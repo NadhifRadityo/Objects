@@ -42,8 +42,8 @@ public class ModernScrollPane extends JScrollPane {
     }
 
     public ModernScrollPane(Component view, int vsbPolicy, int hsbPolicy) {
-//    	this.setVerticalScrollBarPolicy(vsbPolicy);
-//    	this.setHorizontalScrollBarPolicy(hsbPolicy);
+    	this.setVerticalScrollBarPolicy(vsbPolicy);
+    	this.setHorizontalScrollBarPolicy(hsbPolicy);
     	
         setBorder(null);
 

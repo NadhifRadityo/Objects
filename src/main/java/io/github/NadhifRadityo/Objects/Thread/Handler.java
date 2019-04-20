@@ -5,17 +5,27 @@ import io.github.NadhifRadityo.Objects.Utilizations.RunnableUtils;
 
 public class Handler {
 	private static Handler MAIN_THREAD_HANDLER = null;
-    private final Looper looper;
-    private final PostQueue queue;
+    protected final Looper looper;
+    protected final PostQueue queue;
     
     public Handler(Looper looper) {
         this.looper = looper;
         this.queue = looper.myQueue();
+        if(looper.getThread() instanceof HandlerThread) {
+        	HandlerThread handlerThread = (HandlerThread) looper.getThread();
+        	if(handlerThread.mHandler != null && !equals(handlerThread.mHandler))
+        		System.out.println("Multiple handler detected!");
+        	else handlerThread.mHandler = this;
+        }
     }
     
     public static Handler getMain() {
-        if (MAIN_THREAD_HANDLER == null) MAIN_THREAD_HANDLER = new Handler(Looper.getMainLooper());
-        return MAIN_THREAD_HANDLER;
+        if (MAIN_THREAD_HANDLER == null && Looper.getMainLooper() != null) {
+        	if(Looper.getMainLooper().getThread() instanceof HandlerThread) {
+            	HandlerThread handlerThread = (HandlerThread) Looper.getMainLooper().getThread();
+            	if(handlerThread.mHandler != null) MAIN_THREAD_HANDLER = handlerThread.mHandler;
+            } if(MAIN_THREAD_HANDLER == null) MAIN_THREAD_HANDLER = new Handler(Looper.getMainLooper());
+        } return MAIN_THREAD_HANDLER;
     }
     
     public final RunnablePost post(Runnable r, String title, String subject) {
@@ -90,7 +100,8 @@ public class Handler {
     private final RunnablePost sendMessageAtTime(RunnablePost runnable, long uptimeMillis) {
         if (queue == null) throw new IllegalStateException(this + " sendMessageAtTime() called with no queue");
         queue.add(runnable, uptimeMillis);
-        return runnable; 
+        looper.updateProgress();
+        return runnable;
     }
     
     private RunnablePost createRunnablePost(Runnable runnable, String title, String subject) {

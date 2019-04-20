@@ -11,7 +11,7 @@ import java.util.Map;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 
-import io.github.NadhifRadityo.Objects.Utilizations.DateCreateObject;
+import io.github.NadhifRadityo.Objects.Object.DateCreateObject;
 import net.miginfocom.swing.MigLayout;
 
 public class ColumnText extends JPanel {
@@ -83,6 +83,14 @@ public class ColumnText extends JPanel {
 		removeColumn(key.getText());
 	}
 	
+	@Override
+	public void removeAll() {
+		String[] keys = groups.keySet().toArray(new String[groups.size()]);
+		for(String key : keys) removeColumn(key);
+		super.removeAll();
+		rearrange();
+	}
+	
 //	public void addText(JLabel key, Component value) {
 //		Component insert = value;
 //		JLabel val;
@@ -142,7 +150,7 @@ public class ColumnText extends JPanel {
 	}
 	
 	public static class ColumnTextGroup implements DateCreateObject {
-		private final long timestampCreated = System.currentTimeMillis();
+		private final long timestampCreated = System.nanoTime();
 		private final JLabel key;
 		private final Component value;
 		private final ColumnText columnText;

@@ -21,55 +21,57 @@ public class Panel extends JPanel {
 	private Color hoverForegroundColor;
     private Color pressedForegroundColor;
     
+    private final MouseListener mouseListener = new MouseListener() {
+		private boolean hover;
+		private boolean pressed;
+		
+		@Override
+		public void mouseReleased(MouseEvent e) {
+			pressed = false;
+			if(hover) {
+				Panel.super.setBackground(hoverBackgroundColor);
+				Panel.super.setForeground(hoverForegroundColor);
+			} else {
+				Panel.super.setBackground(backgroundColor);
+				Panel.super.setForeground(foregroundColor);
+			}
+		}
+		
+		@Override
+		public void mousePressed(MouseEvent e) {
+			pressed = true;
+        	if(pressedBackgroundColor != null)
+        		Panel.super.setBackground(pressedBackgroundColor);
+        	if(pressedForegroundColor != null)
+        		Panel.super.setForeground(pressedForegroundColor);
+		}
+		
+		@Override
+		public void mouseExited(MouseEvent e) {
+			hover = false;
+			if(!pressed) {
+				Panel.super.setBackground(backgroundColor);
+				Panel.super.setForeground(foregroundColor);
+			}
+		}
+		
+		@Override
+		public void mouseEntered(MouseEvent e) {
+			hover = true;
+			if(!pressed) {
+	        	if(hoverBackgroundColor != null)
+	        		Panel.super.setBackground(hoverBackgroundColor);
+	        	if(hoverForegroundColor != null)
+	        		Panel.super.setForeground(hoverForegroundColor);
+			}
+		}
+		
+		@Override
+		public void mouseClicked(MouseEvent e) { }
+	};
+    
     public Panel() {
-    	addMouseListener(new MouseListener() {
-    		private boolean hover;
-    		private boolean pressed;
-    		
-			@Override
-			public void mouseReleased(MouseEvent e) {
-				pressed = false;
-				if(hover) {
-					Panel.super.setBackground(hoverBackgroundColor);
-					Panel.super.setForeground(hoverForegroundColor);
-				} else {
-					Panel.super.setBackground(backgroundColor);
-					Panel.super.setForeground(foregroundColor);
-				}
-			}
-			
-			@Override
-			public void mousePressed(MouseEvent e) {
-				pressed = true;
-	        	if(pressedBackgroundColor != null)
-	        		Panel.super.setBackground(pressedBackgroundColor);
-	        	if(pressedForegroundColor != null)
-	        		Panel.super.setForeground(pressedForegroundColor);
-			}
-			
-			@Override
-			public void mouseExited(MouseEvent e) {
-				hover = false;
-				if(!pressed) {
-					Panel.super.setBackground(backgroundColor);
-					Panel.super.setForeground(foregroundColor);
-				}
-			}
-			
-			@Override
-			public void mouseEntered(MouseEvent e) {
-				hover = true;
-				if(!pressed) {
-		        	if(hoverBackgroundColor != null)
-		        		Panel.super.setBackground(hoverBackgroundColor);
-		        	if(hoverForegroundColor != null)
-		        		Panel.super.setForeground(hoverForegroundColor);
-				}
-			}
-			
-			@Override
-			public void mouseClicked(MouseEvent e) { }
-		});
+    	addMouseListener(mouseListener);
     }
     
     public void setBackground(Color bg) {
@@ -110,4 +112,8 @@ public class Panel extends JPanel {
     public void setPressedForegroundColor(Color pressedForegroundColor) {
         this.pressedForegroundColor = pressedForegroundColor;
     }
+    
+    public MouseListener getBackgroundMouseListener() {
+		return mouseListener;
+	}
 }

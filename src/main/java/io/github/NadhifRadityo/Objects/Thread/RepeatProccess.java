@@ -1,8 +1,8 @@
 package io.github.NadhifRadityo.Objects.Thread;
 
 public abstract class RepeatProccess extends HandlerThread {
-	private volatile long delay;
-	private volatile boolean run = true;
+	protected volatile long delay;
+	protected volatile boolean run = true;
 	
 	public RepeatProccess(String name, long delay) {
 		super(name);

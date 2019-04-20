@@ -8,6 +8,7 @@ public final class DimensionUtils {
 	}
 	
 	private static final Dimension MAX_DIMENSION = new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE);
+	private static final Dimension NEUTRAL_DIMENSION = new Dimension(0, 0);
 	public static Dimension getMaxDimension() {
 		return (Dimension) MAX_DIMENSION.clone();
 	}
@@ -20,5 +21,8 @@ public final class DimensionUtils {
 		Dimension dim = getMaxDimension();
 		dim.width = 0;
 		return dim;
+	}
+	public static Dimension getNeutralDimension() {
+		return (Dimension) NEUTRAL_DIMENSION.clone();
 	}
 }

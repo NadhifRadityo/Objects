@@ -1,9 +1,9 @@
 package io.github.NadhifRadityo.Objects.Thread;
 
 public class HandlerThread extends Thread {
-    private int mTid = -1;
-    private Looper mLooper;
-    private Handler mHandler;
+    protected int mTid = -1;
+    protected Looper mLooper;
+    protected Handler mHandler;
     
     public HandlerThread(String name) {
         super(name);

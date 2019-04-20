@@ -57,8 +57,8 @@ public class QueueList<E> implements DeadableObject {
 	}
 	
 	public synchronized E get() {
-		assertDead();
-		while(size() == 0) {
+		if(map.size() == 0) assertDead();
+		while(map.size() == 0) {
 			try { isWaiting = true; wait();
 			} catch (InterruptedException e) { e.printStackTrace(); }
 		} isWaiting = false;
@@ -72,6 +72,7 @@ public class QueueList<E> implements DeadableObject {
 		map.remove(returnVal);
 		return returnVal;
 	}
+	public synchronized Map<E, Long> values() { return Collections.unmodifiableMap(map); }
 	
 	public synchronized int size() {
 		assertDead();
@@ -92,10 +93,10 @@ public class QueueList<E> implements DeadableObject {
 	
 	public synchronized void quit() {
 		if(!deadAllowed) throw new IllegalStateException("Not allowed to dead.");
-		if(dead) return; this.dead = true;
-		map.put(null, 0L);
+		if(dead) return;
+		map.put(null, Long.MIN_VALUE);
 		notifyAll();
-		map.clear();
+		this.dead = true;
 	}
 	
 //	@SuppressWarnings("deprecation")

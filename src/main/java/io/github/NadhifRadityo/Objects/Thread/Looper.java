@@ -2,19 +2,19 @@ package io.github.NadhifRadityo.Objects.Thread;
 
 import io.github.NadhifRadityo.Objects.Console.Logger;
 import io.github.NadhifRadityo.Objects.Exception.ExceptionHandler;
-import io.github.NadhifRadityo.Objects.Exception.ThrowsRunnable;
 import io.github.NadhifRadityo.Objects.Utilizations.ExceptionUtils;
 
 public final class Looper {
 	private static final ThreadLocal<Looper> sThreadLocal = new ThreadLocal<Looper>();
 	private static Looper mainLooper;
 	
-	private final Thread thread;
-	private final PostQueue queue;
+	protected final Thread thread;
+	protected final PostQueue queue;
 	
-	private final Logger logger;
-	private volatile ExceptionHandler exceptionHandler;
-	private volatile RunnablePost jobRunning;
+	protected final Logger logger;
+	protected volatile ExceptionHandler exceptionHandler;
+	protected volatile ThreadProgressHandler progressHandler;
+	protected volatile RunnablePost jobRunning;
 	
 	public static void prepare() { prepare(true); }
 	private static void prepare(boolean quitAllowed) {
@@ -41,7 +41,10 @@ public final class Looper {
 			if (runnable == null) return;
 			me.runPost(runnable);
 		} catch(Exception e) {
-			if(me.exceptionHandler == null) throw e;
+			me.logger.error(">>> " + ExceptionUtils.getStackTrace(e));
+			if(me.progressHandler != null) me.progressHandler.catchException(e, me.jobRunning, me);
+			me.jobRunning = null; me.updateProgress();
+			if(me.exceptionHandler == null) throw new RuntimeException(e);
 			me.exceptionHandler.onExceptionOccurred(e);
 		} }
 	}
@@ -52,28 +55,38 @@ public final class Looper {
 		logger = new Logger("[Thread " + thread.getName() + "] ");
 	}
 	
-	private void runPost(RunnablePost runnable) {
+	private void runPost(RunnablePost runnable) throws Exception {
 		logger.log(">>> Dispatching to " + runnable.getTitle() + (runnable.getSubject() != null && runnable.getSubject() != "" ? 
 				": " + runnable.getSubject() : ""));
 		long startTime = System.currentTimeMillis();
 		
 		jobRunning = runnable;
-		ExceptionUtils.doSilentException((e) -> {
-			logger.error(">>> " + ExceptionUtils.getStackTrace(e));
-		}, (ThrowsRunnable) () -> runnable.work());
+		logProgress(-1, -1, "Job Running...", runnable);
+		runnable.work();
 		jobRunning = null;
-		
+		logProgress(1, 1, "Job Done!", runnable);
+
 		logger.log("<<< Finished to " + runnable.getTitle() + (runnable.getSubject() != null && runnable.getSubject() != "" ?
 				": " + runnable.getSubject() + " | " : " ") + "Took: " + (System.currentTimeMillis() - startTime) + "ms");
 	}
+	
+	protected void logProgress(int current, int total, String desc, RunnablePost jobRunning) {
+		if(progressHandler != null) progressHandler.logProgress(current, total, desc, jobRunning, this);
+	} public void logProgress(int current, int total, String desc) { logProgress(current, total, desc, jobRunning); } 
+	protected void updateProgress() { if(progressHandler != null) progressHandler.update(); }
 
 	public Thread getThread() { return thread; }
 	public PostQueue myQueue() { return queue; }
 	public Logger getLogger() { return logger; }
+	public ExceptionHandler getExceptionHandler() { return exceptionHandler; }
+	public ThreadProgressHandler getProgressHandler() { return progressHandler; }
 	public RunnablePost getJobRunning() { return jobRunning; }
 	
 	public void setExceptionHandler(ExceptionHandler exceptionHandler) {
 		this.exceptionHandler = exceptionHandler;
+	}
+	public void setProgressHandler(ThreadProgressHandler progressHandler) {
+		this.progressHandler = progressHandler;
 	}
 	public boolean isCurrentThread() { return Thread.currentThread() == thread; }
 	public boolean isIdling() { return queue.isWaiting(); }
@@ -90,7 +103,13 @@ public final class Looper {
 		while(queue.size() != 0) {
 			RunnablePost runnable = queue.get();
 			if (runnable == null) break;
-			runPost(runnable);
+			try { runPost(runnable); } catch(Exception e) {
+				logger.error(">>> " + ExceptionUtils.getStackTrace(e));
+				if(progressHandler != null) progressHandler.catchException(e, jobRunning, this);
+				jobRunning = null; updateProgress();
+				if(exceptionHandler == null) throw new RuntimeException(e);
+				exceptionHandler.onExceptionOccurred(e);
+			}
 		} queue.quit();
 		logger.debug("<<< Thread Quited Safely | Took: " + (System.currentTimeMillis() - startTime) + "ms");
 	}

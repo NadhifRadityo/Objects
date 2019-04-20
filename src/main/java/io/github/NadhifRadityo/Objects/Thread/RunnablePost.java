@@ -7,15 +7,18 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import io.github.NadhifRadityo.Objects.Utilizations.PublicRandom;
 
 public abstract class RunnablePost {
-	private final long id = PublicRandom.getRandom().nextInt(Integer.MAX_VALUE);
-	private String title;
-	private String subject;
+	protected final long id = PublicRandom.getRandom().nextInt(Integer.MAX_VALUE);
+	protected String title;
+	protected String subject;
 	
 	public RunnablePost(String title, String subject) {
 		this.title = title;
 		this.subject = subject;
 	}
 	
+	public long getId() {
+		return id;
+	}
 	public String getTitle() {
 		return title == null ? getClass().getCanonicalName() : title;
 	}

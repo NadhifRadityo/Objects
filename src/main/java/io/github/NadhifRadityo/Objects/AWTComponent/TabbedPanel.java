@@ -13,7 +13,7 @@ import java.util.Map;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 
-import io.github.NadhifRadityo.Objects.Utilizations.DateCreateObject;
+import io.github.NadhifRadityo.Objects.Object.DateCreateObject;
 import io.github.NadhifRadityo.Objects.Utilizations.DimensionUtils;
 import io.github.NadhifRadityo.Objects.Utilizations.Direction.Compass;
 import io.github.NadhifRadityo.Objects.Utilizations.Direction.Direction2D;
@@ -165,7 +165,7 @@ public class TabbedPanel extends JPanel {
 	}
 	
 	public static class TabbedPanelGroup implements DateCreateObject {
-		private final long timestampCreated = System.currentTimeMillis();
+		private final long timestampCreated = System.nanoTime();
 		private TabbedPanel parent;
 		private String key;
 		private JButton button;

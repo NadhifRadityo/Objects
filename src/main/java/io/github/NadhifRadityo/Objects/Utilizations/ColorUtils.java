@@ -35,4 +35,17 @@ public class ColorUtils {
 	public static boolean isDark(Color color) {
 		return isDark(color, false);
 	}
+	
+	public static Color shadeColor(Color color, int percent) {
+		int r = Math.max(0, Math.min(255, color.getRed()   * (100 + percent) / 100));
+		int g = Math.max(0, Math.min(255, color.getGreen() * (100 + percent) / 100));
+		int b = Math.max(0, Math.min(255, color.getBlue()  * (100 + percent) / 100));
+		return new Color(r, g, b, color.getAlpha());
+	}
+	public static Color darkenColor(Color color, int percent) {
+		return shadeColor(color, percent * -1);
+	}
+	public static Color lightenColor(Color color, int percent) {
+		return shadeColor(color, percent);
+	}
 }
