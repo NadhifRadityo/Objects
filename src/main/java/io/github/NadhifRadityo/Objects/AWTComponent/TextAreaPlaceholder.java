@@ -11,7 +11,7 @@ import javax.swing.JTextField;
 @Deprecated
 public class TextAreaPlaceholder implements FocusListener {
 	private boolean placeHolderShow = false;
-	private char passwordChar = '•';
+	private char passwordChar = "•".charAt(0);
 	private String placeholder = "placeholder";
 	
 	private Color placeholderColor = new Color(150, 150, 150);
@@ -21,12 +21,10 @@ public class TextAreaPlaceholder implements FocusListener {
 		this.placeholder = placeholder;
 	}
 	
-    @Override
-    public void focusGained(FocusEvent e) {
+    @Override public void focusGained(FocusEvent e) {
     	showPlaceholder(e.getComponent());
     }
-    @Override
-    public void focusLost(FocusEvent e) {
+    @Override public void focusLost(FocusEvent e) {
     	hidePlaceholder(e.getComponent());
     }
     

@@ -81,6 +81,7 @@ public class Handler {
     }
     
     public final long removePost(RunnablePost runnable) {
+    	if(runnable == null) return 0L;
     	return queue.remove(runnable);
     }
     public final boolean hasPost(RunnablePost runnable) {

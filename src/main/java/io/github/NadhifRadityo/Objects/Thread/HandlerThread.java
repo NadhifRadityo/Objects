@@ -9,8 +9,7 @@ public class HandlerThread extends Thread {
         super(name);
     }
     
-    @Override
-    public void run() {
+    @Override public void run() {
         mTid = getThreadId();
         Looper.prepare();
         synchronized (this) {
@@ -36,10 +35,9 @@ public class HandlerThread extends Thread {
         if (mHandler == null) mHandler = new Handler(getLooper());
         return mHandler;
     }
-    
-    protected void onLooperPrepared() {
-    }
-    
+
+    protected void onLooperPrepared() { }
+
     public boolean quit() {
         Looper looper = getLooper();
         if (looper != null) {
