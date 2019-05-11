@@ -33,18 +33,10 @@ public enum FlatColor {
 		this.color = color;
 	}
 	
-	public String getName() {
-		return name;
-	}
-	public Color getColor() {
-		return color;
-	}
+	public String getName() { return name; }
+	public Color getColor() { return color; }
+	public Color getColor(float alpha) { return new Color(color.getRed(), color.getGreen(), color.getBlue(), (int) NumberUtils.map(alpha, 0, 1, 0, 255)); }
 	
-	private static Random random = new Random();
-	public static FlatColor pickRandom(Random random) {
-		return values()[random.nextInt(values().length)];
-	}
-	public static FlatColor pickRandom() {
-		return pickRandom(random);
-	}
+	public static FlatColor pickRandom(Random random) { return values()[random.nextInt(values().length)]; }
+	public static FlatColor pickRandom() { return pickRandom(PublicRandom.getRandom()); }
 }

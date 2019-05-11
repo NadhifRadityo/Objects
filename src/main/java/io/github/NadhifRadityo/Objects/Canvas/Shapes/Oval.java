@@ -1,10 +1,13 @@
 package io.github.NadhifRadityo.Objects.Canvas.Shapes;
 
 import java.awt.Graphics;
+import java.awt.geom.Area;
+import java.awt.geom.Ellipse2D;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 public class Oval extends Rectangle {
@@ -21,14 +24,24 @@ public class Oval extends Rectangle {
 	public Oval(Point p, int width, int height, boolean center) { this(p.getX(), p.getY(), width, height, center); }
 	public Oval(int x, int y, int width, int height) { this(x, y, width, height, false); }
 	public Oval(Point p, int width, int height) { this(p.getX(), p.getY(), width, height); }
-	
+
+	public boolean isCenter() { return center; }
 	public int getX(boolean center) { return center ? x + width / 2 : (this.center ? x - width / 2 : x); }
 	public int getY(boolean center) { return center ? y + height / 2 : (this.center ? y - height / 2 : y); }
 	@Override public int getX() { return getX(false); }
 	@Override public int getY() { return getY(false); }
-	
-	public boolean isCenter() { return center; }
 	public Point getCenterPoint() { return new Point(getX(true), getY(true)); }
+	
+	public void setCenter(boolean center) {
+		if(this.center == center) return;
+		this.center = center;
+		if(center) { setX(x, true); setY(y, true); }
+		else { setX(x + (width / 2), false); setY(y + (height / 2)); }
+	}
+	public void setX(int x, boolean center) { this.x = center ? x - (width / 2) : x; }
+	public void setY(int y, boolean center) { this.y = center ? y - (height / 2) : y; }
+	@Override public void setX(int x) { setX(x, false); }
+	@Override public void setY(int y) { setY(y, false); }
 	
 	public Point[] getPoints(int numPoints) {
 		final Point[] points = new Point[numPoints];
@@ -40,25 +53,24 @@ public class Oval extends Rectangle {
 	}
 	
 	@Override public void draw(Graphics g) { g.drawOval(x, y, width, height); }
-	
+	@Override public Area getArea() { return new Area(new Ellipse2D.Double(getX(true), getY(true), width, height)); }
+
 	@Override
 	public boolean equals(final Object other) {
 		if (!(other instanceof Oval))
 			return false;
-		if (!super.equals(other))
-			return false;
 		Oval castOther = (Oval) other;
-		return Objects.equals(center, castOther.center);
+		return new EqualsBuilder().appendSuper(super.equals(other)).append(center, castOther.center).isEquals();
 	}
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), center);
+		return new HashCodeBuilder().appendSuper(super.hashCode()).append(center).toHashCode();
 	}
 	@Override
 	public String toString() {
 		return new ToStringBuilder(this).appendSuper(super.toString()).append("center", center).toString();
 	}
-
+	
 	public static Point[] checkIntersects(Oval c1, Oval c2, int numPoints, double minDistance) {
 		List<Point> points = new ArrayList<>();
 		Point[] p1s = c1.getPoints(numPoints);

@@ -69,6 +69,7 @@ public class PriorityList<E> implements DeadableObject {
 		int minPriority = Integer.MAX_VALUE;
 		int maxPriority = Integer.MIN_VALUE;
 		List<E> returnVal = new ArrayList<>();
+		if(entry.size() == 0) return returnVal;
 		
 		for(Entry<E, Integer> pair : entry) {
 			minPriority = Math.min(minPriority, pair.getValue());

@@ -1,8 +1,11 @@
 package io.github.NadhifRadityo.Objects.Canvas.Shapes;
 
 import java.awt.Graphics;
-import java.util.Objects;
+import java.awt.geom.Area;
+import java.awt.geom.Rectangle2D;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import io.github.NadhifRadityo.Objects.Canvas.Sprite;
@@ -18,21 +21,23 @@ public class Rectangle extends Sprite {
 
 	public int getWidth() { return width; }
 	public int getHeight() { return height; }
+	public void setWidth(int width) { this.width = width; }
+	public void setHeight(int height) { this.height = height; }
 	
 	@Override public void draw(Graphics g) { g.drawRect(x, y, width, height); }
+	@Override public Area getArea() { return new Area(new Rectangle2D.Double(x, y, width, height)); }
 
 	@Override
 	public boolean equals(final Object other) {
 		if (!(other instanceof Rectangle))
 			return false;
-		if (!super.equals(other))
-			return false;
 		Rectangle castOther = (Rectangle) other;
-		return Objects.equals(width, castOther.width) && Objects.equals(height, castOther.height);
+		return new EqualsBuilder().appendSuper(super.equals(other)).append(width, castOther.width)
+				.append(height, castOther.height).isEquals();
 	}
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), width, height);
+		return new HashCodeBuilder().appendSuper(super.hashCode()).append(width).append(height).toHashCode();
 	}
 	@Override
 	public String toString() {
