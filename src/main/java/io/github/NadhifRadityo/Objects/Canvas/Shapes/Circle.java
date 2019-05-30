@@ -4,7 +4,7 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 
-public class Circle extends Oval {
+public class Circle extends Ellipse {
 	public Circle(int x, int y, int d, boolean center) { super(x, y, d, d, center); }
 	public Circle(Point p, int d, boolean center) { this(p.getX(), p.getY(), d, center); }
 	public Circle(int x, int y, int d) { this(x, y, d, false); }

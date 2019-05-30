@@ -1,15 +1,17 @@
 package io.github.NadhifRadityo.Objects.Canvas.RenderHints;
 
+import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.geom.AffineTransform;
 
+import io.github.NadhifRadityo.Objects.Canvas.Sprite;
 import io.github.NadhifRadityo.Objects.Canvas.Managers.GraphicModifierManager.CustomGraphicModifier;
 
 public class Scale extends CustomGraphicModifier {
 	protected double sx, sy;
 	
-	public Scale(double sx, double sy) {
-		this.sx = sx; this.sy = sy;
+	public Scale(double sx, double sy, Sprite... sprites) {
+		super(sprites); this.sx = sx; this.sy = sy;
 	}
 	
 	public double getSx() { return sx; }
@@ -18,9 +20,13 @@ public class Scale extends CustomGraphicModifier {
 	public void setSy(double sy) { this.sy = sy; }
 	
 	private AffineTransform old;
-	@Override public void draw(Graphics2D g) {
-		old = g.getTransform();
+	@Override public void draw(Graphics g) {
+		if(!(g instanceof Graphics2D)) return;
+		old = ((Graphics2D) g).getTransform();
 		((Graphics2D) g).scale(sx, sy);
 	}
-	@Override public void reset(Graphics2D g) { g.setTransform(old); }
+	@Override public void reset(Graphics g) {
+		if(!(g instanceof Graphics2D) || old == null) return;
+		((Graphics2D) g).setTransform(old); old = null;
+	}
 }

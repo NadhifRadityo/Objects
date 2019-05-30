@@ -5,7 +5,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import io.github.NadhifRadityo.Objects.Exception.ThrowsRunnable;
 import io.github.NadhifRadityo.Objects.Object.DeadableObject;
+import io.github.NadhifRadityo.Objects.Utilizations.ExceptionUtils;
 
 public class QueueList<E> implements DeadableObject {
 	protected final Map<E, Long> map;
@@ -59,16 +61,21 @@ public class QueueList<E> implements DeadableObject {
 	public synchronized E get() {
 		if(map.size() == 0) assertDead();
 		while(map.size() == 0) {
-			try { isWaiting = true; wait();
-			} catch (InterruptedException e) { e.printStackTrace(); }
+			isWaiting = true;
+			ExceptionUtils.doSilentException(false, (ThrowsRunnable) this::wait);
 		} isWaiting = false;
 		
 		Long minReturnAt = Long.MAX_VALUE;
 		E returnVal = null;
-		for(Entry<E, Long> entry : map.entrySet()) { if(entry.getValue().longValue() <= minReturnAt.longValue()) {
+		for(Entry<E, Long> entry : map.entrySet()) { if(entry.getValue().longValue() < minReturnAt.longValue()) {
 			minReturnAt = entry.getValue();
 			returnVal = entry.getKey();
 		} }
+		
+		long waitUntil = minReturnAt.longValue();
+		ExceptionUtils.doSilentException(false, (ThrowsRunnable) () -> { long now; 
+			while(waitUntil > (now = System.currentTimeMillis())) Thread.sleep(waitUntil - now); });
+		
 		map.remove(returnVal);
 		return returnVal;
 	}

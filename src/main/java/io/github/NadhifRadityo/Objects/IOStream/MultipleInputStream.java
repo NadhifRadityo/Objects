@@ -75,6 +75,7 @@ public class MultipleInputStream extends PipedOutputStream {
 		return closed;
 	}
 	
+//	@SuppressWarnings("deprecation") //TODO: Java < 9 Support?
 	private static void setField(Class<?> klass, Object obj, String fieldName, Object val) throws IOException { try {
 		Field field = klass.getDeclaredField(fieldName);
 		boolean isAccessible = field.isAccessible();
@@ -82,6 +83,7 @@ public class MultipleInputStream extends PipedOutputStream {
 		field.set(obj, val);
 		field.setAccessible(isAccessible);
 	} catch (Exception e) { throw new IOException(e); } }
+//	@SuppressWarnings("deprecation") //TODO: Java < 9 Support?
 	private static Object getField(Class<?> klass, Object obj, String fieldName) throws IOException { try {
 		Field field = klass.getDeclaredField(fieldName);
 		boolean isAccessible = field.isAccessible();

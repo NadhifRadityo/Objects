@@ -10,8 +10,8 @@ public final class Looper {
 	
 	protected final Thread thread;
 	protected final PostQueue queue;
-	
 	protected final Logger logger;
+	
 	protected volatile ExceptionHandler exceptionHandler;
 	protected volatile ThreadProgressHandler progressHandler;
 	protected volatile RunnablePost jobRunning;

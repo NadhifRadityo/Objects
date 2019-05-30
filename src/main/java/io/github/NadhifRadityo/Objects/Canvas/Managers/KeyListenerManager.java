@@ -45,9 +45,8 @@ public class KeyListenerManager extends ImplementSpriteManager {
 	@Override protected void init(CanvasPanel canvas) {
 		super.init(canvas);
 		while(canvas instanceof ManagerCanvas) {
-			CanvasPanel parent = ((ManagerCanvas) canvas).getCanvasParent();
-			if(parent == null) break;
-			canvas = parent;
+			CanvasPanel parent = ((ManagerCanvas) canvas).getManager().getParent();
+			if(parent == null) break; canvas = parent;
 		} this.registeredListener = canvas;
 		registeredListener.addKeyListener(keyListener);
 	}

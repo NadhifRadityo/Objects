@@ -10,10 +10,10 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-public class Oval extends Rectangle {
+public class Ellipse extends Rectangle {
 	protected boolean center;
 	
-	public Oval(int x, int y, int width, int height, boolean center) {
+	public Ellipse(int x, int y, int width, int height, boolean center) {
 		super(x, y, width, height);
 		this.center = center;
 		if(center) {
@@ -21,9 +21,9 @@ public class Oval extends Rectangle {
 			this.y -= height / 2;
 		}
 	}
-	public Oval(Point p, int width, int height, boolean center) { this(p.getX(), p.getY(), width, height, center); }
-	public Oval(int x, int y, int width, int height) { this(x, y, width, height, false); }
-	public Oval(Point p, int width, int height) { this(p.getX(), p.getY(), width, height); }
+	public Ellipse(Point p, int width, int height, boolean center) { this(p.getX(), p.getY(), width, height, center); }
+	public Ellipse(int x, int y, int width, int height) { this(x, y, width, height, false); }
+	public Ellipse(Point p, int width, int height) { this(p.getX(), p.getY(), width, height); }
 
 	public boolean isCenter() { return center; }
 	public int getX(boolean center) { return center ? x + width / 2 : (this.center ? x - width / 2 : x); }
@@ -57,9 +57,9 @@ public class Oval extends Rectangle {
 
 	@Override
 	public boolean equals(final Object other) {
-		if (!(other instanceof Oval))
+		if (!(other instanceof Ellipse))
 			return false;
-		Oval castOther = (Oval) other;
+		Ellipse castOther = (Ellipse) other;
 		return new EqualsBuilder().appendSuper(super.equals(other)).append(center, castOther.center).isEquals();
 	}
 	@Override
@@ -71,7 +71,7 @@ public class Oval extends Rectangle {
 		return new ToStringBuilder(this).appendSuper(super.toString()).append("center", center).toString();
 	}
 	
-	public static Point[] checkIntersects(Oval c1, Oval c2, int numPoints, double minDistance) {
+	public static Point[] checkIntersects(Ellipse c1, Ellipse c2, int numPoints, double minDistance) {
 		List<Point> points = new ArrayList<>();
 		Point[] p1s = c1.getPoints(numPoints);
 		Point[] p2s = c2.getPoints(numPoints);

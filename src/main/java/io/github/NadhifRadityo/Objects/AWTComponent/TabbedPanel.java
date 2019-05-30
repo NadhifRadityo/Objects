@@ -121,6 +121,9 @@ public class TabbedPanel extends JPanel {
 		return currentTab;
 	}
 	
+	public List<TabChangedListener> getTabChangedListeners() {
+		return Collections.unmodifiableList(tabChangedListeners);
+	}
 	public void addTabChangedListener(TabChangedListener listener) {
 		tabChangedListeners.add(listener);
 	}

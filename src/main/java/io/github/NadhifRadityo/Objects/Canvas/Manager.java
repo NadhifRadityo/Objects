@@ -4,18 +4,20 @@ import java.util.List;
 import java.util.Map;
 
 public abstract class Manager {
-	private CanvasPanel init = null;
+	protected CanvasPanel parent = null;
 	protected ManagerCanvas toApply;
 	
 	public Manager(boolean applyToGraphic) {
 		setApplyToGraphic(applyToGraphic);
 	}
 	
-	public boolean isInited() { return init != null; }
+	public CanvasPanel getParent() { return parent; }
+	public ManagerCanvas getToApply() { return toApply; }
+	public boolean isInited() { return parent != null; }
 	public boolean isApplyToGraphic() { return toApply == null; }
 	public void setApplyToGraphic(boolean flag) {
 		if(isApplyToGraphic() == flag) return;
-		this.toApply = flag ? null : new ManagerCanvas(this, init);
+		this.toApply = flag ? null : new ManagerCanvas(this);
 	}
 	
 	public Map<Sprite, Integer> getSprites() { return toApply.getSprites(); }
@@ -28,34 +30,28 @@ public abstract class Manager {
 	public void removeManager(Manager manager) { toApply.removeManager(manager); }
 	
 	protected final void initCanvas(CanvasPanel canvas) {
-		if(init != null) throw new IllegalArgumentException("Already inited!");
+		if(parent != null) throw new IllegalArgumentException("Already inited!");
 		if(canvas == null) return;
-		init(canvas); this.init = canvas;
-		if(!isApplyToGraphic()) toApply.canvasParent = canvas;
+		init(canvas); this.parent = canvas;
 	} protected abstract void init(CanvasPanel canvas);
 	protected final CanvasPanel uninitCanvas() {
-		if(init == null) return null;
-		uninit(init); CanvasPanel canvas = init;
-		this.init = null;
-		if(!isApplyToGraphic()) toApply.canvasParent = null;
-		return canvas;
+		if(parent == null) return null;
+		uninit(parent); CanvasPanel canvas = parent;
+		this.parent = null; return canvas;
 	} protected abstract void uninit(CanvasPanel canvas);
 	protected void reinit() { initCanvas(uninitCanvas()); }
 	
-	protected class ManagerCanvas extends CanvasPanel {
+	protected static class ManagerCanvas extends CanvasPanel {
 		/**
 		 * 
 		 */
 		private static final long serialVersionUID = -7303158112910216128L;
 		protected final Manager manager;
-		protected CanvasPanel canvasParent;
 		
-		public ManagerCanvas(Manager manager, CanvasPanel canvasParent) {
+		public ManagerCanvas(Manager manager) {
 			this.manager = manager;
-			this.canvasParent = canvasParent;
 		}
 		
 		public Manager getManager() { return manager; }
-		public CanvasPanel getCanvasParent() { return canvasParent; }
 	}
 }

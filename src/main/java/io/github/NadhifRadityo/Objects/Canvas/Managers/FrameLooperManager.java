@@ -1,5 +1,7 @@
 package io.github.NadhifRadityo.Objects.Canvas.Managers;
 
+import javax.swing.SwingUtilities;
+
 import io.github.NadhifRadityo.Objects.Canvas.CanvasPanel;
 import io.github.NadhifRadityo.Objects.Canvas.Manager;
 import io.github.NadhifRadityo.Objects.Exception.ThrowsRunnable;
@@ -15,6 +17,9 @@ public class FrameLooperManager extends ImplementSpriteManager {
 	protected final ThrowsRunnable runnable;
 	protected RunnablePost post;
 	protected CanvasPanel canvas;
+
+	private volatile boolean painting = false;
+	private final Object paintingLock = new Object();
 	
 	protected volatile int fps = 30;
 	protected volatile RunBehindCallback runbehind;
@@ -29,10 +34,15 @@ public class FrameLooperManager extends ImplementSpriteManager {
 			long nextTick = System.currentTimeMillis();
 			while(enabled && canvas != null) {
 				updaters.get().forEach(i -> i.update());
-				canvas.repaint();
-				long sleep = (nextTick += 1000 / fps) - System.currentTimeMillis();
-				if(sleep >= 0) Thread.sleep(sleep);
-				else if(runbehind != null) runbehind.late(sleep * -1);
+				painting = true; canvas.repaint();
+				SwingUtilities.invokeLater(() -> { painting = false; synchronized(paintingLock) { paintingLock.notifyAll(); } });
+				synchronized(paintingLock) { while(painting) try { paintingLock.wait(); } catch(Exception e) { } }
+				
+				long currentTick = System.currentTimeMillis();
+				long sleep = (nextTick += 1000 / fps) - currentTick;
+				if(sleep < 0) { nextTick = currentTick;
+					if(runbehind != null) runbehind.late(sleep * -1);
+				} else Thread.sleep(sleep);
 			}
 		};
 	} public FrameLooperManager(boolean applyToGraphic, boolean enabled, Handler handler) { this(applyToGraphic, enabled, handler, 0); }
@@ -67,6 +77,7 @@ public class FrameLooperManager extends ImplementSpriteManager {
 	}
 	private void checkManagers(CanvasPanel canvas) {
 		for(Manager manager : canvas.getManagers()) {
+			if(!manager.isApplyToGraphic()) checkManagers(manager.getToApply());
 			if(!(manager instanceof FrameLooperManager) || manager.equals(this)) continue;
 			uninitCanvas(); throw new IllegalArgumentException("There's already frame looper!");
 		}
@@ -75,7 +86,7 @@ public class FrameLooperManager extends ImplementSpriteManager {
 	@Override protected void init(CanvasPanel canvas) {
 		super.init(canvas); checkManagers(canvas);
 		while(canvas instanceof ManagerCanvas) {
-			CanvasPanel parent = ((ManagerCanvas) canvas).getCanvasParent();
+			CanvasPanel parent = ((ManagerCanvas) canvas).getManager().getParent();
 			if(parent == null) break; canvas = parent; checkManagers(canvas);
 		} this.canvas = canvas; if(enabled) start();
 	}

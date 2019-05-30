@@ -106,7 +106,8 @@ public class Table extends JTable {
 		super(tableModel, tableColumnModel);
 		onConstruct();
 	}
-	public Table(Vector<?> rowData, Vector<?> columnNames) {
+	@SuppressWarnings("rawtypes")
+	public Table(Vector<? extends Vector> rowData, Vector<?> columnNames) {
 		super(rowData, columnNames);
 		onConstruct();
 	}

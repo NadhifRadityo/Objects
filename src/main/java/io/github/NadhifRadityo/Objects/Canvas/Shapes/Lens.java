@@ -28,7 +28,7 @@ public class Lens extends Rectangle {
 		if(calculatedHeight == -1) {
 			Circle c1 = new Circle(0, 0, height);
 			Circle c2 = new Circle(height - width, 0, height);
-			Point[] intersect = Oval.checkIntersects(c1, c2, 1000, width / 2);
+			Point[] intersect = Ellipse.checkIntersects(c1, c2, 1000, width / 2);
 			calculatedHeight = (int) new Line(intersect[0], intersect[1]).getDistance();
 		} return calculatedHeight;
 	}
@@ -45,7 +45,7 @@ public class Lens extends Rectangle {
 			AffineTransform transform = new AffineTransform();
 			transform.translate(-height + width + x, -(height - getHeight()) / 2 + y);
 			area.transform(transform); calculatedArea = area;
-		} return calculatedArea;
+		} return new Area(calculatedArea);
 	}
 
 	@Override

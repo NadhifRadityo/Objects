@@ -18,9 +18,15 @@ public class RunnableUtils {
     public static Runnable convertToRunnable(boolean printException, ThrowsRunnable runnable){
         return convertToRunnable(e -> { if(printException) e.printStackTrace(); }, runnable);
     }
+    public static Runnable[] convertToRunnable(ExceptionHandler exceptionHandler, ThrowsRunnable... throwsRunnables){
+        Runnable[] runnables = new Runnable[throwsRunnables.length];
+        for(int i = 0; i < runnables.length; i++)
+            runnables[i] = convertToRunnable(exceptionHandler, throwsRunnables[i]);
+        return runnables;
+    }
     public static Runnable[] convertToRunnable(boolean printException, ThrowsRunnable... throwsRunnables){
         Runnable[] runnables = new Runnable[throwsRunnables.length];
-        for(int i = 0; i < throwsRunnables.length; i++)
+        for(int i = 0; i < runnables.length; i++)
             runnables[i] = convertToRunnable(printException, throwsRunnables[i]);
         return runnables;
     }

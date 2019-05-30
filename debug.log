@@ -1,0 +1,15 @@
+[0528/200702.112:WARNING:spdy_session.cc(3180)] Received HEADERS for invalid stream 5
+[0528/200733.867:INFO:CONSOLE(579)] "Powered by AMP ⚡ HTML – Version 1905140117570", source: https://cdn.ampproject.org/rtv/011905140117570/amp4ads-v0.js (579)
+[0528/200738.915:INFO:CONSOLE(0)] "The resource https://pagead2.googlesyndication.com/pagead/js/r20190522/r20190131/show_ads_impl.js was preloaded using link preload but not used within a few seconds from the window's load event. Please make sure it has an appropriate `as` value and it is preloaded intentionally.", source:  (0)
+[0528/212909.433:WARNING:angle_platform_impl.cc(52)] compileToBinary(233): 
+C:\fakepath(77,10-42): warning X3571: pow(f, e) will not work for negative f, use abs(f) or conditionally handle negative values if you expect them
+C:\fakepath(99,10-42): warning X3571: pow(f, e) will not work for negative f, use abs(f) or conditionally handle negative values if you expect them
+
+[0528/213500.283:WARNING:angle_platform_impl.cc(52)] compileToBinary(233): 
+C:\fakepath(77,10-42): warning X3571: pow(f, e) will not work for negative f, use abs(f) or conditionally handle negative values if you expect them
+C:\fakepath(99,10-42): warning X3571: pow(f, e) will not work for negative f, use abs(f) or conditionally handle negative values if you expect them
+
+[0528/213629.908:WARNING:angle_platform_impl.cc(52)] compileToBinary(233): 
+C:\fakepath(77,10-42): warning X3571: pow(f, e) will not work for negative f, use abs(f) or conditionally handle negative values if you expect them
+C:\fakepath(99,10-42): warning X3571: pow(f, e) will not work for negative f, use abs(f) or conditionally handle negative values if you expect them
+

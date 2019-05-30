@@ -13,16 +13,12 @@ import io.github.NadhifRadityo.Objects.Object.DeadableObject;
 public class PriorityList<E> implements DeadableObject {
 	protected final Map<E, Integer> map;
 	protected final boolean deadAllowed;
-	protected final boolean fromHighest;
 	protected volatile boolean dead = false;
 	
-	public PriorityList(boolean deadAllowed, boolean fromHighest) {
+	public PriorityList(boolean deadAllowed) {
 		this.map = Collections.synchronizedMap(new HashMap<E, Integer>());
 		this.deadAllowed = deadAllowed;
-		this.fromHighest = fromHighest;
-	}
-	public PriorityList(boolean fromHighest) { this(true, fromHighest); }
-	public PriorityList() { this(true, true); }
+	} public PriorityList() { this(true); }
 	
 	@Override public boolean isDead() { return dead; }
 	@Override public void setDead() { quit(); }
@@ -63,7 +59,7 @@ public class PriorityList<E> implements DeadableObject {
 		return returnVal;
 	}
 	
-	public synchronized List<E> get() {
+	public synchronized List<E> get(boolean fromHighest) {
 		assertDead();
 		Set<Entry<E, Integer>> entry = map.entrySet();
 		int minPriority = Integer.MAX_VALUE;
@@ -84,7 +80,7 @@ public class PriorityList<E> implements DeadableObject {
 				values.add(pair.getKey());
 			} returnVal.addAll(values);
 		} return returnVal;
-	}
+	} public synchronized List<E> get() { return get(true); }
 	
 	public synchronized int size() {
 		assertDead();

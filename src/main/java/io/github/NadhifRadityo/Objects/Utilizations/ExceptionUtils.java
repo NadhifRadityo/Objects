@@ -5,13 +5,12 @@ import io.github.NadhifRadityo.Objects.Exception.ThrowsRunnable;
 
 public class ExceptionUtils extends org.apache.commons.lang3.exception.ExceptionUtils {
     public static void doSilentException(ExceptionHandler exceptionHandler, ThrowsRunnable... throwsRunnables){
-        for(ThrowsRunnable throwsRunnable : throwsRunnables)
-            RunnableUtils.convertToRunnable(exceptionHandler, throwsRunnable).run();
+    	Runnable[] runnables = RunnableUtils.convertToRunnable(exceptionHandler, throwsRunnables);
+        for(Runnable runnable : runnables) runnable.run();
     }
-
     public static void doSilentException(boolean printException, ThrowsRunnable... throwsRunnables){
-        for(ThrowsRunnable throwsRunnable : throwsRunnables)
-            RunnableUtils.convertToRunnable(printException, throwsRunnable).run();
+    	Runnable[] runnables = RunnableUtils.convertToRunnable(printException, throwsRunnables);
+        for(Runnable runnable : runnables) runnable.run();
     }
 
     public static void doSilentException(ExceptionHandler exceptionHandler, Runnable... runnables){
