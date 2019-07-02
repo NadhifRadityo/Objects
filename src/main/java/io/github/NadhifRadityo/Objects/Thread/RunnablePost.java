@@ -4,10 +4,11 @@ import java.util.Objects;
 
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-import io.github.NadhifRadityo.Objects.Utilizations.PublicRandom;
-
 public abstract class RunnablePost {
-	protected final long id = PublicRandom.getRandom().nextInt(Integer.MAX_VALUE);
+	private static long nextId = 0;
+	protected synchronized long getNextId() { return nextId++; }
+	
+	protected final long id = getNextId();
 	protected String title;
 	protected String subject;
 	
@@ -16,22 +17,12 @@ public abstract class RunnablePost {
 		this.subject = subject;
 	}
 	
-	public long getId() {
-		return id;
-	}
-	public String getTitle() {
-		return title == null ? getClass().getCanonicalName() : title;
-	}
-	public String getSubject() {
-		return subject;
-	}
+	public long getId() { return id; }
+	public String getTitle() { return title == null ? getClass().getCanonicalName() : title; }
+	public String getSubject() { return subject; }
 	
-	public void setTitle(String title) {
-		this.title = title;
-	}
-	public void setSubject(String subject) {
-		this.subject = subject;
-	}
+	public void setTitle(String title) { this.title = title; }
+	public void setSubject(String subject) { this.subject = subject; }
 	
 	public abstract void work() throws Exception;
 	public abstract void stop() throws Exception;

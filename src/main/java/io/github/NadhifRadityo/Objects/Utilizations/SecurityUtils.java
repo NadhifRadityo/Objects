@@ -23,7 +23,6 @@ public class SecurityUtils {
 		} catch (NoSuchAlgorithmException ignore) { }
 		return null;
 	}
-
 	public static String getMD5(String string) { return MD5Digest(string.getBytes()); }
 	public static String getMD5(File file) {
 		byte[] buf = new byte[8192];
@@ -36,6 +35,33 @@ public class SecurityUtils {
 				baos.write(buf, 0, length);
 			fis.close(); bis.close(); baos.close();
 			return MD5Digest(baos.toByteArray());
+		} catch (Exception e) { }
+		return null;
+	}
+	
+	public static String SHA256Digest(byte[] bytes) {
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			byte[] digest = md.digest(bytes);
+			StringBuffer result = new StringBuffer();
+			for(int i = 0; i < digest.length; i++)
+				result.append(Integer.toHexString((digest[i] & 0xFF) | 0x100).substring(1, 3));
+			return result.toString();
+		} catch (NoSuchAlgorithmException ignore) { }
+		return null;
+	}
+	public static String getSHA256(String string) { return SHA256Digest(string.getBytes()); }
+	public static String getSHA256(File file) {
+		byte[] buf = new byte[8192];
+		int length;
+		try {
+			FileInputStream fis = new FileInputStream(file);
+			BufferedInputStream bis = new BufferedInputStream(fis);
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			while ((length = bis.read(buf)) != -1)
+				baos.write(buf, 0, length);
+			fis.close(); bis.close(); baos.close();
+			return SHA256Digest(baos.toByteArray());
 		} catch (Exception e) { }
 		return null;
 	}

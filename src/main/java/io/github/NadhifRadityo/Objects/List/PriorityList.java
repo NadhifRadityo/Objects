@@ -1,14 +1,12 @@
 package io.github.NadhifRadityo.Objects.List;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import io.github.NadhifRadityo.Objects.Object.DeadableObject;
+import io.github.NadhifRadityo.Objects.Utilizations.MapUtils;
 
 public class PriorityList<E> implements DeadableObject {
 	protected final Map<E, Integer> map;
@@ -59,28 +57,11 @@ public class PriorityList<E> implements DeadableObject {
 		return returnVal;
 	}
 	
-	public synchronized List<E> get(boolean fromHighest) {
+	public synchronized Set<E> get(boolean fromHighest) {
 		assertDead();
-		Set<Entry<E, Integer>> entry = map.entrySet();
-		int minPriority = Integer.MAX_VALUE;
-		int maxPriority = Integer.MIN_VALUE;
-		List<E> returnVal = new ArrayList<>();
-		if(entry.size() == 0) return returnVal;
-		
-		for(Entry<E, Integer> pair : entry) {
-			minPriority = Math.min(minPriority, pair.getValue());
-			maxPriority = Math.max(maxPriority, pair.getValue());
-		}
-		
-		for(int i = fromHighest ? maxPriority : minPriority; 
-				fromHighest ? (i >= minPriority) : (i <= maxPriority); i += fromHighest ? -1 : +1) {
-			List<E> values = new ArrayList<>();
-			for(Entry<E, Integer> pair : entry) {
-				if(pair.getValue().intValue() != i) continue;
-				values.add(pair.getKey());
-			} returnVal.addAll(values);
-		} return returnVal;
-	} public synchronized List<E> get() { return get(true); }
+		MapUtils.sort(map, (o1, o2) -> Integer.compare(!fromHighest ? o1.getValue() : o2.getValue(), !fromHighest ? o2.getValue() : o1.getValue()));
+		return map.keySet();
+	} public synchronized Set<E> get() { return get(true); }
 	
 	public synchronized int size() {
 		assertDead();

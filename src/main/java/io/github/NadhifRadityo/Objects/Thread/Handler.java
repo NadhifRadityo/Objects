@@ -13,9 +13,9 @@ public class Handler {
         this.queue = looper.myQueue();
         if(looper.getThread() instanceof HandlerThread) {
         	HandlerThread handlerThread = (HandlerThread) looper.getThread();
-        	if(handlerThread.mHandler != null && !equals(handlerThread.mHandler))
+        	if(handlerThread.handler != null && !equals(handlerThread.handler))
         		System.out.println("Multiple handler detected!");
-        	else handlerThread.mHandler = this;
+        	else handlerThread.handler = this;
         }
     }
     
@@ -23,7 +23,7 @@ public class Handler {
         if (MAIN_THREAD_HANDLER == null && Looper.getMainLooper() != null) {
         	if(Looper.getMainLooper().getThread() instanceof HandlerThread) {
             	HandlerThread handlerThread = (HandlerThread) Looper.getMainLooper().getThread();
-            	if(handlerThread.mHandler != null) MAIN_THREAD_HANDLER = handlerThread.mHandler;
+            	if(handlerThread.handler != null) MAIN_THREAD_HANDLER = handlerThread.handler;
             } if(MAIN_THREAD_HANDLER == null) MAIN_THREAD_HANDLER = new Handler(Looper.getMainLooper());
         } return MAIN_THREAD_HANDLER;
     }

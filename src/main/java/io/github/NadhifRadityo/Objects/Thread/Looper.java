@@ -63,8 +63,8 @@ public final class Looper {
 		jobRunning = runnable;
 		logProgress(-1, -1, "Job Running...", runnable);
 		runnable.work();
-		jobRunning = null;
 		logProgress(1, 1, "Job Done!", runnable);
+		jobRunning = null;
 
 		logger.log("<<< Finished to " + runnable.getTitle() + (runnable.getSubject() != null && runnable.getSubject() != "" ?
 				": " + runnable.getSubject() + " | " : " ") + "Took: " + (System.currentTimeMillis() - startTime) + "ms");

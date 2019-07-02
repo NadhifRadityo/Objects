@@ -8,6 +8,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -27,8 +28,9 @@ public class JarUtils extends JarUtil {
 		JarFile jar = new JarFile(jarFile);
 		List<File> extracteds = new ArrayList<>();
 		for(Enumeration<JarEntry> enumEntries = jar.entries(); enumEntries.hasMoreElements();) {
-			JarEntry jarEntry = enumEntries.nextElement(); File file = new File(destDir, jarEntry.getName());
-			if(!filter.accept(new JarEntryFile(file, jarEntry))) continue; extracteds.add(file);
+			JarEntry jarEntry = enumEntries.nextElement();
+			File file = new JarEntryFile(destDir, jarEntry.getName(), jarEntry);
+			if(!filter.accept(file)) continue; extracteds.add(file);
 			if(!file.getParentFile().exists()) file.getParentFile().mkdirs();
 			if(jarEntry.isDirectory()) { file.mkdirs(); continue; }
 			try(InputStream is = jar.getInputStream(jarEntry)) { Files.copy(is, file.toPath(), StandardCopyOption.REPLACE_EXISTING); }
@@ -54,7 +56,9 @@ public class JarUtils extends JarUtil {
 		System.setProperty("java.library.path", System.getProperty("java.library.path") + libPathProps);
 	}
 	
-	public static void addJarToClassPath(File... jarFiles) throws NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, MalformedURLException {
+	public static void addJarToClassPath(File... jarFiles) throws NoSuchMethodException, SecurityException, 
+														   IllegalAccessException, IllegalArgumentException, 
+														   InvocationTargetException, MalformedURLException {
 		ClassLoader classLoader = ClassLoader.getSystemClassLoader();
 		Method addUrlMethod = classLoader.getClass().getSuperclass().getDeclaredMethod("addURL", new Class[] { URL.class });
 		addUrlMethod.setAccessible(true);
@@ -73,10 +77,10 @@ public class JarUtils extends JarUtil {
 		private static final long serialVersionUID = -2396556437986810388L;
 		protected final JarEntry jarEntry;
 		
-		protected JarEntryFile(File destinationFile, JarEntry jarEntry) {
-			super(destinationFile.getPath());
-			this.jarEntry = jarEntry;
-		}
+		protected JarEntryFile(URI uri, JarEntry jarEntry) { super(uri); this.jarEntry = jarEntry; }
+		protected JarEntryFile(String pathname, JarEntry jarEntry) { super(pathname); this.jarEntry = jarEntry; }
+		protected JarEntryFile(File parent, String child, JarEntry jarEntry) { super(parent, child); this.jarEntry = jarEntry; }
+		protected JarEntryFile(String parent, String child, JarEntry jarEntry) { super(parent, child); this.jarEntry = jarEntry; }
 		
 		public JarEntry getJarEntry() { return jarEntry; }
 	}

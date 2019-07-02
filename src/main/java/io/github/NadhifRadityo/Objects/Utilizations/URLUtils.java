@@ -85,4 +85,9 @@ public final class URLUtils {
 			else if(urlConnection instanceof HttpURLConnection) ((HttpURLConnection) urlConnection).disconnect();
 		}
 	}
+	
+	public static boolean isValidURL(String urlString) {
+		try { URL url = new URL(urlString); url.toURI(); return true;
+		} catch (Exception ignored) { return false; }
+	}
 }

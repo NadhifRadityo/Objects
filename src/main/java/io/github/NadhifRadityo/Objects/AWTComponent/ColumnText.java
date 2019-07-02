@@ -85,7 +85,7 @@ public class ColumnText extends JPanel {
 	
 	@Override
 	public void removeAll() {
-		String[] keys = groups.keySet().toArray(new String[groups.size()]);
+		String[] keys = groups.keySet().toArray(new String[0]);
 		for(String key : keys) removeColumn(key);
 		super.removeAll();
 		rearrange();

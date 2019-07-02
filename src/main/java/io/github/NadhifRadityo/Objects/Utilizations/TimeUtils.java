@@ -8,17 +8,14 @@ public final class TimeUtils {
 		
 	}
 	
-	public static String getTime(String format) {
-		Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+	public static String getTime(String format, long millis) {
+		Timestamp timestamp = new Timestamp(millis);
 		SimpleDateFormat sdf = new SimpleDateFormat(format);
 		return sdf.format(timestamp);
 	}
+	public static String getTime(String format) { return getTime(format, System.currentTimeMillis()); }
+	public static String getTime() { return getTime("HH:mm:ss"); }
 	
-	public static String getTime() {
-		return getTime("HH:mm:ss");
-	}
-	
-	public static long getMiliseconds() {
-		return System.currentTimeMillis() % 1000;
-	}
+	public static long getMiliseconds(long millis) { return millis % 1000; }
+	public static long getMiliseconds() { return getMiliseconds(System.currentTimeMillis()); }
 }

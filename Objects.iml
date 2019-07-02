@@ -28,11 +28,21 @@
     <orderEntry type="jdk" jdkName="Android API 28 Platform" jdkType="Android SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" exported="" name="commons-lang3-3.0" level="project" />
+    <orderEntry type="library" exported="" name="commons-io-2.6" level="project" />
     <orderEntry type="library" exported="" name="httpclient-4.5.7" level="project" />
     <orderEntry type="library" exported="" name="miglayout-3.7.4" level="project" />
+    <orderEntry type="library" exported="" name="reflections-0.9.11" level="project" />
+    <orderEntry type="library" exported="" name="json-20180813" level="project" />
     <orderEntry type="library" exported="" name="httpcore-4.4.11" level="project" />
     <orderEntry type="library" exported="" name="commons-logging-1.2" level="project" />
     <orderEntry type="library" exported="" name="commons-codec-1.11" level="project" />
+    <orderEntry type="library" exported="" name="guava-20.0" level="project" />
+    <orderEntry type="library" exported="" name="javassist-3.21.0-GA" level="project" />
+    <orderEntry type="library" exported="" name="gluegen-rt" level="project" />
+    <orderEntry type="library" exported="" name="jogl-all" level="project" />
+    <orderEntry type="library" exported="" name="jocl" level="project" />
+    <orderEntry type="library" exported="" name="joal" level="project" />
+    <orderEntry type="library" exported="" name="jcef" level="project" />
     <orderEntry type="library" exported="" scope="TEST" name="junit-3.8.1" level="project" />
   </component>
 </module>

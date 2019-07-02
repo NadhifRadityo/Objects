@@ -58,26 +58,24 @@ public class QueueList<E> implements DeadableObject {
 		return returnVal;
 	}
 	
+	private synchronized Entry<E, Long> getSoonestEntry() {
+		Entry<E, Long> result = null;
+		for(Entry<E, Long> entry : map.entrySet()) {
+			if(result != null && entry.getValue() >= result.getValue()) continue;
+			result = entry;
+		} return result;
+	}
 	public synchronized E get() {
 		if(map.size() == 0) assertDead();
-		while(map.size() == 0) {
-			isWaiting = true;
+		while(map.size() == 0) { isWaiting = true;
 			ExceptionUtils.doSilentException(false, (ThrowsRunnable) this::wait);
 		} isWaiting = false;
 		
-		Long minReturnAt = Long.MAX_VALUE;
-		E returnVal = null;
-		for(Entry<E, Long> entry : map.entrySet()) { if(entry.getValue().longValue() < minReturnAt.longValue()) {
-			minReturnAt = entry.getValue();
-			returnVal = entry.getKey();
-		} }
-		
-		long waitUntil = minReturnAt.longValue();
-		ExceptionUtils.doSilentException(false, (ThrowsRunnable) () -> { long now; 
-			while(waitUntil > (now = System.currentTimeMillis())) Thread.sleep(waitUntil - now); });
-		
-		map.remove(returnVal);
-		return returnVal;
+		Entry<E, Long> value = getSoonestEntry(); long now;
+		while(value.getValue() > (now = System.currentTimeMillis())) {
+			try { wait(value.getValue() - now); } catch(InterruptedException e) { }
+			value = getSoonestEntry(); if(value == null) return get();
+		} map.remove(value.getKey()); return value.getKey();
 	}
 	public synchronized Map<E, Long> values() { return Collections.unmodifiableMap(map); }
 	

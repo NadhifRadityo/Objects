@@ -8,6 +8,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
+@Deprecated
 public class MultipleInputStream extends PipedOutputStream {
 	protected final List<PipedInputStream> sinks = new ArrayList<>();
 	protected final InputStream inputStream;

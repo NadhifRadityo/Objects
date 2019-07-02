@@ -3,6 +3,7 @@ package io.github.NadhifRadityo.Objects.Canvas.Managers;
 import java.awt.Graphics;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 import io.github.NadhifRadityo.Objects.Canvas.CanvasPanel;
 import io.github.NadhifRadityo.Objects.Canvas.CanvasPanel.SpriteChecker;
@@ -34,7 +35,7 @@ public class GraphicModifierManager extends ImplementSpriteManager {
 		Graphics graphics;
 		@Override public void draw(Graphics g) {
 			Graphics realGraphics = g;
-			List<CustomGraphicModifier> modifiers = GraphicModifierManager.this.modifiers.get();
+			Set<CustomGraphicModifier> modifiers = GraphicModifierManager.this.modifiers.get();
 			for(CustomGraphicModifier modifier : modifiers) {
 				if(modifier.sprite.size() > 0) continue;
 				modifier.draw(g); if(!(modifier instanceof OverrideGraphic)) continue;
@@ -61,7 +62,7 @@ public class GraphicModifierManager extends ImplementSpriteManager {
 	protected class GraphicModifierChecker implements SpriteChecker {
 		Graphics oldGraphic;
 		@Override public Graphics beforeDraw(Sprite sprite, Graphics g) { this.oldGraphic = g;
-			List<CustomGraphicModifier> modifiers = GraphicModifierManager.this.modifiers.get();
+			Set<CustomGraphicModifier> modifiers = GraphicModifierManager.this.modifiers.get();
 			Graphics graphic;
 			for(CustomGraphicModifier modifier : modifiers) {
 				if((modifier instanceof SpriteChecker) && (modifier.sprite.size() == 0 || 
@@ -76,7 +77,7 @@ public class GraphicModifierManager extends ImplementSpriteManager {
 			} return g;
 		}
 		@Override public Graphics afterDraw(Sprite sprite, Graphics g) {
-			List<CustomGraphicModifier> modifiers = GraphicModifierManager.this.modifiers.get(false);
+			Set<CustomGraphicModifier> modifiers = GraphicModifierManager.this.modifiers.get(false);
 			Graphics graphic;
 			for(CustomGraphicModifier modifier : modifiers) {
 				if(modifier.sprite.size() > 0 && ListUtils.containsEquals(modifier.sprite, sprite))
