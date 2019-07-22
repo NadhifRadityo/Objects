@@ -1,10 +1,9 @@
 package io.github.NadhifRadityo.Objects.Canvas.Shapes;
 
-import java.awt.Graphics;
-import java.awt.Polygon;
-import java.awt.geom.Area;
-
 import io.github.NadhifRadityo.Objects.Canvas.Sprite;
+
+import java.awt.*;
+import java.awt.geom.Area;
 
 public class CustomShape extends Sprite {
 	protected Polygon polygon;

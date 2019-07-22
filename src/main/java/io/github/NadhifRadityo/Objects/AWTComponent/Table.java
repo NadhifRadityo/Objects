@@ -1,8 +1,9 @@
 package io.github.NadhifRadityo.Objects.AWTComponent;
 
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Font;
+import javax.swing.*;
+import javax.swing.event.TableModelListener;
+import javax.swing.table.*;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
@@ -10,21 +11,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
 
-import javax.swing.JTable;
-import javax.swing.ListSelectionModel;
-import javax.swing.event.TableModelListener;
-import javax.swing.table.AbstractTableModel;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableColumnModel;
-import javax.swing.table.TableModel;
-
 public class Table extends JTable {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -3976478478143987893L;
-	protected final List<CustomCellRenderer> cellsRenderer = new ArrayList<CustomCellRenderer>();
+	protected final List<CustomCellRenderer> cellsRenderer = new ArrayList<>();
 	protected CustomCellRenderer defaultCellRenderer;
 	protected TableCellRenderer cellRenderer = new DefaultTableCellRenderer() {
 		/**
@@ -42,7 +34,7 @@ public class Table extends JTable {
 		}
 	};
 	
-	protected final List<TableModel> tableModels = new ArrayList<TableModel>();
+	protected final List<TableModel> tableModels = new ArrayList<>();
 	protected TableModel defaultTableModel;
 	protected CustomTableModel tableModel = new CustomTableModel();
 	protected class CustomTableModel extends AbstractTableModel {
@@ -81,43 +73,21 @@ public class Table extends JTable {
 				if(!(e instanceof UnsupportedOperationException)) throw e;
 			}
 		}
-	};
+	}
 	
-	protected final List<CellEditable> cellsEditable = new ArrayList<CellEditable>();
-	protected final List<CellMouseListener> cellClickListenerHandler = new ArrayList<CellMouseListener>();
+	protected final List<CellEditable> cellsEditable = new ArrayList<>();
+	protected final List<CellMouseListener> cellClickListenerHandler = new ArrayList<>();
 
-	public Table() {
-		super();
-		onConstruct();
-	}
-	public Table(TableModel tableModel) {
-		super(tableModel);
-		onConstruct();
-	}
-	public Table(int numRows, int numColumns) {
-		super(numRows, numColumns);
-		onConstruct();
-	}
-	public Table(Object[][] rowData, Object[] columnNames) {
-		super(rowData, columnNames);
-		onConstruct();
-	}
-	public Table(TableModel tableModel, TableColumnModel tableColumnModel) {
-		super(tableModel, tableColumnModel);
-		onConstruct();
-	}
-	@SuppressWarnings("rawtypes")
-	public Table(Vector<? extends Vector> rowData, Vector<?> columnNames) {
-		super(rowData, columnNames);
-		onConstruct();
-	}
-	public Table(TableModel tableModel, TableColumnModel tableColumnModel, ListSelectionModel listSelectionModel) {
-		super(tableModel, tableColumnModel, listSelectionModel);
-		onConstruct();
-	}
+	public Table() { super(); onConstruct(); }
+	public Table(TableModel tableModel) { super(tableModel); onConstruct(); }
+	public Table(int numRows, int numColumns) { super(numRows, numColumns); onConstruct(); }
+	public Table(Object[][] rowData, Object[] columnNames) { super(rowData, columnNames); onConstruct(); }
+	public Table(TableModel tableModel, TableColumnModel tableColumnModel) { super(tableModel, tableColumnModel); onConstruct(); }
+	@SuppressWarnings("rawtypes") public Table(Vector<? extends Vector> rowData, Vector<?> columnNames) { super(rowData, columnNames); onConstruct(); }
+	public Table(TableModel tableModel, TableColumnModel tableColumnModel, ListSelectionModel listSelectionModel) { super(tableModel, tableColumnModel, listSelectionModel); onConstruct(); }
 	
 	private void onConstruct() {
-		Font defaultFont = new Font("Segoe UI", 0, 12);
+		Font defaultFont = new Font("Segoe UI", Font.PLAIN, 12);
 		Color defaultFontColor = new Color(51, 51, 51);
 		Color defaultColor = new Color(62, 226, 141);
 		
@@ -134,8 +104,7 @@ public class Table extends JTable {
 		addMouseListener(cellClickListener);
 	}
 	
-	@Override
-	public void setDefaultRenderer(Class<?> columnClass, TableCellRenderer renderer) {
+	@Override public void setDefaultRenderer(Class<?> columnClass, TableCellRenderer renderer) {
 		defaultCellRenderer = new CustomCellRenderer(Integer.MAX_VALUE, Integer.MAX_VALUE, columnClass, renderer);
 	}
 	public void setCellRenderer(int row, int col, Class<?> columnClass, TableCellRenderer renderer) {
@@ -147,9 +116,7 @@ public class Table extends JTable {
 		setCellRenderer(row, col, Object.class, renderer);
 	}
 	
-	public void resetDefaultRenderer() {
-		defaultCellRenderer = null;
-	}
+	public void resetDefaultRenderer() { defaultCellRenderer = null; }
 	private CustomCellRenderer searchRenderer(int row, int col, Class<?> columnClass) {
 		for(CustomCellRenderer renderer : cellsRenderer) {
 			if(renderer.getColumnClass().isAssignableFrom(columnClass) && 
@@ -158,9 +125,9 @@ public class Table extends JTable {
 		}
 		return defaultCellRenderer;
 	}
-	
-	@Override
-	public void setModel(TableModel dataModel) {
+
+	@Override public TableModel getModel() { return defaultTableModel; }
+	@Override public void setModel(TableModel dataModel) {
 		if(dataModel == null) throw new IllegalArgumentException("Cannot set a null TableModel");
 		if(dataModel == defaultTableModel) return;
 		if(tableModel == null) tableModel = new CustomTableModel();
@@ -170,10 +137,7 @@ public class Table extends JTable {
 		this.defaultTableModel = dataModel;
 		for(TableModelListener l : tableModel.getTableModelListeners()) defaultTableModel.addTableModelListener(l);
 	}
-	@Override
-	public TableModel getModel() {
-		return defaultTableModel;
-	}
+
 	public void addExtendedTableModel(TableModel model) {
 		for(TableModelListener l : tableModel.getTableModelListeners())
 			model.addTableModelListener(l);
@@ -195,19 +159,16 @@ public class Table extends JTable {
 		cellsEditable.add(new CellEditable(row, col, editable));
 		tableModel.fireTableCellUpdated(row, col);
 	}
-	@Override
-	public boolean isCellEditable(int row, int col) {
-		return tableModel.isCellEditable(row, col);
-	}
+	@Override public boolean isCellEditable(int row, int col) { return tableModel.isCellEditable(row, col); }
 	
 	/*
 	 * Classes 
 	 */
 	protected static class CustomCellRenderer {
-		private int row;
-		private int col;
-		private Class<?> columnClass;
-		private TableCellRenderer renderer;
+		protected final int row;
+		protected final int col;
+		protected final Class<?> columnClass;
+		protected final TableCellRenderer renderer;
 		
 		protected CustomCellRenderer(int row, int col, Class<?> columnClass, TableCellRenderer renderer){
 			this.row = row;
@@ -216,18 +177,10 @@ public class Table extends JTable {
 			this.renderer = renderer;
 		}
 		
-		public int getRow() {
-			return row;
-		}
-		public int getColumn() {
-			return col;
-		}
-		public Class<?> getColumnClass() {
-			return columnClass;
-		}
-		public TableCellRenderer getTableCellRenderer() {
-			return renderer;
-		}
+		public int getRow() { return row; }
+		public int getColumn() { return col; }
+		public Class<?> getColumnClass() { return columnClass; }
+		public TableCellRenderer getTableCellRenderer() { return renderer; }
 	}
 
 	public static abstract class EmptyTableModel extends AbstractTableModel {
@@ -306,9 +259,9 @@ public class Table extends JTable {
 		public void mouseWheelMoved(CellMouseEvent e) { }
 	}
 	public static class CellMouseEvent {
-		private int row;
-		private int col;
-		private MouseEvent event;
+		protected final int row;
+		protected final int col;
+		protected final MouseEvent event;
 		
 		protected CellMouseEvent(int row, int col, MouseEvent event) {
 			this.row = row;
@@ -328,9 +281,9 @@ public class Table extends JTable {
 	}
 	
 	public static class CellEditable {
-		private int row;
-		private int col;
-		private boolean editable;
+		protected final int row;
+		protected final int col;
+		protected boolean editable;
 		
 		protected CellEditable(int row, int col, boolean editable) {
 			this.row = row;
@@ -338,18 +291,10 @@ public class Table extends JTable {
 			this.editable = editable;
 		}
 		
-		public int getRow() {
-			return row;
-		}
-		public int getColumn() {
-			return col;
-		}
-		public boolean isEditable() {
-			return editable;
-		}
+		public int getRow() { return row; }
+		public int getColumn() { return col; }
+		public boolean isEditable() { return editable; }
 		
-		public void setEditable(boolean editable) {
-			this.editable = editable;
-		}
+		public void setEditable(boolean editable) { this.editable = editable; }
 	}
 }

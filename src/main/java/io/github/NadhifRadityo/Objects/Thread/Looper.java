@@ -5,7 +5,7 @@ import io.github.NadhifRadityo.Objects.Exception.ExceptionHandler;
 import io.github.NadhifRadityo.Objects.Utilizations.ExceptionUtils;
 
 public final class Looper {
-	private static final ThreadLocal<Looper> sThreadLocal = new ThreadLocal<Looper>();
+	private static final ThreadLocal<Looper> sThreadLocal = new ThreadLocal<>();
 	private static Looper mainLooper;
 	
 	protected final Thread thread;
@@ -56,7 +56,7 @@ public final class Looper {
 	}
 	
 	private void runPost(RunnablePost runnable) throws Exception {
-		logger.log(">>> Dispatching to " + runnable.getTitle() + (runnable.getSubject() != null && runnable.getSubject() != "" ? 
+		logger.log(">>> Dispatching to " + runnable.getTitle() + (runnable.getSubject() != null && !runnable.getSubject().isEmpty() ?
 				": " + runnable.getSubject() : ""));
 		long startTime = System.currentTimeMillis();
 		
@@ -66,7 +66,7 @@ public final class Looper {
 		logProgress(1, 1, "Job Done!", runnable);
 		jobRunning = null;
 
-		logger.log("<<< Finished to " + runnable.getTitle() + (runnable.getSubject() != null && runnable.getSubject() != "" ?
+		logger.log("<<< Finished to " + runnable.getTitle() + (runnable.getSubject() != null && !runnable.getSubject().isEmpty() ?
 				": " + runnable.getSubject() + " | " : " ") + "Took: " + (System.currentTimeMillis() - startTime) + "ms");
 	}
 	

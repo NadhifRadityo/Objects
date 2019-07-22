@@ -1,8 +1,8 @@
 package io.github.NadhifRadityo.Objects.Canvas.Shapes;
 
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 public class Circle extends Ellipse {
 	public Circle(int x, int y, int d, boolean center) { super(x, y, d, d, center); }

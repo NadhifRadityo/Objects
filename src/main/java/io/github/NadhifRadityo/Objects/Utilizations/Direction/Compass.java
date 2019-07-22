@@ -11,40 +11,26 @@ public enum Compass {
 		
 					 SOUTH;
 	
-	public Direction2D toDirection2D() {
-		return toDirection2D(this);
-	}
-	public Compass toPrimaryDirection() {
-		return toPrimaryDirection(this);
-	}
+	public Direction2D toDirection2D() { return toDirection2D(this); }
+	public Compass toPrimaryDirection() { return toPrimaryDirection(this); }
 	
 	public static Direction2D toDirection2D(Compass compass) {
 		switch(compass) {
-			case NORTH:
-				return Direction2D.UP;
-			case EAST:
-				return Direction2D.RIGHT;
-			case SOUTH:
-				return Direction2D.BOTTOM;
-			case WEST:
-				return Direction2D.LEFT;
-			default:
-				return null;
+			case NORTH: return Direction2D.UP;
+			case EAST: return Direction2D.RIGHT;
+			case SOUTH: return Direction2D.BOTTOM;
+			case WEST: return Direction2D.LEFT;
+			default: return null;
 		}
 	}
 	
 	public static Compass fromDirection2D(Direction2D direction) {
 		switch(direction) {
-			case UP:
-				return Compass.NORTH;
-			case RIGHT:
-				return Compass.EAST;
-			case BOTTOM:
-				return Compass.SOUTH;
-			case LEFT:
-				return Compass.WEST;
-		}
-		return null;
+			case UP: return Compass.NORTH;
+			case RIGHT: return Compass.EAST;
+			case BOTTOM: return Compass.SOUTH;
+			case LEFT: return Compass.WEST;
+		} return null;
 	}
 	public static Compass toPrimaryDirection(Compass compass) {
 		switch(compass) {
@@ -53,8 +39,7 @@ public enum Compass {
 			case SOUTH:
 			case WEST:
 				return compass;
-			default:
-				return null;
+			default: return null;
 		}
 	}
 }

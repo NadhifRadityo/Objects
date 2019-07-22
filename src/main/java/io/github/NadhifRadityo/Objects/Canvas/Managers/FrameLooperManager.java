@@ -1,13 +1,13 @@
 package io.github.NadhifRadityo.Objects.Canvas.Managers;
 
-import javax.swing.SwingUtilities;
-
 import io.github.NadhifRadityo.Objects.Canvas.CanvasPanel;
 import io.github.NadhifRadityo.Objects.Canvas.Manager;
 import io.github.NadhifRadityo.Objects.Exception.ThrowsRunnable;
 import io.github.NadhifRadityo.Objects.List.PriorityList;
 import io.github.NadhifRadityo.Objects.Thread.Handler;
 import io.github.NadhifRadityo.Objects.Thread.RunnablePost;
+
+import javax.swing.*;
 
 public class FrameLooperManager extends ImplementSpriteManager {
 	protected final PriorityList<FrameUpdater> updaters;
@@ -22,7 +22,7 @@ public class FrameLooperManager extends ImplementSpriteManager {
 	private final Object paintingLock = new Object();
 	
 	protected volatile int fps = 30;
-	protected volatile RunBehindCallback runbehind;
+	protected volatile RunBehindCallback runBehind;
 
 	public FrameLooperManager(boolean applyToGraphic, boolean enabled, Handler handler, int priority) {
 		super(applyToGraphic, priority);
@@ -33,15 +33,15 @@ public class FrameLooperManager extends ImplementSpriteManager {
 		this.runnable = () -> {
 			long nextTick = System.currentTimeMillis();
 			while(enabled && canvas != null) {
-				updaters.get().forEach(i -> i.update());
+				updaters.get().forEach(FrameUpdater::update);
 				painting = true; canvas.repaint();
 				SwingUtilities.invokeLater(() -> { painting = false; synchronized(paintingLock) { paintingLock.notifyAll(); } });
-				synchronized(paintingLock) { while(painting) try { paintingLock.wait(); } catch(Exception e) { } }
+				synchronized(paintingLock) { while(painting) try { paintingLock.wait(); } catch(Exception ignored) { } }
 				
 				long currentTick = System.currentTimeMillis();
 				long sleep = (nextTick += 1000 / fps) - currentTick;
 				if(sleep < 0) { nextTick = currentTick;
-					if(runbehind != null) runbehind.late(sleep * -1);
+					if(runBehind != null) runBehind.late(sleep * -1);
 				} else Thread.sleep(sleep);
 			}
 		};
@@ -50,7 +50,7 @@ public class FrameLooperManager extends ImplementSpriteManager {
 	public boolean isEnabled() { return enabled; }
 	public Handler getHandler() { return handler; }
 	public int getFps() { return fps; }
-	public RunBehindCallback getRunBehindCallback() { return runbehind; }
+	public RunBehindCallback getRunBehindCallback() { return runBehind; }
 	
 	public void setEnabled(boolean enabled) {
 		if(this.enabled == enabled) return;
@@ -60,7 +60,7 @@ public class FrameLooperManager extends ImplementSpriteManager {
 	}
 	public void setHandler(Handler handler) { this.handler = handler; }
 	public void setFps(int fps) { this.fps = Math.max(1, fps); }
-	public void setRunBehindCallback(RunBehindCallback runbehind) { this.runbehind = runbehind; }
+	public void setRunBehindCallback(RunBehindCallback runBehind) { this.runBehind = runBehind; }
 	
 	public void addUpdater(FrameUpdater updater, int priority) { updaters.add(updater, priority); }
 	public void addUpdater(FrameUpdater updater) { addUpdater(updater, 0); }

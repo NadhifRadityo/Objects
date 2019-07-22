@@ -1,20 +1,11 @@
 package io.github.NadhifRadityo.Objects.AWTComponent;
 
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.GraphicsEnvironment;
-import java.awt.Insets;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.Window;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.swing.JComponent;
-import javax.swing.SwingUtilities;
 
 /**
  *  The ComponentResizer allows you to resize a component by dragging a border
@@ -26,7 +17,7 @@ public class ComponentResizer extends MouseAdapter
 	private final static Dimension MAXIMUM_SIZE =
 		new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE);
 
-	private static Map<Integer, Integer> cursors = new HashMap<Integer, Integer>();
+	private static Map<Integer, Integer> cursors = new HashMap<>();
 	{
 		cursors.put(1, Cursor.N_RESIZE_CURSOR);
 		cursors.put(2, Cursor.W_RESIZE_CURSOR);
@@ -180,7 +171,7 @@ public class ComponentResizer extends MouseAdapter
 	/**
 	 *  Remove listeners from the specified component
 	 *
-	 *  @param component  the component the listeners are removed from
+	 *  @param components  the component the listeners are removed from
 	 */
 	public void deregisterComponent(Component... components)
 	{
@@ -194,7 +185,7 @@ public class ComponentResizer extends MouseAdapter
 	/**
 	 *  Add the required listeners to the specified component
 	 *
-	 *  @param component  the component the listeners are added to
+	 *  @param components  the component the listeners are added to
 	 */
 	public void registerComponent(Component... components)
 	{
@@ -357,7 +348,7 @@ public class ComponentResizer extends MouseAdapter
 	@Override
 	public void mouseDragged(MouseEvent e)
 	{
-		if (resizing == false) return;
+		if (!resizing) return;
 
 		Component source = e.getComponent();
 		Point dragged = e.getPoint();

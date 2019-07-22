@@ -1,14 +1,13 @@
 package io.github.NadhifRadityo.Objects.Thread;
 
-import java.util.Objects;
-
+import io.github.NadhifRadityo.Objects.Object.IdObject;
+import io.github.NadhifRadityo.Objects.Utilizations.IdObjectUtils;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-public abstract class RunnablePost {
-	private static long nextId = 0;
-	protected synchronized long getNextId() { return nextId++; }
-	
-	protected final long id = getNextId();
+import java.util.Objects;
+
+public abstract class RunnablePost implements IdObject {
+	protected final long id = IdObjectUtils.getNewId(RunnablePost.class);
 	protected String title;
 	protected String subject;
 	
@@ -17,7 +16,7 @@ public abstract class RunnablePost {
 		this.subject = subject;
 	}
 	
-	public long getId() { return id; }
+	@Override public long getId() { return id; }
 	public String getTitle() { return title == null ? getClass().getCanonicalName() : title; }
 	public String getSubject() { return subject; }
 	
@@ -35,7 +34,7 @@ public abstract class RunnablePost {
 			return false;
 		if (!getClass().equals(other.getClass()))
 			return false;
-		RunnablePost castOther = RunnablePost.class.cast(other);
+		RunnablePost castOther = (RunnablePost) other;
 		return Objects.equals(id, castOther.id) && Objects.equals(title, castOther.title)
 				&& Objects.equals(subject, castOther.subject);
 	}

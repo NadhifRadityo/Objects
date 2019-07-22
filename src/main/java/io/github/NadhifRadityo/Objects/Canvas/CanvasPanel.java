@@ -1,17 +1,13 @@
 package io.github.NadhifRadityo.Objects.Canvas;
 
-import java.awt.Component;
-import java.awt.Graphics;
-import java.awt.geom.Area;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
 import io.github.NadhifRadityo.Objects.Exception.ThrowsRunnable;
 import io.github.NadhifRadityo.Objects.List.PriorityList;
 import io.github.NadhifRadityo.Objects.Utilizations.ExceptionUtils;
+
+import java.awt.*;
+import java.awt.geom.Area;
+import java.util.List;
+import java.util.*;
 
 public class CanvasPanel extends Component {
 	/**

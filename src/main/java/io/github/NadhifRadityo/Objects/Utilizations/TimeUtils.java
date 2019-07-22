@@ -16,6 +16,6 @@ public final class TimeUtils {
 	public static String getTime(String format) { return getTime(format, System.currentTimeMillis()); }
 	public static String getTime() { return getTime("HH:mm:ss"); }
 	
-	public static long getMiliseconds(long millis) { return millis % 1000; }
-	public static long getMiliseconds() { return getMiliseconds(System.currentTimeMillis()); }
+	public static long getMilliseconds(long millis) { return millis % 1000; }
+	public static long getMilliseconds() { return getMilliseconds(System.currentTimeMillis()); }
 }

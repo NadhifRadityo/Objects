@@ -1,9 +1,6 @@
 package io.github.NadhifRadityo.Objects.Utilizations;
 
-import java.awt.Dimension;
-import java.awt.GraphicsEnvironment;
-import java.awt.Point;
-import java.awt.Rectangle;
+import java.awt.*;
 
 public enum WindowPosition{
 	CENTER, LEFT, TOP, RIGHT, BOTTOM,

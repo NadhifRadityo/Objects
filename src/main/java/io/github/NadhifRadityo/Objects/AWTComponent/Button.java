@@ -1,10 +1,7 @@
 package io.github.NadhifRadityo.Objects.AWTComponent;
 
-import java.awt.Color;
-import java.awt.Graphics;
-
-import javax.swing.ButtonModel;
-import javax.swing.JButton;
+import javax.swing.*;
+import java.awt.*;
 
 public class Button extends JButton{
     /**
@@ -39,8 +36,8 @@ public class Button extends JButton{
 
     @Override
     protected void paintComponent(Graphics g) {
-    	Color background = null;
-    	Color foreground = null;
+    	Color background;
+    	Color foreground;
     	ButtonModel model = getModel();
     	
     	if(!isEnabled()) {
@@ -54,12 +51,9 @@ public class Button extends JButton{
     			background = disabledBackgroundColor;
     			foreground = disabledForegroundColor;
     		}
-    		
-    		if(background == null)
-    			background = disabledBackgroundColor;
-    		if(foreground == null)
-    			foreground = disabledForegroundColor;
-    		
+    		if(background == null) background = disabledBackgroundColor;
+    		if(foreground == null) foreground = disabledForegroundColor;
+
     	} else {
     		if(model.isPressed()) {
     			background = pressedBackgroundColor;
@@ -71,20 +65,12 @@ public class Button extends JButton{
     			background = backgroundColor;
     			foreground = foregroundColor;
     		}
-    		
-    		if(background == null)
-    			background = backgroundColor;
-    		if(foreground == null)
-    			foreground = foregroundColor;
+    		if(background == null) background = backgroundColor;
+    		if(foreground == null) foreground = foregroundColor;
     	}
     	
-    	if(background != null) {
-        	g.setColor(background);
-    		super.setBackground(background);
-    	}
-    	if(foreground != null)
-    		super.setForeground(foreground);
-    	
+    	if(background != null) { g.setColor(background); super.setBackground(background); }
+    	if(foreground != null) super.setForeground(foreground);
         g.fillRect(0, 0, getWidth(), getHeight());
         super.paintComponent(g);
     }

@@ -1,13 +1,13 @@
 package io.github.NadhifRadityo.Objects.Canvas.Managers;
 
-import java.awt.Graphics;
-import java.awt.geom.Area;
-import java.util.Objects;
-import java.util.Set;
-
 import io.github.NadhifRadityo.Objects.Canvas.CanvasPanel;
 import io.github.NadhifRadityo.Objects.Canvas.Manager;
 import io.github.NadhifRadityo.Objects.Canvas.Sprite;
+
+import java.awt.*;
+import java.awt.geom.Area;
+import java.util.Objects;
+import java.util.Set;
 
 public class ImplementSpriteManager extends Manager {
 	protected int priority;
@@ -26,7 +26,7 @@ public class ImplementSpriteManager extends Manager {
 		@Override public void draw(Graphics g) { if(!isApplyToGraphic()) toApply.paint(g); }
 		@Override public Area getArea() { if(isApplyToGraphic()) return null;
 			Set<Sprite> sprites = toApply.getSprites().keySet();
-			int currentHash = Objects.hash((Object[]) sprites.toArray(new Sprite[0]));
+			int currentHash = Objects.hash((Object[]) sprites.toArray());
 			if(currentHash != lastHash) { lastHash = currentHash; lastArea = CanvasPanel.getAllArea(sprites); }
 			return lastArea;
 		} @Override public boolean equals(Object other) { return this == other; }

@@ -21,19 +21,15 @@ public class CloneInputStream extends PipedOutputStream {
 		inputStream.read(read);
 		write(read);
 		
-		thread = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				byte nextByte;
-				while(!isClosed && (nextByte = scanner.nextByte()) != -1)
-					try { write(nextByte); } catch (IOException e) { e.printStackTrace(); }
-			}
+		thread = new Thread(() -> {
+			byte nextByte;
+			while(!isClosed && (nextByte = scanner.nextByte()) != -1)
+				try { write(nextByte); } catch (IOException e) { e.printStackTrace(); }
 		}); thread.start();
 	}
 	
 //	@SuppressWarnings("deprecation")
 	public void close() throws IOException {
-		super.close();
-		thread.stop();
+		super.close(); thread.stop();
 	}
 }

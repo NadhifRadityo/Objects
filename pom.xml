@@ -5,7 +5,19 @@
   <groupId>io.github.NadhifRadityo</groupId>
   <artifactId>Objects</artifactId>
   <version>0.0.1-SNAPSHOT</version>
-  <packaging>jar</packaging>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>10</source>
+                    <target>10</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    <packaging>jar</packaging>
 
   <name>Objects</name>
   <url>http://maven.apache.org</url>
@@ -51,6 +63,11 @@
       <groupId>org.json</groupId>
       <artifactId>json</artifactId>
       <version>20180813</version>
+	</dependency>
+	<dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-pool2</artifactId>
+      <version>2.2</version>
 	</dependency>
 	<!-- <dependency>
 	  <groupId>org.ejml</groupId>

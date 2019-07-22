@@ -94,11 +94,11 @@ public class Handler {
         return looper;
     }
     
-    private final RunnablePost sendMessageDelayed(RunnablePost runnable, long delayMillis) {
+    private RunnablePost sendMessageDelayed(RunnablePost runnable, long delayMillis) {
         if (delayMillis < 0) delayMillis = 0;
         return sendMessageAtTime(runnable, System.currentTimeMillis() + delayMillis);
     }
-    private final RunnablePost sendMessageAtTime(RunnablePost runnable, long uptimeMillis) {
+    private RunnablePost sendMessageAtTime(RunnablePost runnable, long uptimeMillis) {
         if (queue == null) throw new IllegalStateException(this + " sendMessageAtTime() called with no queue");
         queue.add(runnable, uptimeMillis);
         looper.updateProgress();
@@ -111,7 +111,7 @@ public class Handler {
     private RunnablePost createThrowsRunnablePost(ThrowsRunnable runnable, String title, String subject) {
     	return new RunnablePost(title, subject) {
 			@Override public void work() throws Exception { runnable.run(); }
-			@Override public void stop() throws Exception { looper.getThread().interrupt(); }
+			@Override public void stop() { looper.getThread().interrupt(); }
 		};
     }
     

@@ -1,20 +1,14 @@
 package io.github.NadhifRadityo.Objects.Canvas.RenderHints;
 
-import java.awt.Color;
-import java.awt.Composite;
-import java.awt.Font;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.GraphicsConfiguration;
-import java.awt.Image;
-import java.awt.Paint;
-import java.awt.Polygon;
-import java.awt.Rectangle;
-import java.awt.RenderingHints;
+import io.github.NadhifRadityo.Objects.Canvas.CanvasPanel.SpriteChecker;
+import io.github.NadhifRadityo.Objects.Canvas.Managers.GraphicModifierManager.CustomGraphicModifier;
+import io.github.NadhifRadityo.Objects.Canvas.Managers.GraphicModifierManager.OverrideGraphic;
+import io.github.NadhifRadityo.Objects.Canvas.Managers.ImplementSpriteManager;
+import io.github.NadhifRadityo.Objects.Canvas.RenderHints.Easing.Easing;
+import io.github.NadhifRadityo.Objects.Canvas.Sprite;
+
+import java.awt.*;
 import java.awt.RenderingHints.Key;
-import java.awt.Shape;
-import java.awt.Stroke;
 import java.awt.font.FontRenderContext;
 import java.awt.font.GlyphVector;
 import java.awt.geom.AffineTransform;
@@ -29,13 +23,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import io.github.NadhifRadityo.Objects.Canvas.CanvasPanel.SpriteChecker;
-import io.github.NadhifRadityo.Objects.Canvas.Sprite;
-import io.github.NadhifRadityo.Objects.Canvas.Managers.GraphicModifierManager.CustomGraphicModifier;
-import io.github.NadhifRadityo.Objects.Canvas.Managers.GraphicModifierManager.OverrideGraphic;
-import io.github.NadhifRadityo.Objects.Canvas.Managers.ImplementSpriteManager;
-import io.github.NadhifRadityo.Objects.Canvas.RenderHints.Easing.Easing;
 
 public class SpriteEasing extends CustomGraphicModifier implements OverrideGraphic, SpriteChecker {
 	protected final Map<Sprite, RunningEase> runningEase;

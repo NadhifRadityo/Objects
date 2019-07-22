@@ -1,12 +1,12 @@
 package io.github.NadhifRadityo.Objects.Canvas.Shapes;
 
-import java.awt.Color;
-import java.awt.Graphics;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
+import java.awt.*;
 import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 public class Point extends Circle {
 	public Point(int x, int y) {

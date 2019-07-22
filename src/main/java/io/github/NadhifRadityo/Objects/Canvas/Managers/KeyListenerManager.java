@@ -1,15 +1,15 @@
 package io.github.NadhifRadityo.Objects.Canvas.Managers;
 
+import io.github.NadhifRadityo.Objects.Canvas.CanvasPanel;
+import io.github.NadhifRadityo.Objects.Canvas.Sprite;
+import io.github.NadhifRadityo.Objects.List.PriorityList;
+
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-
-import io.github.NadhifRadityo.Objects.Canvas.CanvasPanel;
-import io.github.NadhifRadityo.Objects.Canvas.Sprite;
-import io.github.NadhifRadityo.Objects.List.PriorityList;
 
 public class KeyListenerManager extends ImplementSpriteManager {
 	protected final PriorityList<CustomKeyListener> listeners;
@@ -23,7 +23,7 @@ public class KeyListenerManager extends ImplementSpriteManager {
 	public void addListener(CustomKeyListener listener) { addListener(listener, 0); }
 	public void removeListener(CustomKeyListener listener) { listeners.remove(listener); }
 	
-	private List<CustomKeyListener> getListeners(KeyEvent e, List<Integer> pressed) {
+	private List<CustomKeyListener> getListeners(List<Integer> pressed) {
 		Set<Sprite> inside = !isApplyToGraphic() ? toApply.getSprites().keySet() : null;
 		List<CustomKeyListener> result = new ArrayList<>();
 		for(CustomKeyListener listener : listeners.get()) {
@@ -37,9 +37,9 @@ public class KeyListenerManager extends ImplementSpriteManager {
 	private CanvasPanel registeredListener;
 	protected KeyAdapter keyListener = new KeyAdapter() {
 		List<Integer> pressed = new ArrayList<>();
-		@Override public void keyPressed(KeyEvent e) { pressed.add(e.getKeyCode()); getListeners(e, pressed).forEach(i -> i.keyPressed(e)); }
-		@Override public void keyReleased(KeyEvent e) { pressed.remove((Integer) e.getKeyCode()); getListeners(e, pressed).forEach(i -> i.keyReleased(e)); }
-		@Override public void keyTyped(KeyEvent e) { getListeners(e, Arrays.asList(e.getKeyCode())).forEach(i -> i.keyTyped(e)); }
+		@Override public void keyPressed(KeyEvent e) { pressed.add(e.getKeyCode()); getListeners(pressed).forEach(i -> i.keyPressed(e)); }
+		@Override public void keyReleased(KeyEvent e) { pressed.remove((Integer) e.getKeyCode()); getListeners(pressed).forEach(i -> i.keyReleased(e)); }
+		@Override public void keyTyped(KeyEvent e) { getListeners(Arrays.asList(e.getKeyCode())).forEach(i -> i.keyTyped(e)); }
 	};
 	
 	@Override protected void init(CanvasPanel canvas) {

@@ -1,12 +1,9 @@
 package io.github.NadhifRadityo.Objects.AWTComponent;
 
-import java.awt.Color;
-import java.awt.Component;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.FocusEvent;
 import java.awt.event.FocusListener;
-
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
 
 @Deprecated
 public class TextAreaPlaceholder implements FocusListener {

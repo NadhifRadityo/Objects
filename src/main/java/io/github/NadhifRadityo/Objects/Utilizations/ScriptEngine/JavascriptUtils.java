@@ -1,12 +1,11 @@
 package io.github.NadhifRadityo.Objects.Utilizations.ScriptEngine;
 
-import java.io.IOException;
+import io.github.NadhifRadityo.Objects.Utilizations.URLUtils;
 
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-
-import io.github.NadhifRadityo.Objects.Utilizations.URLUtils;
+import java.io.IOException;
 
 public class JavascriptUtils {
 	private JavascriptUtils() { }

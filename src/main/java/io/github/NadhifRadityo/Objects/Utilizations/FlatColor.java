@@ -1,6 +1,6 @@
 package io.github.NadhifRadityo.Objects.Utilizations;
 
-import java.awt.Color;
+import java.awt.*;
 import java.util.Random;
 
 public enum FlatColor {
@@ -28,14 +28,15 @@ public enum FlatColor {
 	
 	private String name;
 	private Color color;
-	private FlatColor(String name, Color color) {
+	FlatColor(String name, Color color) {
 		this.name = name;
 		this.color = color;
 	}
 	
 	public String getName() { return name; }
 	public Color getColor() { return color; }
-	public Color getColor(float alpha) { return new Color(color.getRed(), color.getGreen(), color.getBlue(), (int) NumberUtils.map(alpha, 0, 1, 0, 255)); }
+	public Color getColor(int alpha) { return new Color(color.getRed(), color.getGreen(), color.getBlue(), alpha); }
+	public Color getColor(float alpha) { return getColor((int) NumberUtils.map(alpha, 0f, 1f, 0, 255)); }
 	
 	public static FlatColor pickRandom(Random random) { return values()[random.nextInt(values().length)]; }
 	public static FlatColor pickRandom() { return pickRandom(PublicRandom.getRandom()); }

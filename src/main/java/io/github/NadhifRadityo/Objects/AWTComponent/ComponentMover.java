@@ -1,18 +1,9 @@
 package io.github.NadhifRadityo.Objects.AWTComponent;
 
-import java.awt.Component;
-import java.awt.Cursor;
-import java.awt.Dimension;
-import java.awt.GraphicsEnvironment;
-import java.awt.Insets;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.Window;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-
-import javax.swing.JComponent;
-import javax.swing.SwingUtilities;
 
 /**
  *  This class allows you to move a Component by using a mouse. The Component
@@ -64,7 +55,7 @@ public class ComponentMover extends MouseAdapter
 	 *  will be passed to the first ancestor of this specified class.
 	 *
 	 *  @param destinationClass  the Class of the ancestor component
-	 *  @param component         the Components to be registered for forwarding
+	 *  @param components        the Components to be registered for forwarding
 	 *                           drag events to the ancestor Component.
 	 */
 	public ComponentMover(Class<?> destinationClass, Component... components)
@@ -177,7 +168,7 @@ public class ComponentMover extends MouseAdapter
 	/**
 	 *  Remove listeners from the specified component
 	 *
-	 *  @param component  the component the listeners are removed from
+	 *  @param components  the component the listeners are removed from
 	 */
 	public void deregisterComponent(Component... components)
 	{
@@ -188,7 +179,7 @@ public class ComponentMover extends MouseAdapter
 	/**
 	 *  Add the required listeners to the specified component
 	 *
-	 *  @param component  the component the listeners are added to
+	 *  @param components  the component the listeners are added to
 	 */
 	public void registerComponent(Component... components)
 	{
@@ -373,7 +364,7 @@ public class ComponentMover extends MouseAdapter
 		{
 			if (destination instanceof JComponent)
 			{
-				((JComponent)destination).revalidate();
+				destination.revalidate();
 			}
 			else
 			{

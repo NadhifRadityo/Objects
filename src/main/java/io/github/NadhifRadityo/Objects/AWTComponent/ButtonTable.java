@@ -1,39 +1,28 @@
 package io.github.NadhifRadityo.Objects.AWTComponent;
 
-import java.awt.Component;
-import java.awt.FlowLayout;
-import java.awt.event.ActionListener;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Objects;
+import io.github.NadhifRadityo.Objects.AWTComponent.Table.EmptyTableModel;
+import io.github.NadhifRadityo.Objects.Utilizations.RandomString;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
-import javax.swing.AbstractCellEditor;
-import javax.swing.JButton;
-import javax.swing.JTable;
+import javax.swing.*;
 import javax.swing.event.TableModelEvent;
 import javax.swing.event.TableModelListener;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableModel;
-
-import org.apache.commons.lang3.builder.ToStringBuilder;
-
-import io.github.NadhifRadityo.Objects.AWTComponent.Table.EmptyTableModel;
-import io.github.NadhifRadityo.Objects.Utilizations.RandomString;
+import java.awt.*;
+import java.awt.event.ActionListener;
+import java.util.List;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class ButtonTable {
-	protected TableCellRenderer renderer = new TableCellRenderer() {
-		@Override public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int col) {
-			ButtonTablePanel buttonPanel = getTablePanel(row, col);
-			if(buttonPanel == null) return null;
-			buttonPanel.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
-			buttonPanel.setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
-			return buttonPanel;
-		}
+	protected TableCellRenderer renderer = (table, value, isSelected, hasFocus, row, col) -> {
+		ButtonTablePanel buttonPanel = getTablePanel(row, col);
+		if(buttonPanel == null) return null;
+		buttonPanel.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+		buttonPanel.setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
+		return buttonPanel;
 	};
 	protected TableCellEditor editor = new ButtonTableCellEditor();
 	protected class ButtonTableCellEditor extends AbstractCellEditor implements TableCellEditor {
@@ -41,9 +30,7 @@ public class ButtonTable {
 		 * 
 		 */
 		private static final long serialVersionUID = -7730541905051799746L;
-		@Override public Object getCellEditorValue() {
-			return currentButton;
-		}
+		@Override public Object getCellEditorValue() { return currentButton; }
 		@Override public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int col) {
 			ButtonTablePanel buttonPanel = getTablePanel(row, col);
 			if(buttonPanel == null) return null;
@@ -51,7 +38,7 @@ public class ButtonTable {
 			buttonPanel.setForeground(isSelected ? table.getSelectionForeground() : table.getForeground());
 			return buttonPanel;
 		}
-	};
+	}
 	protected TableModel model = new EmptyTableModel() {
 		/**
 		 * 
@@ -59,8 +46,7 @@ public class ButtonTable {
 		private static final long serialVersionUID = 6652535574218994263L;
 		@Override public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
 			JButton button = searchButton(rowIndex, columnIndex, aValue.toString());
-			if(button == null) return;
-			button.doClick();
+			if(button == null) return; button.doClick();
 			fireTableCellUpdated(rowIndex, columnIndex);
 		}
 	};
@@ -72,11 +58,11 @@ public class ButtonTable {
 			
 			if(e.getType() == TableModelEvent.DELETE) { for(int i = e.getFirstRow(); i <= e.getLastRow(); i++) {
 				for(ButtonTablePanel buttonPanel : getTablePanels(i, -1)) removeCell(buttonPanel);
-			}}
+			} }
 			for(int i = e.getLastRow() + 1; i <= maxRows; i++) { for(ButtonTablePanel buttonPanel : getTablePanels(i, -1)) {
 				if(buttonPanel == null) continue;
 				changeCellLocation(buttonPanel, buttonPanel.getRow() + shift, buttonPanel.getColumn());
-			}}
+			} }
 		}
 	};
 	
@@ -87,29 +73,15 @@ public class ButtonTable {
 	protected int maxRows = 0;
 	protected int maxCols = 0;
 	
-	public TableCellRenderer getRenderer() {
-		return renderer;
-	}
-	public TableCellEditor getEditor() {
-		return editor;
-	}
-	public TableModel getModel() {
-		return model;
-	}
-	public TableModelListener getListener() {
-		return listener;
-	}
+	public TableCellRenderer getRenderer() { return renderer; }
+	public TableCellEditor getEditor() { return editor; }
+	public TableModel getModel() { return model; }
+	public TableModelListener getListener() { return listener; }
 	
-	public int getMaxRows() {
-		return maxRows;
-	}
-	public int getMaxCols() {
-		return maxCols;
-	}
+	public int getMaxRows() { return maxRows; }
+	public int getMaxCols() { return maxCols; }
 	
-	public ButtonTablePanel addCell(int row, int col) {
-		return getTablePanelOrCreate(row, col);
-	}
+	public ButtonTablePanel addCell(int row, int col) { return getTablePanelOrCreate(row, col); }
 	public ButtonTablePanel removeCell(int row, int col) {
 		ButtonTablePanel removed = getTablePanel(row, col);
 		removeCell(removed);
@@ -153,8 +125,7 @@ public class ButtonTable {
 				ButtonTablePanel buttonPanel = getTablePanel(i, j);
 				if(buttonPanel != null) result.add(buttonPanel);
 			}
-		}
-		return result.toArray(new ButtonTablePanel[result.size()]);
+		} return result.toArray(new ButtonTablePanel[0]);
 	}
 	protected ButtonTablePanel getTablePanelOrCreate(int row, int col) {
 		ButtonTablePanel buttonPanel = getTablePanel(row, col);
@@ -171,8 +142,7 @@ public class ButtonTable {
 	}
 	
 	private void readButtonPanels() {
-		maxRows = 0;
-		maxCols = 0;
+		maxRows = 0; maxCols = 0;
 		for(ButtonTablePanel buttonPanel : buttonPanels) {
 			maxRows = Math.max(buttonPanel.getRow(), maxRows);
 			maxCols = Math.max(buttonPanel.getColumn(), maxCols);
@@ -192,8 +162,7 @@ public class ButtonTable {
 		protected final Map<String, JButton> buttons = new HashMap<>();
 		
 		protected ButtonTablePanel(int row, int col) {
-			this.row = row;
-			this.col = col;
+			this.row = row; this.col = col;
 			setLayout(new FlowLayout(FlowLayout.LEFT));
 		}
 		
@@ -223,36 +192,22 @@ public class ButtonTable {
 			button.setActionCommand(command);
 		}
 		
-		protected void addActionListener(ActionListener l) {
-			for(JButton button : buttons.values()) button.addActionListener(l);
-		}
-		protected void removeActionListener(ActionListener l) {
-			for(JButton button : buttons.values()) button.removeActionListener(l);
-		}
+		protected void addActionListener(ActionListener l) { for(JButton button : buttons.values()) button.addActionListener(l); }
+		protected void removeActionListener(ActionListener l) { for(JButton button : buttons.values()) button.removeActionListener(l); }
 		
 		protected void setRow(int row) {
-			int oldRow = this.row;
-			this.row = row;
+			int oldRow = this.row; this.row = row;
 			firePropertyChange("reallocateRow", oldRow, row);
 		}
 		protected void setColumn(int col) {
-			int oldCol = this.col;
-			this.col = col;
+			int oldCol = this.col; this.col = col;
 			firePropertyChange("reallocateCol", oldCol, col);
 		}
-		public int getRow() {
-			return row;
-		}
-		public int getColumn() {
-			return col;
-		}
+		public int getRow() { return row; }
+		public int getColumn() { return col; }
 		
-		public JButton getButton(String command) {
-			return buttons.get(command);
-		}
-		public JButton[] getButtons() {
-			return buttons.values().toArray(new JButton[buttons.size()]);
-		}
+		public JButton getButton(String command) { return buttons.get(command); }
+		public JButton[] getButtons() { return buttons.values().toArray(new JButton[0]); }
 		public String getCommand(JButton button) {
 			for(Entry<String, JButton> pair : buttons.entrySet()) {
 				if(pair.getValue().equals(button)) return pair.getKey();
@@ -275,7 +230,6 @@ public class ButtonTable {
 		public int hashCode() {
 			return Objects.hash(row, col, buttons);
 		}
-
 		@Override
 		public String toString() {
 			return new ToStringBuilder(this).append("row", row).append("col", col).append("buttons", buttons)

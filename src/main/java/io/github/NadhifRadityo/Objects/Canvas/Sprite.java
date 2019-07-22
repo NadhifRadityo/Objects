@@ -1,10 +1,10 @@
 package io.github.NadhifRadityo.Objects.Canvas;
 
-import java.awt.Graphics;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
+import java.awt.*;
 import java.awt.geom.Area;
 import java.util.Objects;
-
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 public abstract class Sprite {
 	protected int x, y;

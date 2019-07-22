@@ -1,10 +1,9 @@
 package io.github.NadhifRadityo.Objects.Utilizations;
 
-import java.awt.Component;
-
-import javax.swing.JTable;
+import javax.swing.*;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import java.awt.*;
 
 public final class TableUtils {
 	private TableUtils() {

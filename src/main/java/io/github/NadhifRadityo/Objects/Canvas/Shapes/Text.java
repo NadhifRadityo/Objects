@@ -1,13 +1,12 @@
 package io.github.NadhifRadityo.Objects.Canvas.Shapes;
 
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.font.FontRenderContext;
-import java.awt.geom.AffineTransform;
-
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+
+import java.awt.*;
+import java.awt.font.FontRenderContext;
+import java.awt.geom.AffineTransform;
 
 public class Text extends Rectangle {
 	protected String text;

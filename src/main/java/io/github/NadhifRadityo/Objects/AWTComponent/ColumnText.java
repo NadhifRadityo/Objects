@@ -1,54 +1,26 @@
 package io.github.NadhifRadityo.Objects.AWTComponent;
 
-import java.awt.Component;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-
-import io.github.NadhifRadityo.Objects.Object.DateCreateObject;
+import io.github.NadhifRadityo.Objects.Object.IdObject;
+import io.github.NadhifRadityo.Objects.Pool.Pool;
+import io.github.NadhifRadityo.Objects.Utilizations.IdObjectUtils;
 import net.miginfocom.swing.MigLayout;
 
-public class ColumnText extends JPanel {
+import javax.swing.*;
+import java.awt.*;
+import java.util.List;
+import java.util.*;
 
+public class ColumnText extends JPanel {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -1599946490929612637L;
+
+	protected int row;
+	protected final Map<String, ColumnTextGroup> groups = new HashMap<>();
 	
-	private int row;
-	private final Map<String, ColumnTextGroup> groups = new HashMap<String, ColumnTextGroup>();
-	
-	public ColumnText(int row) {
-		setRow(row);
-	}
-	public ColumnText() {
-		this(1);
-	}
-	
-	public ColumnTextGroup getColumn(String key) {
-		return groups.get(key);
-	}
-	public ColumnTextGroup[] getAllColumns() {
-		return groups.values().toArray(new ColumnTextGroup[groups.size()]);
-	}
-	public Map<String, ColumnTextGroup> getGroups() {
-		return Collections.unmodifiableMap(groups);
-	}
-	
-	public int getRow() {
-		return row;
-	}
-	public void setRow(int row) {
-		setLayout(new MigLayout("wrap " + row * 2));
-		this.row = row;
-		rearrange();
-	}
+	public ColumnText(int row) { setRow(row); }
+	public ColumnText() { this(1); }
 	
 	public JPanel addColumn(JLabel key, Component... components) {
 		Component insert = components[0];
@@ -69,8 +41,7 @@ public class ColumnText extends JPanel {
 		
 		ColumnTextGroup group = new ColumnTextGroup(key, insert, this);
 		firePropertyChange("ColumnAdded", groups.get(key.getText()), group);
-		groups.put(key.getText(), group);
-		rearrange();
+		groups.put(key.getText(), group); rearrange();
 		if(insert instanceof JPanel) return (JPanel) insert;
 		return null;
 	}
@@ -79,16 +50,54 @@ public class ColumnText extends JPanel {
 		firePropertyChange("ColumnRemoved", group, null);
 		rearrange();
 	}
-	public void removeColumn(JLabel key) {
-		removeColumn(key.getText());
+	public void removeColumn(JLabel key) { removeColumn(key.getText()); }
+
+	private void rearrange(List<String> keys) {
+		for(String key : keys) {
+			ColumnTextGroup group = groups.get(key);
+			JLabel keyLabel = group.getKey();
+			Component valueLabel = group.getValue();
+
+			remove(keyLabel);
+			remove(valueLabel);
+
+			add(keyLabel);
+			add(valueLabel);
+		}
 	}
-	
-	@Override
-	public void removeAll() {
+	public void rearrange() {
+		ArrayList<ColumnTextGroup> columnsGroup = Pool.tryBorrow(Pool.getPool(ArrayList.class));
+		ArrayList<String> sorted = Pool.tryBorrow(Pool.getPool(ArrayList.class));
+		try { columnsGroup.addAll(groups.values()); columnsGroup.sort(Comparator.comparing(IdObject::getId));
+			for(ColumnTextGroup group : columnsGroup) sorted.add(group.getKey().getText()); rearrange(sorted);
+		} finally { Pool.returnObject(ArrayList.class, columnsGroup); Pool.returnObject(ArrayList.class, sorted); }
+	}
+
+	public void shuffle() {
+		ArrayList<String> shuffleKey = Pool.tryBorrow(Pool.getPool(ArrayList.class));
+		try { shuffleKey.addAll(groups.keySet()); Collections.shuffle(shuffleKey);
+			rearrange(shuffleKey); } finally { Pool.returnObject(ArrayList.class, shuffleKey); }
+	}
+	public void sort() {
+		ArrayList<String> shuffleKey = Pool.tryBorrow(Pool.getPool(ArrayList.class));
+		try { shuffleKey.addAll(groups.keySet()); Collections.sort(shuffleKey);
+			rearrange(shuffleKey); } finally { Pool.returnObject(ArrayList.class, shuffleKey); }
+	}
+
+	public ColumnTextGroup getColumn(String key) { return groups.get(key); }
+	public ColumnTextGroup[] getAllColumns() { return groups.values().toArray(new ColumnTextGroup[0]); }
+	public Map<String, ColumnTextGroup> getGroups() { return Collections.unmodifiableMap(groups); }
+
+	public int getRow() { return row; }
+	public void setRow(int row) {
+		setLayout(new MigLayout("wrap " + row * 2));
+		this.row = row; rearrange();
+	}
+
+	@Override public void removeAll() {
 		String[] keys = groups.keySet().toArray(new String[0]);
 		for(String key : keys) removeColumn(key);
-		super.removeAll();
-		rearrange();
+		super.removeAll(); rearrange();
 	}
 	
 //	public void addText(JLabel key, Component value) {
@@ -112,68 +121,21 @@ public class ColumnText extends JPanel {
 //		rearrange();
 //	}
 	
-	private void rearrange(List<String> keys) {
-		for(String key : keys) {
-			ColumnTextGroup group = groups.get(key);
-			JLabel keyLabel = group.getKey();
-			Component valueLabel = group.getValue();
-			
-			remove(keyLabel);
-			remove(valueLabel);
-			
-			add(keyLabel);
-			add(valueLabel);
-		}
-	}
-	public void rearrange() {
-		List<ColumnTextGroup> columnsGroup = new ArrayList<ColumnTextGroup>(groups.values());
-		Collections.sort(columnsGroup, new Comparator<ColumnTextGroup>() {
-			@Override public int compare(ColumnTextGroup o1, ColumnTextGroup o2) {
-				return o1.getDateObjectCreated().compareTo(o2.getDateObjectCreated());
-			}
-		});
-		
-		ArrayList<String> sorted = new ArrayList<String>();
-		for(ColumnTextGroup group : columnsGroup) sorted.add(group.getKey().getText());  
-		rearrange(sorted);
-	}
-	
-	public void shuffle() {
-		List<String> shuffleKey = new ArrayList<String>(groups.keySet());
-		Collections.shuffle(shuffleKey);
-		rearrange(shuffleKey);
-	}
-	public void sort() {
-		List<String> shuffleKey = new ArrayList<String>(groups.keySet());
-		Collections.sort(shuffleKey);
-		rearrange(shuffleKey);
-	}
-	
-	public static class ColumnTextGroup implements DateCreateObject {
-		private final long timestampCreated = System.nanoTime();
-		private final JLabel key;
-		private final Component value;
-		private final ColumnText columnText;
+	public static class ColumnTextGroup implements IdObject {
+		private final long id = IdObjectUtils.getNewId(ColumnTextGroup.class);
+		protected final JLabel key;
+		protected final Component value;
+		protected final ColumnText columnText;
 		
 		private ColumnTextGroup(JLabel key, Component value, ColumnText columnText) {
 			this.key = key;
 			this.value = value;
 			this.columnText = columnText;
 		}
-		
-		public JLabel getKey() {
-			return key;
-		}
-		public Component getValue() {
-			return value;
-		}
-		public ColumnText getColumnText() {
-			return columnText;
-		}
-		
-		@Override
-		public long getTimestampObjectCreated() {
-			return timestampCreated;
-		}
+
+		@Override public long getId() { return id; }
+		public JLabel getKey() { return key; }
+		public Component getValue() { return value; }
+		public ColumnText getColumnText() { return columnText; }
 	}
 }

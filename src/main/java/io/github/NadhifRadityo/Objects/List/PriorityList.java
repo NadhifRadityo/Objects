@@ -1,20 +1,18 @@
 package io.github.NadhifRadityo.Objects.List;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
 import io.github.NadhifRadityo.Objects.Object.DeadableObject;
 import io.github.NadhifRadityo.Objects.Utilizations.MapUtils;
 
-public class PriorityList<E> implements DeadableObject {
+import java.util.*;
+import java.util.function.Consumer;
+
+public class PriorityList<E> implements DeadableObject, Iterable<E> {
 	protected final Map<E, Integer> map;
 	protected final boolean deadAllowed;
 	protected volatile boolean dead = false;
 	
 	public PriorityList(boolean deadAllowed) {
-		this.map = Collections.synchronizedMap(new HashMap<E, Integer>());
+		this.map = Collections.synchronizedMap(new HashMap<>());
 		this.deadAllowed = deadAllowed;
 	} public PriorityList() { this(true); }
 	
@@ -81,8 +79,12 @@ public class PriorityList<E> implements DeadableObject {
 		if(dead) return; this.dead = true;
 		map.clear();
 	}
-	
-//	public static void main(String[] args) {
+
+	@Override public Iterator<E> iterator() { return get().iterator(); }
+	@Override public void forEach(Consumer<? super E> action) { get().forEach(action); }
+	@Override public Spliterator<E> spliterator() { return get().spliterator(); }
+
+	//	public static void main(String[] args) {
 //		PriorityList<String> list = new PriorityList<>();
 //		list.add("test 0");
 //		list.add("test 1", 1);

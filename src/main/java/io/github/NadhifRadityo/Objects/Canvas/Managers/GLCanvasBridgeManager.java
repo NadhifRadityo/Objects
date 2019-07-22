@@ -1,18 +1,13 @@
 package io.github.NadhifRadityo.Objects.Canvas.Managers;
 
-import java.awt.Component;
-import java.awt.Frame;
-import java.awt.Graphics;
-import java.awt.Image;
-import java.awt.Rectangle;
+import com.jogamp.opengl.awt.GLJPanel;
+import io.github.NadhifRadityo.Objects.List.PriorityList;
+
+import java.awt.*;
 import java.awt.geom.Area;
 import java.awt.geom.Rectangle2D;
 import java.lang.reflect.Field;
 import java.util.Map;
-
-import com.jogamp.opengl.awt.GLJPanel;
-
-import io.github.NadhifRadityo.Objects.List.PriorityList;
 
 public class GLCanvasBridgeManager extends ImplementSpriteManager {
 	protected final Frame dumpPeer = new Frame();

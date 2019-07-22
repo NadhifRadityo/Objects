@@ -482,13 +482,8 @@ public enum MimeType {
 	undefined("application/octet-stream");
 
 	private String contentType;
-	public String getContentType() {
-		return this.contentType;
-	}
-
-	MimeType(String contentType) {
-		this.contentType = contentType;
-	}
+	MimeType(String contentType) { this.contentType = contentType; }
+	public String getContentType() { return this.contentType; }
 
 	public static MimeType getByExtension(String extension) {
 		if (extension == null) return null;

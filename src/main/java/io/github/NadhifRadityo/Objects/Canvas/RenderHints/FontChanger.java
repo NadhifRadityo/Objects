@@ -1,10 +1,9 @@
 package io.github.NadhifRadityo.Objects.Canvas.RenderHints;
 
-import java.awt.Font;
-import java.awt.Graphics;
-
-import io.github.NadhifRadityo.Objects.Canvas.Sprite;
 import io.github.NadhifRadityo.Objects.Canvas.Managers.GraphicModifierManager.CustomGraphicModifier;
+import io.github.NadhifRadityo.Objects.Canvas.Sprite;
+
+import java.awt.*;
 
 public class FontChanger extends CustomGraphicModifier {
 	protected Font font;

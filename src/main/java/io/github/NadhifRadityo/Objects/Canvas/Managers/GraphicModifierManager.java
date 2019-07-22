@@ -1,15 +1,15 @@
 package io.github.NadhifRadityo.Objects.Canvas.Managers;
 
-import java.awt.Graphics;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-
 import io.github.NadhifRadityo.Objects.Canvas.CanvasPanel;
 import io.github.NadhifRadityo.Objects.Canvas.CanvasPanel.SpriteChecker;
 import io.github.NadhifRadityo.Objects.Canvas.Sprite;
 import io.github.NadhifRadityo.Objects.List.PriorityList;
 import io.github.NadhifRadityo.Objects.Utilizations.ListUtils;
+
+import java.awt.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
 
 public class GraphicModifierManager extends ImplementSpriteManager {
 	protected final PriorityList<CustomGraphicModifier> modifiers;
@@ -112,5 +112,5 @@ public class GraphicModifierManager extends ImplementSpriteManager {
 		public abstract void draw(Graphics g);
 		public abstract void reset(Graphics g);
 	}
-	public interface OverrideGraphic { Graphics getGraphics(); };
+	public interface OverrideGraphic { Graphics getGraphics(); }
 }

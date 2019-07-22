@@ -1,5 +1,8 @@
 package io.github.NadhifRadityo.Objects.Utilizations;
 
+import com.jogamp.common.util.JarUtil;
+import io.github.NadhifRadityo.Objects.Pool.Pool;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -16,17 +19,14 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
-import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-
-import com.jogamp.common.util.JarUtil;
 
 public class JarUtils extends JarUtil {
 
 	public static File[] extractFileFromJar(File jarFile, File destDir, FileFilter filter) throws IOException {
 		JarFile jar = new JarFile(jarFile);
-		List<File> extracteds = new ArrayList<>();
+		ArrayList<File> extracteds = Pool.tryBorrow(Pool.getPool(ArrayList.class)); try {
 		for(Enumeration<JarEntry> enumEntries = jar.entries(); enumEntries.hasMoreElements();) {
 			JarEntry jarEntry = enumEntries.nextElement();
 			File file = new JarEntryFile(destDir, jarEntry.getName(), jarEntry);
@@ -34,26 +34,27 @@ public class JarUtils extends JarUtil {
 			if(!file.getParentFile().exists()) file.getParentFile().mkdirs();
 			if(jarEntry.isDirectory()) { file.mkdirs(); continue; }
 			try(InputStream is = jar.getInputStream(jarEntry)) { Files.copy(is, file.toPath(), StandardCopyOption.REPLACE_EXISTING); }
-		} jar.close(); return extracteds.toArray(new File[0]);
-	} public static File[] extractFileFromJar(File jarFile, File destDir) throws IOException {
-		return extractFileFromJar(jarFile, destDir, f -> { return true; });
-	}
+		} jar.close(); return extracteds.toArray(new File[0]); } finally { Pool.returnObject(ArrayList.class, extracteds); }
+	} public static File[] extractFileFromJar(File jarFile, File destDir) throws IOException { return extractFileFromJar(jarFile, destDir, f -> true); }
 	
 	public static void addLibraryPath(String... pathsToAdd) throws NoSuchFieldException, SecurityException, 
 															IllegalArgumentException, IllegalAccessException {
 		Field usrPathsField = ClassLoader.class.getDeclaredField("usr_paths");
 		usrPathsField.setAccessible(true);
 		String[] paths = (String[]) usrPathsField.get(null);
-		List<String> deltas = new ArrayList<>(Arrays.asList(pathsToAdd));
+		ArrayList<String> deltas = Pool.tryBorrow(Pool.getPool(ArrayList.class));
+		deltas.addAll(Arrays.asList(pathsToAdd));
 		deltas.removeAll(Arrays.asList(paths));
 		
-		String[] newPaths = Arrays.copyOf(paths, paths.length + deltas.size());
-		int i = paths.length; for(String delta : deltas) newPaths[i++] = delta;
-		usrPathsField.set(null, newPaths);
-		
-		String libPathProps = "";
-		for(String pathAdd : pathsToAdd) libPathProps += File.pathSeparator + pathAdd;
-		System.setProperty("java.library.path", System.getProperty("java.library.path") + libPathProps);
+		try {
+			String[] newPaths = Arrays.copyOf(paths, paths.length + deltas.size());
+			int i = paths.length; for(String delta : deltas) newPaths[i++] = delta;
+			usrPathsField.set(null, newPaths);
+
+			String libPathProps = "";
+			for(String pathAdd : pathsToAdd) libPathProps += File.pathSeparator + pathAdd;
+			System.setProperty("java.library.path", System.getProperty("java.library.path") + libPathProps);
+		} finally { Pool.returnObject(ArrayList.class, deltas); }
 	}
 	
 	public static void addJarToClassPath(File... jarFiles) throws NoSuchMethodException, SecurityException, 

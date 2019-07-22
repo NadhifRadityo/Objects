@@ -1,15 +1,15 @@
 package io.github.NadhifRadityo.Objects.Canvas.Managers;
 
+import io.github.NadhifRadityo.Objects.Canvas.CanvasPanel;
+import io.github.NadhifRadityo.Objects.Canvas.Sprite;
+import io.github.NadhifRadityo.Objects.List.PriorityList;
+
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Area;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
-import io.github.NadhifRadityo.Objects.Canvas.CanvasPanel;
-import io.github.NadhifRadityo.Objects.Canvas.Sprite;
-import io.github.NadhifRadityo.Objects.List.PriorityList;
 
 public class MouseListenerManager extends ImplementSpriteManager {
 	protected final PriorityList<CustomMouseListener> listeners;

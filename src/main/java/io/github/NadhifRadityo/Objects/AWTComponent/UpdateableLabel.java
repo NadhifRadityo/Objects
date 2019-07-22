@@ -1,9 +1,9 @@
 package io.github.NadhifRadityo.Objects.AWTComponent;
 
 import io.github.NadhifRadityo.Objects.Object.ReferencedCallback;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 public class UpdateableLabel extends Label {
 	/**

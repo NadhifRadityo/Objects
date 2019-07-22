@@ -1,7 +1,7 @@
 package io.github.NadhifRadityo.Objects.Canvas.Shapes;
 
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 public class Square extends Rectangle {

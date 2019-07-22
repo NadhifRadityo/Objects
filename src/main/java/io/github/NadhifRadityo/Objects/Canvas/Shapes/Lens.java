@@ -1,13 +1,13 @@
 package io.github.NadhifRadityo.Objects.Canvas.Shapes;
 
-import java.awt.Graphics;
-import java.awt.Graphics2D;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
+import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Area;
 import java.awt.geom.Ellipse2D;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.ToStringBuilder;
 
 public class Lens extends Rectangle {
 	protected Area calculatedArea = null;

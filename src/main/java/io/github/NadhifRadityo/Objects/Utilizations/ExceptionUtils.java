@@ -20,7 +20,5 @@ public class ExceptionUtils extends org.apache.commons.lang3.exception.Exception
         doSilentException(printException, RunnableUtils.convertToThrowsRunnable(runnables));
     }
     
-    public static final ExceptionHandler exceptionPrintHandler = new ExceptionHandler() {
-		@Override public void onExceptionOccurred(Throwable e) { e.printStackTrace(); }
-	};
+    public static final ExceptionHandler exceptionPrintHandler = Throwable::printStackTrace;
 }

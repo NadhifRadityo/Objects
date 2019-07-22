@@ -1,11 +1,10 @@
 package io.github.NadhifRadityo.Objects.Canvas.RenderHints;
 
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.geom.AffineTransform;
-
-import io.github.NadhifRadityo.Objects.Canvas.Sprite;
 import io.github.NadhifRadityo.Objects.Canvas.Managers.GraphicModifierManager.CustomGraphicModifier;
+import io.github.NadhifRadityo.Objects.Canvas.Sprite;
+
+import java.awt.*;
+import java.awt.geom.AffineTransform;
 
 public class Rotate extends CustomGraphicModifier {
 	protected double degree;

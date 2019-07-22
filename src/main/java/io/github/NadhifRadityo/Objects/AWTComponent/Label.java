@@ -1,9 +1,10 @@
 package io.github.NadhifRadityo.Objects.AWTComponent;
 
-import javax.swing.JLabel;
-import org.apache.commons.lang3.builder.ToStringBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+
+import javax.swing.*;
 
 public class Label extends JLabel {
 	/**

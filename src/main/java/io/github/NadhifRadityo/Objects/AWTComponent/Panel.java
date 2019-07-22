@@ -1,10 +1,9 @@
 package io.github.NadhifRadityo.Objects.AWTComponent;
 
-import java.awt.Color;
+import javax.swing.*;
+import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
-
-import javax.swing.JPanel;
 
 public class Panel extends JPanel {
 

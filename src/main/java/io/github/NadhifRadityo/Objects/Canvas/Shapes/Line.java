@@ -1,14 +1,13 @@
 package io.github.NadhifRadityo.Objects.Canvas.Shapes;
 
-import java.awt.Graphics;
-import java.awt.geom.Area;
-import java.awt.geom.Line2D;
-
+import io.github.NadhifRadityo.Objects.Canvas.Sprite;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-import io.github.NadhifRadityo.Objects.Canvas.Sprite;
+import java.awt.*;
+import java.awt.geom.Area;
+import java.awt.geom.Line2D;
 
 public class Line extends Sprite {
 	protected int x2, y2;

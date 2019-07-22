@@ -9,6 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Deprecated
+/*
+ * Use WriteableInputStream instead!
+ */
 public class MultipleInputStream extends PipedOutputStream {
 	protected final List<PipedInputStream> sinks = new ArrayList<>();
 	protected final InputStream inputStream;

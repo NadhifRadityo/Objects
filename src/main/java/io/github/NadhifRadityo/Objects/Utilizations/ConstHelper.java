@@ -10,10 +10,9 @@ public class ConstHelper {
 	
 	public static Object fromString(Class<?> clazz, String name) throws IllegalArgumentException, IllegalAccessException {
 		for(Field field : clazz.getDeclaredFields()) {
-			if(isConstField(field) && field.getName().equals(name))
-				return field.get(null);
-		}
-		return null;
+			if(!isConstField(field) || !field.getName().equals(name)) continue;
+			return field.get(null);
+		} return null;
 	}
 	
 	public static boolean isConstField(Field field) {

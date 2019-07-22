@@ -1,22 +1,21 @@
 package io.github.NadhifRadityo.Objects.List;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-
 import io.github.NadhifRadityo.Objects.Exception.ThrowsRunnable;
 import io.github.NadhifRadityo.Objects.Object.DeadableObject;
 import io.github.NadhifRadityo.Objects.Utilizations.ExceptionUtils;
 
-public class QueueList<E> implements DeadableObject {
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.function.Consumer;
+
+public class QueueList<E> implements DeadableObject, Iterable<E> {
 	protected final Map<E, Long> map;
 	protected final boolean deadAllowed;
 	protected volatile boolean dead = false;
 	private volatile boolean isWaiting = false;
 	
 	public QueueList(boolean deadAllowed) {
-		this.map = Collections.synchronizedMap(new HashMap<E, Long>());
+		this.map = Collections.synchronizedMap(new HashMap<>());
 		this.deadAllowed = deadAllowed;
 	} public QueueList() { this(true); }
 	
@@ -73,7 +72,7 @@ public class QueueList<E> implements DeadableObject {
 		
 		Entry<E, Long> value = getSoonestEntry(); long now;
 		while(value.getValue() > (now = System.currentTimeMillis())) {
-			try { wait(value.getValue() - now); } catch(InterruptedException e) { }
+			try { wait(value.getValue() - now); } catch(InterruptedException ignored) { }
 			value = getSoonestEntry(); if(value == null) return get();
 		} map.remove(value.getKey()); return value.getKey();
 	}
@@ -103,8 +102,12 @@ public class QueueList<E> implements DeadableObject {
 		notifyAll();
 		this.dead = true;
 	}
-	
-//	@SuppressWarnings("deprecation")
+
+	@Override public Iterator<E> iterator() { return map.keySet().iterator(); }
+	@Override public void forEach(Consumer<? super E> action) { map.keySet().forEach(action); }
+	@Override public Spliterator<E> spliterator() { return map.keySet().spliterator(); }
+
+	//	@SuppressWarnings("deprecation")
 //	public static void main(String[] args) {
 //		final ListQueue<String> queue = new ListQueue<>(true);
 //		Thread t1 = new Thread(RunnableUtils.convertToRunnable(true, () -> {

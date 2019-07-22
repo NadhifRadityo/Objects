@@ -1,19 +1,17 @@
 package io.github.NadhifRadityo.Objects.Utilizations.Android;
 
+import io.github.NadhifRadityo.Objects.Utilizations.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
+
+import javax.swing.text.View;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.swing.text.View;
-
-import org.apache.commons.lang3.math.NumberUtils;
-
-import io.github.NadhifRadityo.Objects.Utilizations.StringUtils;
-
 public class BuildVersion {
-	private static final Map<String, Integer> buildVersions = new HashMap<String, Integer>();
+	private static final Map<String, Integer> buildVersions = new HashMap<>();
 	static {
 		try {
 			for(Field field : BuildVersion.class.getFields()) {
@@ -32,9 +30,7 @@ public class BuildVersion {
 		} catch (IllegalArgumentException | IllegalAccessException e) { e.printStackTrace(); }
 	}
 	
-	public static Map<String, Integer> getBuildversions() {
-		return Collections.unmodifiableMap(buildVersions);
-	}
+	public static Map<String, Integer> getBuildVersions() { return Collections.unmodifiableMap(buildVersions); }
 	
 	/**
      * October 2008: The original, first, version of Android.  Yay!

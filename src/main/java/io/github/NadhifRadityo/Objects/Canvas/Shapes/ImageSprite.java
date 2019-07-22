@@ -1,10 +1,11 @@
 package io.github.NadhifRadityo.Objects.Canvas.Shapes;
 
-import java.awt.Graphics;
-import java.awt.image.BufferedImage;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+
+import java.awt.*;
+import java.awt.image.BufferedImage;
 
 public class ImageSprite extends Rectangle {
 	protected BufferedImage image;
