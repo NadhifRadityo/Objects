@@ -1,18 +1,18 @@
 package io.github.NadhifRadityo.Objects.Pool.BuiltInPool;
 
-import io.github.NadhifRadityo.Objects.ObjectUtils.EqualsProxy;
-import io.github.NadhifRadityo.Objects.ObjectUtils.Proxy;
 import io.github.NadhifRadityo.Objects.Pool.Pool;
 import io.github.NadhifRadityo.Objects.Pool.PoolConfig;
 import io.github.NadhifRadityo.Objects.Pool.PoolFactory;
-import org.apache.commons.pool2.PooledObject;
-import org.apache.commons.pool2.impl.AbandonedConfig;
-import org.apache.commons.pool2.impl.DefaultPooledObject;
+import io.github.NadhifRadityo.Objects.Pool.PooledObject;
+import io.github.NadhifRadityo.Objects.Utilizations.MapUtils;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collector;
 
-public class HashMapPool extends Pool<HashMap> {
-	
+@SuppressWarnings("jol")
+public class HashMapPool extends Pool<HashMap<Object, Object>> {
+
 	public static void addPool() {
 		if(Pool.containsPool(HashMap.class)) return;
 		HashMapPool pool = new HashMapPool(new HashMapPoolFactory(), Pool.getDefaultPoolConfig());
@@ -22,16 +22,17 @@ public class HashMapPool extends Pool<HashMap> {
 //		if(!Pool.containsPool(HashMap.class)) return;
 //		Pool.removePool(HashMap.class);
 //	}
-	
-	protected HashMapPool(PoolFactory<HashMap> factory) { super(factory); }
-	protected HashMapPool(PoolFactory<HashMap> factory, PoolConfig config) { super(factory, config); }
-	protected HashMapPool(PoolFactory<HashMap> factory, PoolConfig config, AbandonedConfig abandonedConfig) { super(factory, config, abandonedConfig); }
-	
-	protected static class HashMapPoolFactory extends PoolFactory<HashMap> {
-		@Override public Proxy<HashMap> create() { return new EqualsProxy<>(new HashMap()); }
-		@Override public PooledObject<Proxy<HashMap>> wrap(Proxy<HashMap> obj) { return new DefaultPooledObject<>(obj); }
-		@Override public void passivateObject(PooledObject<Proxy<HashMap>> p) { p.getObject().get().clear(); }
-		@Override public boolean validateObject(PooledObject<Proxy<HashMap>> p) { return p.getObject().get().isEmpty(); }
-	}
-}
 
+	protected HashMapPool(PoolFactory<HashMap<Object, Object>> factory) { super(factory); }
+	protected HashMapPool(PoolFactory<HashMap<Object, Object>> factory, PoolConfig<HashMap<Object, Object>> config) { super(factory, config); }
+
+	protected static class HashMapPoolFactory extends PoolFactory<HashMap<Object, Object>> {
+		@Override public HashMap<Object, Object> create() { return MapUtils.optimizedHashMap()/*new HashMap()*/; }
+		@Override public PooledObject<HashMap<Object, Object>> wrap(HashMap<Object, Object> obj) { return new PooledObject<>(obj); }
+		@Override public boolean validateObject(PooledObject<HashMap<Object, Object>> p) { return p.getObject().isEmpty(); }
+		@Override public void passivateObject(PooledObject<HashMap<Object, Object>> p) { p.getObject().clear(); }
+	}
+
+	public static <K, V> Collector<Map.Entry<K, V>, ?, HashMap<K, V>> getCollectors() { return Collector.of(() -> Pool.tryBorrow(Pool.getPool(HashMap.class)),
+			(m, e) -> m.put(e.getKey(), e.getValue()), (left, right) -> { left.putAll(right); return left; }, Collector.Characteristics.IDENTITY_FINISH); }
+}

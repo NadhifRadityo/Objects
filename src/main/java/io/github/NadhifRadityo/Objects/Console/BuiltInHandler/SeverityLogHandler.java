@@ -1,34 +1,36 @@
 package io.github.NadhifRadityo.Objects.Console.BuiltInHandler;
 
-import io.github.NadhifRadityo.Objects.Console.LogHandler;
 import io.github.NadhifRadityo.Objects.Console.LogLevel;
-import io.github.NadhifRadityo.Objects.Console.LogRecord;
 import io.github.NadhifRadityo.Objects.Object.ReferencedCallback;
-import io.github.NadhifRadityo.Objects.Pool.Pool;
 
-public class SeverityLogHandler implements LogHandler {
-	public static final int DEFAULT_PRIORITY = 102;
+import java.util.List;
 
-	protected ReferencedCallback<AnsiLogHandler.AnsiColor> colorCallback;
-	public SeverityLogHandler(ReferencedCallback<AnsiLogHandler.AnsiColor> colorCallback) { this.colorCallback = colorCallback; }
-	public SeverityLogHandler() { }
+public class SeverityLogHandler extends SnippetHandler {
+	public static final int DEFAULT_PRIORITY = 103;
+	public static final Object ENABLED = new Object();
+	protected static final SnippetListener listener = (snippet, _handler, record) -> {
+		List<Object> args = record.getArgs();
+		Object STATE_ENABLED = AttributesHandler.checkOnce(ENABLED, AttributesHandler.ON, args);
+		if(STATE_ENABLED != AttributesHandler.ON) return 0;
 
-	@Override public void manipulateLog(LogRecord record) {
-		boolean coloredSupport = AnsiLogHandler.isAnsiSupport(record.getLogger());
-		StringBuilder builder = Pool.tryBorrow(Pool.getPool(StringBuilder.class));
-		if(coloredSupport) builder.append(AnsiLogHandler.AnsiColor.YELLOW.asForeground().asCommand().toString()); builder.append("[");
-		if(coloredSupport) builder.append(getLevelSeverityColor(record.getLogLevel()).asForeground().asCommand().toString()); builder.append(record.getLogLevel().name());
-		if(coloredSupport) builder.append(AnsiLogHandler.AnsiColor.YELLOW.asForeground().asCommand().toString()); builder.append("]");
-		if(coloredSupport) builder.append(AnsiLogHandler.AnsiAttribute.RESET.asSGRParam().asCommand().toString());
-		record.getArgs().add(0, builder.toString());
-		Pool.returnObject(StringBuilder.class, builder);
-	}
+		SeverityLogHandler handler = (SeverityLogHandler) _handler;
+		boolean ansiSupported = AnsiLogHandler.isAnsiSupported(record.getLogger());
+		if(ansiSupported) snippet.add(handler.getLevelSeverityColor(null)); snippet.add("[");
+		if(ansiSupported) snippet.add(handler.getLevelSeverityColor(record.getLogLevel())); snippet.add(record.getLogLevel().name());
+		if(ansiSupported) snippet.add(handler.getLevelSeverityColor(null)); snippet.add("] ");
+		if(ansiSupported) snippet.add(AnsiLogHandler.AnsiColor.DEFAULT.asForeground()); return 0;
+	};
 
-	public ReferencedCallback<AnsiLogHandler.AnsiColor> getColorCallback() { return colorCallback; }
-	public void setColorCallback(ReferencedCallback<AnsiLogHandler.AnsiColor> colorCallback) { this.colorCallback = colorCallback; }
+	protected ReferencedCallback<Object> colorCallback;
+	public SeverityLogHandler(ReferencedCallback<Object> colorCallback) { super(listener); this.colorCallback = colorCallback; }
+	public SeverityLogHandler() { this(null); }
 
-	public AnsiLogHandler.AnsiColor getLevelSeverityColor(LogLevel logLevel) {
+	public ReferencedCallback<Object> getColorCallback() { return colorCallback; }
+	public void setColorCallback(ReferencedCallback<Object> colorCallback) { this.colorCallback = colorCallback; }
+
+	public Object getLevelSeverityColor(LogLevel logLevel) {
 		if(colorCallback != null) return colorCallback.get(logLevel, this);
+		if(logLevel == null) return AnsiLogHandler.AnsiColor.YELLOW;
 		switch(logLevel) {
 			case LOG: return AnsiLogHandler.AnsiColor.WHITE;
 			case INFO: return AnsiLogHandler.AnsiColor.GREEN;

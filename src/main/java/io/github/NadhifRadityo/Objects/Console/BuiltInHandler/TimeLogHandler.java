@@ -1,13 +1,15 @@
 package io.github.NadhifRadityo.Objects.Console.BuiltInHandler;
 
-import io.github.NadhifRadityo.Objects.Console.LogHandler;
-import io.github.NadhifRadityo.Objects.Console.LogRecord;
 import io.github.NadhifRadityo.Objects.Object.ReferencedCallback;
-import io.github.NadhifRadityo.Objects.Pool.Pool;
 import io.github.NadhifRadityo.Objects.Utilizations.TimeUtils;
 
-public class TimeLogHandler implements LogHandler {
-	public static final int DEFAULT_PRIORITY = 101;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class TimeLogHandler extends SnippetHandler {
+	public static final int DEFAULT_PRIORITY = 102;
+	public static final Object ENABLED = new Object();
 
 	public static final String ERA_INJECT = "<tlhEra>";
 	public static final String YEAR_INJECT = "<tlhYear>";
@@ -26,7 +28,7 @@ public class TimeLogHandler implements LogHandler {
 			DAY_INJECT   , HOUR_INJECT , MINUTE_INJECT  , SECOND_INJECT    ,
 			MILLIS_INJECT, AM_PM_INJECT, TIMEZONE_INJECT, ADDITIONAL_INJECT
 	};
-	
+
 	private static String COLOR_INJECT(String string) { return "'" + string + "'"; }
 	public static final String ERA_COLOR_INJECT = COLOR_INJECT(ERA_INJECT);
 	public static final String YEAR_COLOR_INJECT = COLOR_INJECT(YEAR_INJECT);
@@ -45,37 +47,41 @@ public class TimeLogHandler implements LogHandler {
 			DAY_COLOR_INJECT   , HOUR_COLOR_INJECT , MINUTE_COLOR_INJECT  , SECOND_COLOR_INJECT    ,
 			MILLIS_COLOR_INJECT, AM_PM_COLOR_INJECT, TIMEZONE_COLOR_INJECT, ADDITIONAL_COLOR_INJECT
 	};
+
 	public static final String defaultDatePattern = HOUR_COLOR_INJECT + "HH" + ADDITIONAL_COLOR_INJECT + ":" + MINUTE_COLOR_INJECT + "mm" + ADDITIONAL_COLOR_INJECT + ":" + SECOND_COLOR_INJECT + "ss";
+	protected static final Pattern injectMatcher = Pattern.compile("(<[a-zA-Z]+>)(.+?(?=<|$))");
+	protected static final SnippetListener listener = (snippet, _handler, record) -> {
+		List<Object> args = record.getArgs();
+		Object STATE_ENABLED = AttributesHandler.checkOnce(ENABLED, AttributesHandler.ON, args);
+		if(STATE_ENABLED != AttributesHandler.ON) return 0;
+
+		TimeLogHandler handler = (TimeLogHandler) _handler;
+		boolean ansiSupported = AnsiLogHandler.isAnsiSupported(record.getLogger());
+		if(ansiSupported) snippet.add(handler.getTimeColor(ADDITIONAL_INJECT)); snippet.add("[");
+		String formatted = handler.dateCallback != null ? handler.dateCallback.get(handler) : TimeUtils.getTime(defaultDatePattern);
+		Matcher matcher = injectMatcher.matcher(formatted);
+		while(matcher.find()) { if(ansiSupported) snippet.add(handler.getTimeColor(matcher.group(1))); snippet.add(matcher.group(2)); }
+		if(ansiSupported) snippet.add(handler.getTimeColor(ADDITIONAL_INJECT)); snippet.add("] ");
+		if(ansiSupported) snippet.add(AnsiLogHandler.AnsiColor.DEFAULT.asForeground()); return 0;
+	};
 
 	protected ReferencedCallback.StringReferencedCallback dateCallback;
-	protected ReferencedCallback<AnsiLogHandler.AnsiColor> colorCallback;
-
-	public TimeLogHandler(ReferencedCallback.StringReferencedCallback dateCallback, ReferencedCallback<AnsiLogHandler.AnsiColor> colorCallback) {
+	protected ReferencedCallback<Object> colorCallback;
+	public TimeLogHandler(ReferencedCallback.StringReferencedCallback dateCallback, ReferencedCallback<Object> colorCallback) {
+		super(listener);
 		this.dateCallback = dateCallback;
 		this.colorCallback = colorCallback;
 	}
 	public TimeLogHandler(ReferencedCallback.StringReferencedCallback dateCallback) { this(dateCallback, null); }
-	public TimeLogHandler(ReferencedCallback<AnsiLogHandler.AnsiColor> colorCallback) { this(null, colorCallback); }
-	public TimeLogHandler() { }
-
-	@Override public void manipulateLog(LogRecord record) {
-		boolean coloredSupport = AnsiLogHandler.isAnsiSupport(record.getLogger());
-		StringBuilder builder = Pool.tryBorrow(Pool.getPool(StringBuilder.class));
-		if(coloredSupport) builder.append(AnsiLogHandler.AnsiColor.YELLOW.asForeground().asCommand().toString()); builder.append("[");
-		String formatted = dateCallback != null ? dateCallback.get(this) : TimeUtils.getTime(defaultDatePattern);
-		if(coloredSupport) for(String kind : injectKinds) formatted = formatted.replaceAll(kind, getTimeColor(kind).asForeground().asCommand().toString()); builder.append(formatted);
-		if(coloredSupport) builder.append(AnsiLogHandler.AnsiColor.YELLOW.asForeground().asCommand().toString()); builder.append("]");
-		if(coloredSupport) builder.append(AnsiLogHandler.AnsiAttribute.RESET.asSGRParam().asCommand().toString());
-		record.getArgs().add(0, builder.toString());
-		Pool.returnObject(StringBuilder.class, builder);
-	}
+	public TimeLogHandler(ReferencedCallback<Object> colorCallback) { this(null, colorCallback); }
+	public TimeLogHandler() { super(listener); }
 
 	public ReferencedCallback.StringReferencedCallback getDateCallback() { return dateCallback; }
-	public ReferencedCallback<AnsiLogHandler.AnsiColor> getColorCallback() { return colorCallback; }
+	public ReferencedCallback<Object> getColorCallback() { return colorCallback; }
 	public void setDateCallback(ReferencedCallback.StringReferencedCallback dateCallback) { this.dateCallback = dateCallback; }
-	public void setColorCallback(ReferencedCallback<AnsiLogHandler.AnsiColor> colorCallback) { this.colorCallback = colorCallback; }
+	public void setColorCallback(ReferencedCallback<Object> colorCallback) { this.colorCallback = colorCallback; }
 
-	public AnsiLogHandler.AnsiColor getTimeColor(String kind) {
+	public Object getTimeColor(String kind) {
 		if(colorCallback != null) return colorCallback.get(kind, this);
 		switch(kind) {
 			case ERA_INJECT:

@@ -18,7 +18,7 @@ public class MultipleInputStream extends PipedOutputStream {
 	protected final byte[] buffer;
 	protected volatile boolean reading = false;
 	protected volatile boolean closed = false;
-	
+
 	public MultipleInputStream(InputStream inputStream, int bufferSize) {
 		this.inputStream = inputStream;
 		this.buffer = new byte[bufferSize];
@@ -26,7 +26,7 @@ public class MultipleInputStream extends PipedOutputStream {
 	public MultipleInputStream() {
 		this(null, 1024);
 	}
-	
+
 	public PipedInputStream createInputStream() throws IOException {
 		return new PipedInputStream(this, buffer.length);
 	}
@@ -47,17 +47,17 @@ public class MultipleInputStream extends PipedOutputStream {
 	public void stopReadInputStream() {
 		reading = false;
 	}
-	
+
 	public void write(int b)  throws IOException {
 		for(PipedInputStream sink : sinks) {
 			setField(PipedOutputStream.class, this, "sink", sink);
 			super.write(b);
 		} setField(PipedOutputStream.class, this, "sink", null);
 	}
-	public void write(byte b[], int off, int len) throws IOException {
+	public void write(byte[] bytes, int off, int len) throws IOException {
 		for(PipedInputStream sink : sinks) {
 			setField(PipedOutputStream.class, this, "sink", sink);
-			super.write(b, off, len);
+			super.write(bytes, off, len);
 		} setField(PipedOutputStream.class, this, "sink", null);
     }
 
@@ -78,29 +78,29 @@ public class MultipleInputStream extends PipedOutputStream {
 	public boolean isClosed() {
 		return closed;
 	}
-	
+
 //	@SuppressWarnings("deprecation") //TODO: Java < 9 Support?
-	private static void setField(Class<?> klass, Object obj, String fieldName, Object val) throws IOException { try {
-		Field field = klass.getDeclaredField(fieldName);
+	private static void setField(Class<?> clazz, Object obj, String fieldName, Object val) throws IOException { try {
+		Field field = clazz.getDeclaredField(fieldName);
 		boolean isAccessible = field.isAccessible();
 		field.setAccessible(true);
 		field.set(obj, val);
 		field.setAccessible(isAccessible);
 	} catch (Exception e) { throw new IOException(e); } }
 //	@SuppressWarnings("deprecation") //TODO: Java < 9 Support?
-	private static Object getField(Class<?> klass, Object obj, String fieldName) throws IOException { try {
-		Field field = klass.getDeclaredField(fieldName);
+	private static Object getField(Class<?> clazz, Object obj, String fieldName) throws IOException { try {
+		Field field = clazz.getDeclaredField(fieldName);
 		boolean isAccessible = field.isAccessible();
 		field.setAccessible(true);
 		Object ret = field.get(obj);
 		field.setAccessible(isAccessible);
 		return ret;
 	} catch (Exception e) { throw new IOException(e); } }
-	
+
 	public static boolean isClosed(PipedInputStream inputStream) {
 		try {
-			return ((Boolean) getField(PipedInputStream.class, inputStream, "closedByWriter")).booleanValue() || 
-				   ((Boolean) getField(PipedInputStream.class, inputStream, "closedByReader")).booleanValue();
+			return (Boolean) getField(PipedInputStream.class, inputStream, "closedByWriter") ||
+					(Boolean) getField(PipedInputStream.class, inputStream, "closedByReader");
 		} catch (IOException e) { throw new IllegalStateException(e); }
 	}
 }

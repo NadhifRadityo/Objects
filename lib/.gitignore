@@ -1,0 +1,6 @@
+*
+!*.java*
+!*.class*
+!/*
+crossplatforms.txt
+configurations.xml

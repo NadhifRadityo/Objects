@@ -1,164 +1,105 @@
 package io.github.NadhifRadityo.Objects;
 
-import io.github.NadhifRadityo.Objects.AWTComponent.AnsiSupportedTextArea;
-import io.github.NadhifRadityo.Objects.AWTComponent.ModernScrollPane;
-import io.github.NadhifRadityo.Objects.AWTComponent.PooledObjectMonitor;
 import io.github.NadhifRadityo.Objects.Console.BuiltInHandler.AnsiLogHandler;
+import io.github.NadhifRadityo.Objects.Console.BuiltInHandler.AttributesHandler;
+import io.github.NadhifRadityo.Objects.Console.BuiltInHandler.FormatHandler;
+import io.github.NadhifRadityo.Objects.Console.BuiltInHandler.ImageLogHandler;
+import io.github.NadhifRadityo.Objects.Console.BuiltInHandler.NewLineHandler;
 import io.github.NadhifRadityo.Objects.Console.BuiltInHandler.SeverityLogHandler;
 import io.github.NadhifRadityo.Objects.Console.BuiltInHandler.TimeLogHandler;
 import io.github.NadhifRadityo.Objects.Console.BuiltInListener.SystemOutListener;
 import io.github.NadhifRadityo.Objects.Console.LogLevel;
 import io.github.NadhifRadityo.Objects.Console.Logger;
-import io.github.NadhifRadityo.Objects.IOStream.WriteableInputStream;
 import io.github.NadhifRadityo.Objects.Pool.Pool;
-import io.github.NadhifRadityo.Objects.Thread.Handler;
 import io.github.NadhifRadityo.Objects.Thread.HandlerThread;
 import io.github.NadhifRadityo.Objects.Thread.Looper;
-import io.github.NadhifRadityo.Objects.Utilizations.*;
+import io.github.NadhifRadityo.Objects.Utilizations.ArrayUtils;
+import io.github.NadhifRadityo.Objects.Utilizations.BufferUtils;
+import io.github.NadhifRadityo.Objects.Utilizations.ClassUtils;
+import io.github.NadhifRadityo.Objects.Utilizations.ConsoleUtils;
+import io.github.NadhifRadityo.Objects.Utilizations.ExceptionUtils;
+import io.github.NadhifRadityo.Objects.Utilizations.FontUtils;
+import io.github.NadhifRadityo.Objects.Utilizations.NumberUtils;
+import io.github.NadhifRadityo.Objects.Utilizations.SystemUtils;
+import org.json.JSONObject;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.imageio.ImageIO;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.Rectangle;
+import java.awt.Shape;
+import java.awt.font.GlyphVector;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.lang.management.ManagementFactory;
+import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MainTest {
 
-	public static void main(String... args) throws Exception {
+	public static void main(String... args) throws Throwable {
+		System.setProperty("pool", new JSONObject().put("maxWaitMillis", 100L).put("maxTotal", 10000000).toString());
+		BufferUtils.pointTo(0, 0);
 		Looper.prepareMainLooper();
 		Looper.myLooper().setExceptionHandler(ExceptionUtils.exceptionPrintHandler);
-//		IOStreamWritableInputStreamTest();
-//		ArraysDeepToStringTest();
-//		PoolTest();
 		Logger logger = LoggerTestWrapper.start(args);
-//		PooledObjectMonitorTest();
-		AnsiSupportedTextAreaTest(logger);
+
+		Map<String, TesterGroup> groups = new HashMap<>();
+		for(Class<? extends Tester> clazz : ClassUtils.getClasses("io.github.NadhifRadityo.Objects.TestPrograms", Tester.class)) {
+			if(!clazz.getName().startsWith("io.github.NadhifRadityo.Objects.TestPrograms.InstanceOfTest")) continue;
+			TestProgram testProgram = clazz.getAnnotation(TestProgram.class);
+			boolean enabled = testProgram == null || testProgram.enabled();
+			String group = testProgram != null ? testProgram.group() : "main";
+			int priority = testProgram != null ? testProgram.priority() : 0;
+			if(!enabled) continue;
+			TesterGroup testerGroup = groups.computeIfAbsent(group, (g) -> new TesterGroup(g, false));
+			testerGroup.addTester(clazz.newInstance(), priority);
+		}
+
+		ByteBuffer dump = BufferUtils.createByteBuffer(1024 * 1024 * 20);
+		viewTempBuffer(BufferUtils.__getAddress(dump), 1024 * 5);
+		for(TesterGroup group : groups.values()) group.run(logger, dump);
+		File dumpFile = new File("E:\\Tio\\Eclipse\\WorkSpace\\Projects\\Objects\\src\\test\\resources\\TestDump\\" + new SimpleDateFormat("yyyy_MM_dd HH-mm-ss-SSS").format(new Date()) + ".bin");
+		if(dumpFile.exists() && dumpFile.createNewFile()) throw new Error("Cannot create dump file!");
+		try(FileOutputStream fileOutputStream = new FileOutputStream(dumpFile)) {
+			byte[] bytes = new byte[dump.position()];
+			dump.position(0);
+			dump.get(bytes); fileOutputStream.write(bytes);
+		}
+
 		Looper.loop();
 	}
 
-	@SuppressWarnings("deprecation")
-	public static void IOStreamWritableInputStreamTest() {
-		WriteableInputStream writeableInputStream = new WriteableInputStream();
-		HandlerThread handlerThread = new HandlerThread("Test");
-		handlerThread.start();
-		handlerThread.getThreadHandler().postThrowable(() -> {
-			int count; byte[] buffer = new byte[1024];
-			while((count = writeableInputStream.read(buffer, 0, buffer.length)) != -1) {
-				System.out.println(buffer.length + " ? " + count);
-				System.out.println(new String(buffer, 0, count));
-			} System.out.println("Exited"); handlerThread.stop();
-		});
+	public static void viewTempBuffer(long address, int samples) { ExceptionUtils.doSilentThrowsRunnable(true, () -> {
+		System.out.println("Connecting to memory server!");
+//		Native.load("kernel32", Kernel32.class);
+		JSONObject data = new JSONObject();
+		data.put("pid", Integer.parseInt(ManagementFactory.getRuntimeMXBean().getName().replaceAll("(@[a-zA-Z]+)", "")));
+		data.put("address", address);
+		data.put("delay", 50);
+		data.put("samples", samples);
+		System.out.println("Data: " + data);
 
-		Handler.getMain().postThrowable(() -> {
-			int count; byte[] buffer = new byte[1024 * 1024];
-			while((count = System.in.read(buffer, 0, buffer.length)) != -1) {
-				String line = new String(buffer, 0, count - 2);
-				if(line.equalsIgnoreCase("exit")) { writeableInputStream.close(); break;
-				} else writeableInputStream.write(line.getBytes());
-			}
-		});
-	}
-
-	public static void ArraysDeepToStringTest() {
-		Object[] object = new Object[] {
-				new int[] {
-						27, 17, 7, 3
-				},
-				new String[] {
-						"twenty seven",
-						"seven teen",
-						"three",
-						null
-				},
-				new long[][] {
-						new long[] {
-								System.currentTimeMillis(),
-								System.currentTimeMillis() - PublicRandom.getRandom().nextLong()
-						},
-						new long[] {
-								System.currentTimeMillis() - PublicRandom.getRandom().nextLong(),
-								System.currentTimeMillis() - PublicRandom.getRandom().nextLong()
-						},
-						null
-				},
-				new short[][] {
-						null,
-						null,
-						new short[] {
-								((Integer) PublicRandom.getRandom().nextInt()).shortValue(),
-								((Integer) PublicRandom.getRandom().nextInt()).shortValue()
-						}
-				},
-				new boolean[][][] {
-						new boolean[][] {
-								new boolean[] {
-										false, true
-								},
-								null,
-								new boolean[] {
-										false
-								}
-						},
-						null
-				},
-				new Object[][] {
-						new Object[] {
-								null,
-								"WOY",
-								((Integer) PublicRandom.getRandom().nextInt()).shortValue(),
-								System.currentTimeMillis() - PublicRandom.getRandom().nextLong(),
-								new RandomString().toString()
-						}
-				},
-				new StringBuilder("deep to string test")
-		};
-
-		String result = ArrayUtils.deepToString(object);
-		long start = System.currentTimeMillis();
-		for(int i = 0; i < 20000; i++) ArrayUtils.deepToString(object);
-		System.out.println("20000 Repetitions -> Took: " + (System.currentTimeMillis() - start) + "ms");
-		// Not the best
-		// 20000 Repetitions -> Took: 1106ms
-		System.out.println(result);
-	}
-
-	public static void PoolTest() {
-		long start;
-		long delta;
-		int sessions = 100;
-		int repetitions = 50000;
-
-		long nonThreadMax = Long.MIN_VALUE;
-		long nonThreadMin = Long.MAX_VALUE;
-
-		for(int j = 0; j < sessions; j++) {
-			System.out.println("------- Starting New Session -------");
-
-			start = System.currentTimeMillis();
-			for(int i = 0; i < repetitions; i++) Pool.returnObject(ArrayList.class, Pool.tryBorrow(Pool.getPool(ArrayList.class)));
-			delta = System.currentTimeMillis() - start; nonThreadMax = Math.max(delta, nonThreadMax); nonThreadMin = Math.min(delta, nonThreadMin);
-			System.out.println("ArrayList, Non Threading, " + repetitions + " Repetitions -> Took: " + delta + "ms");
-
-			start = System.currentTimeMillis();
-			for(int i = 0; i < repetitions; i++) Pool.returnObject(HashMap.class, Pool.tryBorrow(Pool.getPool(HashMap.class)));
-			delta = System.currentTimeMillis() - start; nonThreadMax = Math.max(delta, nonThreadMax); nonThreadMin = Math.min(delta, nonThreadMin);
-			System.out.println("HashMap, Non Threading, " + repetitions + " Repetitions -> Took: " + delta + "ms");
-
-			start = System.currentTimeMillis();
-			for(int i = 0; i < repetitions; i++) Pool.returnObject(StringBuilder.class, Pool.tryBorrow(Pool.getPool(StringBuilder.class)));
-			delta = System.currentTimeMillis() - start; nonThreadMax = Math.max(delta, nonThreadMax); nonThreadMin = Math.min(delta, nonThreadMin);
-			System.out.println("StringBuilder, Non Threading, " + repetitions + " Repetitions -> Took: " + delta + "ms");
-
-			System.out.println("------------------------------------\n");
-		}
-		System.out.println("DONE! (Non Threading)");
-		System.out.println("Max -> " + nonThreadMax + "ms");
-		System.out.println("Min -> " + nonThreadMin + "ms");
-		// Not bad (100 sessions, 50000 repetitions)
-		// Max -> 1609ms
-		// Min -> 15ms
-	}
+		Socket socket = new Socket("127.0.0.1", 8888);
+		BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+		writer.write(data.toString()); writer.flush();
+		socket.getOutputStream().flush(); socket.close();
+	}); }
 
 	public static class LoggerTestWrapper {
 		public static Logger start(String... args) {
@@ -167,7 +108,10 @@ public class MainTest {
 			logger.addHandler(new AnsiLogHandler(), AnsiLogHandler.DEFAULT_PRIORITY);
 			logger.addHandler(new TimeLogHandler(), TimeLogHandler.DEFAULT_PRIORITY);
 			logger.addHandler(new SeverityLogHandler(), SeverityLogHandler.DEFAULT_PRIORITY);
-			logger.addListener(new SystemOutListener());
+			logger.addHandler(new NewLineHandler(), NewLineHandler.DEFAULT_PRIORITY);
+			logger.addHandler(new FormatHandler(), FormatHandler.DEFAULT_PRIORITY);
+			logger.addHandler(new ImageLogHandler(), ImageLogHandler.DEFAULT_PRIORITY);
+			logger.addListener(new SystemOutListener(Integer.MAX_VALUE, Integer.MAX_VALUE));
 
 			logger.log("HELLO WORLD!");
 			HandlerThread handlerThread = new HandlerThread("System In");
@@ -183,6 +127,19 @@ public class MainTest {
 					else if(line.toLowerCase().startsWith("error")) { level = LogLevel.ERROR; line = line.substring(5); }
 					if(line.toLowerCase().startsWith("test")) { test(logger, level, line.substring(4)); continue; }
 					if(line.equalsIgnoreCase("checkAliasDuplicate")) line = testDefAliasCharsDuplicate() + "";
+					if(line.equalsIgnoreCase("clear")) { logger.doLog(level, FormatHandler.SUBSTRING_START, AnsiLogHandler.AnsiCommand.CSICommand.CURSOR_POSITION, AnsiLogHandler.AnsiCommand.CSICommand.ERASE_DISPLAY.asCommand().add(2), FormatHandler.SUBSTRING_END, FormatHandler.NEW_LINE_ENABLED, AttributesHandler.OFF); continue; }
+					if(line.equals("dsr")) { logger.doLog(level, FormatHandler.SUBSTRING_START, AnsiLogHandler.AnsiCommand.CSICommand.DEVICE_STATUS_REPORT, FormatHandler.SUBSTRING_END); continue; }
+					if(line.equals("animation")) { printProgressAnimation(logger, 10); continue; }
+					if(line.equals("size")) { int[] size = new int[2]; ConsoleUtils.getConsoleSize(size); logger.doLog(level, "Methods available: ", ConsoleUtils.GET_CONSOLE_SIZE_POSSIBLE, " ", ArrayUtils.deepToString(size)); continue; }
+					if(line.startsWith("image")) {
+						String defaultImg = SystemUtils.IS_OS_WINDOWS ? "C:\\Users\\Nadhif Radityo\\Pictures\\Disloyal_man_with_his_euler_angles_looking_at_quaternion.jpg" :
+								SystemUtils.IS_OS_UNIX ? "/mnt/c/Users/Nadhif Radityo/Pictures/Disloyal_man_with_his_euler_angles_looking_at_quaternion.jpg" : null;
+						line = line.substring(5);
+						Pattern pattern = Pattern.compile("[^ ]+");
+						Matcher matcher = pattern.matcher(line);
+						String path = matcher.find() ? matcher.group(0) : defaultImg;
+						drawImage(new File(path), logger);
+					}
 					logger.doLog(level, line);
 				} reader.close();
 			});
@@ -190,27 +147,27 @@ public class MainTest {
 		}
 		public static void test(Logger logger, LogLevel level, String testText) {
 			for(AnsiLogHandler.AnsiColor background : AnsiLogHandler.AnsiColor.values()) {
-				String backgroundCommand = background.asBackground().asCommand().toString();
+				AnsiLogHandler.CSISGRParameter backgroundCommand = background.asBackground();
 				for(AnsiLogHandler.AnsiColor foreground : AnsiLogHandler.AnsiColor.values()) {
-					String foregroundCommand = foreground.asForeground().asCommand().toString();
-					logger.doLog(level, backgroundCommand + foregroundCommand + testText);
+					AnsiLogHandler.CSISGRParameter foregroundCommand = foreground.asForeground();
+					logger.doLog(level, backgroundCommand, foregroundCommand, testText);
 				}
 				for(AnsiLogHandler.AnsiColor foreground : AnsiLogHandler.AnsiColor.values()) {
 					if(foreground == AnsiLogHandler.AnsiColor.DEFAULT) continue;
-					String foregroundCommand = foreground.asForegroundBrighter().asCommand().toString();
-					logger.doLog(level, backgroundCommand + foregroundCommand + testText);
+					AnsiLogHandler.CSISGRParameter foregroundCommand = foreground.asForegroundBrighter();
+					logger.doLog(level, backgroundCommand, foregroundCommand, testText);
 				}
 
 				if(background == AnsiLogHandler.AnsiColor.DEFAULT) continue;
-				backgroundCommand = background.asBackgroundBrighter().asCommand().toString();
+				backgroundCommand = background.asBackgroundBrighter();
 				for(AnsiLogHandler.AnsiColor foreground : AnsiLogHandler.AnsiColor.values()) {
-					String foregroundCommand = foreground.asForeground().asCommand().toString();
-					logger.doLog(level, backgroundCommand + foregroundCommand + testText);
+					AnsiLogHandler.CSISGRParameter foregroundCommand = foreground.asForeground();
+					logger.doLog(level, backgroundCommand, foregroundCommand, testText);
 				}
 				for(AnsiLogHandler.AnsiColor foreground : AnsiLogHandler.AnsiColor.values()) {
 					if(foreground == AnsiLogHandler.AnsiColor.DEFAULT) continue;
-					String foregroundCommand = foreground.asForegroundBrighter().asCommand().toString();
-					logger.doLog(level, backgroundCommand + foregroundCommand + testText);
+					AnsiLogHandler.CSISGRParameter foregroundCommand = foreground.asForegroundBrighter();
+					logger.doLog(level, backgroundCommand, foregroundCommand, testText);
 				}
 			}
 		}
@@ -221,35 +178,62 @@ public class MainTest {
 				list.add(aliasChar.hashCode());
 			} return false; } finally { Pool.returnObject(ArrayList.class, list); }
 		}
-	}
 
-	public static void PooledObjectMonitorTest() throws Exception {
-		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		JFrame frame = new JFrame();
+		public static void printProgressAnimation(Logger logger, int maxLoop) {
+			int loop = 0;
+			int increment = 1;
+			long total = 235;
+			long startTime = System.currentTimeMillis();
+			for(int i = 1; i <= total; i += 3 * increment) { try {
+				if(i < 1 || i + 3 > total) { increment *= -1; if(loop > maxLoop) break; loop++; continue; }
+				Thread.sleep(50); printProgress(logger, startTime, total, i, 48);
+			} catch(InterruptedException ignored) { } }
+			logger.log(FormatHandler.SUBSTRING_START, FormatHandler.SUBSTRING_END);
+		}
+		public static void printProgress(Logger logger, long startTime, long total, long current, int width) {
+			long eta = current == 0 ? 0 : (total - current) * (System.currentTimeMillis() - startTime) / current;
+			String etaHms = current == 0 ? "N/A" : String.format("%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(eta),
+					TimeUnit.MILLISECONDS.toMinutes(eta) % TimeUnit.HOURS.toMinutes(1),
+					TimeUnit.MILLISECONDS.toSeconds(eta) % TimeUnit.MINUTES.toSeconds(1));
 
-		PooledObjectMonitor.getMainPooledObjectMonitor().setSize(DimensionUtils.getMaxDimension());
-		PooledObjectMonitor.getMainPooledObjectMonitor().setPreferredSize(DimensionUtils.getMaxDimension());
-		Component[] components = PooledObjectMonitor.getMainPooledObjectMonitor().getComponents();
-		for(Component component : components) {
-			component.setSize(DimensionUtils.getMaxDimension());
-			component.setPreferredSize(DimensionUtils.getMaxDimension());
-		} frame.getContentPane().add(PooledObjectMonitor.getMainPooledObjectMonitor());
+			StringBuilder string = new StringBuilder(width);
+			int percent = (int) (current * 100 / total);
+			width -= 7 + 1 + 1 + 1 + Math.log10(total) * 2 + 1 + 7 + etaHms.length();
+			int progressWidth = NumberUtils.map(percent, 0, 100, 0, width);
+			string
+					.append('\r')
+					.append(String.join("", Collections.nCopies(percent == 0 ? 2 : 2 - (int) (Math.log10(percent)), " ")))
+					.append(String.format(" %d%% [", percent))
+					.append(String.join("", Collections.nCopies(progressWidth, "=")))
+					.append('>')
+					.append(String.join("", Collections.nCopies(width - progressWidth, " ")))
+					.append(']')
+					.append(String.join("", Collections.nCopies((int) (Math.log10(total)) - (int) (Math.log10(current)), " ")))
+					.append(String.format(" %d/%d, ETA: %s", current, total, etaHms));
 
-		Handler handler = Handler.getMain();
-		handler.post(() -> frame.setVisible(true));
-		PooledObjectMonitor.setUpdateHandler(handler);
-	}
+//			System.out.print(string);
+//			logger.log(AnsiLogHandler.AnsiCommand.CSICommand.CURSOR_POSITION, string, FormatHandler.NO_NEW_LINE, "\n", AnsiLogHandler.AnsiCommand.CSICommand.CURSOR_POSITION.asCommand().add(2).add(1), string, FormatHandler.NO_NEW_LINE);
+			logger.log(string, FormatHandler.NEW_LINE_ENABLED, AttributesHandler.OFF);
+		}
 
-	public static void AnsiSupportedTextAreaTest(Logger logger) throws Exception {
-		UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-		JFrame frame = new JFrame();
+		public static void drawImage(File file, Logger logger) throws IOException {
+			BufferedImage image2 = ImageIO.read(file);
+//			BufferedImage image = new BufferedImage(128, 64, BufferedImage.TYPE_INT_ARGB);
+			double target = 512;
+			double scale = Math.min(target / image2.getWidth(), target / image2.getHeight());
 
-		AnsiSupportedTextArea ansiSupportedTextArea = new AnsiSupportedTextArea();
-		ModernScrollPane scrollPane = new ModernScrollPane(ansiSupportedTextArea);
-		scrollPane.setSize(DimensionUtils.getMaxDimension());
-		scrollPane.setPreferredSize(DimensionUtils.getMaxDimension());
-		frame.getContentPane().add(scrollPane);
-		Handler.getMain().post(() -> frame.setVisible(true));
-		logger.addListener(record -> ansiSupportedTextArea.append(record.asString()));
+			Font font = new Font("Fira Code", Font.PLAIN, 12);
+			GlyphVector vector = FontUtils.getVector(font, (Graphics2D) image2.getGraphics(), "█");
+			Shape shape = vector.getGlyphOutline(0);
+			Rectangle bounds = shape.getBounds();
+
+			BufferedImage image = new BufferedImage((int) (image2.getWidth() * scale), (int) (image2.getHeight() * scale * (double) bounds.width / bounds.height), BufferedImage.TYPE_INT_ARGB);
+			Graphics2D graphics = image.createGraphics();
+//			graphics.setColor(new Color(128, 255, 128, 255 / 5));
+//			graphics.fillRect(0, 0, image.getWidth(), image.getHeight());
+			graphics.drawImage(image2, 0, 0, image.getWidth(), image.getHeight(), null);
+			if(SystemUtils.IS_OS_UNIX) logger.log(FormatHandler.SUBSTRING_START, NewLineHandler.ENABLED, AttributesHandler.OFF, ImageLogHandler.FIT_IMAGE_ENABLED, AttributesHandler.ON, image, FormatHandler.SUBSTRING_END);
+			else logger.log(ImageLogHandler.FIT_IMAGE_ENABLED, AttributesHandler.OFF, image);
+		}
 	}
 }

@@ -1,49 +1,70 @@
 package io.github.NadhifRadityo.Objects.Thread;
 
-import io.github.NadhifRadityo.Objects.Object.IdObject;
-import io.github.NadhifRadityo.Objects.Utilizations.IdObjectUtils;
-import org.apache.commons.lang3.builder.ToStringBuilder;
+public abstract class RunnablePost {
+	protected boolean done;
+	protected boolean cancelled;
+	protected boolean fixedRate;
+	protected long period;
 
-import java.util.Objects;
-
-public abstract class RunnablePost implements IdObject {
-	protected final long id = IdObjectUtils.getNewId(RunnablePost.class);
-	protected String title;
-	protected String subject;
-	
-	public RunnablePost(String title, String subject) {
-		this.title = title;
-		this.subject = subject;
+	public RunnablePost(boolean fixedRate, long period) {
+		this.fixedRate = fixedRate;
+		this.period = period;
 	}
-	
-	@Override public long getId() { return id; }
-	public String getTitle() { return title == null ? getClass().getCanonicalName() : title; }
-	public String getSubject() { return subject; }
-	
-	public void setTitle(String title) { this.title = title; }
-	public void setSubject(String subject) { this.subject = subject; }
-	
+	public RunnablePost() {
+		this(false, 0);
+	}
+
+	public boolean isDone() { return done; }
+	public boolean isCancelled() { return cancelled; }
+	public boolean getFixedRate() { return fixedRate; }
+	public long getPeriod() { return period; }
+
+	public void setCancelled() { this.cancelled = true; }
+	public void setFixedRate(boolean fixedRate) { this.fixedRate = fixedRate; }
+	public void setPeriod(long period) { this.period = period; }
+
 	public abstract void work() throws Exception;
 	public abstract void stop() throws Exception;
 
 	@Override
-	public boolean equals(final Object other) {
-		if (this == other)
-			return true;
-		if (other == null)
-			return false;
-		if (!getClass().equals(other.getClass()))
-			return false;
-		RunnablePost castOther = (RunnablePost) other;
-		return Objects.equals(id, castOther.id) && Objects.equals(title, castOther.title)
-				&& Objects.equals(subject, castOther.subject);
-	}
-	@Override
-	public int hashCode() {
-		return Objects.hash(id, title, subject);
-	}
-	@Override
 	public String toString() {
-		return new ToStringBuilder(this).append("id", id).append("title", title).append("subject", subject).toString();
+		return "RunnablePost{" +
+				"done=" + done +
+				", cancelled=" + cancelled +
+				", fixedRate=" + fixedRate +
+				", period=" + period +
+				"} (" + Integer.toHexString(System.identityHashCode(this)) + ")";
+	}
+
+	public static abstract class IdentifiedRunnablePost extends RunnablePost {
+		protected String title;
+		protected String subject;
+
+		public IdentifiedRunnablePost(boolean fixedRate, long period, String title, String subject) {
+			super(fixedRate, period);
+			this.title = title;
+			this.subject = subject;
+		}
+		public IdentifiedRunnablePost(String title, String subject) {
+			this(false, 0, title, subject);
+		}
+
+		public String getTitle() { return title == null ? getClass().getCanonicalName() : title; }
+		public String getSubject() { return subject; }
+
+		public void setTitle(String title) { this.title = title; }
+		public void setSubject(String subject) { this.subject = subject; }
+
+		@Override
+		public String toString() {
+			return "IdentifiedRunnablePost(" +
+					"done=" + done +
+					", cancelled=" + cancelled +
+					", fixedRate=" + fixedRate +
+					", period=" + period +
+					", title='" + title + '\'' +
+					", subject='" + subject + '\'' +
+					"} (" + Integer.toHexString(System.identityHashCode(this)) + ")";
+		}
 	}
 }

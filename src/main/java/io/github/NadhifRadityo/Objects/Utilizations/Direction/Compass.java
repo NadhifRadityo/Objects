@@ -1,7 +1,7 @@
 package io.github.NadhifRadityo.Objects.Utilizations.Direction;
 
 public enum Compass {
-	// Is'nt that sick?!
+	// Isn't that sick?!
 					 NORTH, 
 		NORTH_WEST,			 NORTH_EAST, 
 								

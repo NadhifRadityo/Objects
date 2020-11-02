@@ -1,0 +1,6 @@
+/src/main/resources/opencl/
+/src/main/resources/opengl/
+/target/classes/opencl/
+/target/classes/opengl/
+/backupsrc/
+notes.txt

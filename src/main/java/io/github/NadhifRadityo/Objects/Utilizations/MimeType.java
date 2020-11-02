@@ -481,14 +481,14 @@ public enum MimeType {
 	zmt("chemical/x-mopac-input"),
 	undefined("application/octet-stream");
 
-	private String contentType;
+	protected String contentType;
 	MimeType(String contentType) { this.contentType = contentType; }
-	public String getContentType() { return this.contentType; }
 
+	public String getContentType() { return this.contentType; }
 	public static MimeType getByExtension(String extension) {
-		if (extension == null) return null;
-		for (MimeType mt : MimeType.values())
-			if (mt.name().equalsIgnoreCase(extension)) return mt;
+		if(extension == null) return null;
+		for(MimeType mt : MimeType.values())
+			if(mt.name().equalsIgnoreCase(extension)) return mt;
 		return null;
 	}
 	public static MimeType getByContentType(String contentType) {

@@ -1,0 +1,39 @@
+<project name="Library" basedir="../">
+	<property name="current" value="${basedir}/lib"/>
+	<target name="configure">
+		<javac includes="Library.java" includeantruntime="true" srcdir="${current}" destdir="${current}"/>
+		<java fork="true" dir="${current}" classname="Library">
+			<arg value="configure"/>
+			<arg value="${current}"/>
+			<arg value="${additional}"/>
+			<arg value="${targetLibraries}"/>
+		</java>
+	</target>
+	<target name="download">
+		<javac includes="Library.java" includeantruntime="true" srcdir="${current}" destdir="${current}"/>
+		<java fork="true" dir="${current}" classname="Library">
+			<arg value="download"/>
+			<arg value="${current}"/>
+			<arg value="${additional}"/>
+			<arg value="${targetLibraries}"/>
+		</java>
+	</target>
+	<target name="build">
+		<javac includes="Library.java" includeantruntime="true" srcdir="${current}" destdir="${current}"/>
+		<java fork="true" dir="${current}" classname="Library">
+			<arg value="build"/>
+			<arg value="${current}"/>
+			<arg value="${additional}"/>
+			<arg value="${targetLibraries}"/>
+		</java>
+	</target>
+	<target name="clean">
+		<javac includes="Library.java" includeantruntime="true" srcdir="${current}" destdir="${current}"/>
+		<java fork="true" dir="${current}" classname="Library">
+			<arg value="clean"/>
+			<arg value="${current}"/>
+			<arg value="${additional}"/>
+			<arg value="${targetLibraries}"/>
+		</java>
+	</target>
+</project>

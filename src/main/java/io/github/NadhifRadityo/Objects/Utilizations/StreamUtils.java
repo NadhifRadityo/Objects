@@ -1,24 +1,29 @@
 package io.github.NadhifRadityo.Objects.Utilizations;
 
-import io.github.NadhifRadityo.Objects.Pool.Pool;
-
-import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.lang.ref.WeakReference;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-public final class StreamUtils {
-	private StreamUtils() {
-		
+public class StreamUtils {
+	public static final byte[] EOF = new byte[0];
+	protected static final ThreadLocal<WeakReference<ByteArrayOutputStream>> tempBuffer = new ThreadLocal<>();
+
+	protected static ByteArrayOutputStream getTempBuffer() {
+		ByteArrayOutputStream result = tempBuffer.get() == null || tempBuffer.get().get() == null ? null : tempBuffer.get().get();
+		if(result == null) { result = new ByteArrayOutputStream(); tempBuffer.set(new WeakReference<>(result)); } return result;
 	}
-	
-	public static String toString(InputStream inputStream) throws IOException {
-		StringBuilder stringBuilder = Pool.tryBorrow(Pool.getPool(StringBuilder.class));
-		try (BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
-			String inputLine; while((inputLine = bufferedReader.readLine()) != null)
-				stringBuilder.append(inputLine); bufferedReader.close();
-			return stringBuilder.toString();
-		} finally { Pool.returnObject(StringBuilder.class, stringBuilder); }
-	}
+
+	public static byte[] getBytes(InputStream inputStream) throws IOException {
+		ByteArrayOutputStream result = getTempBuffer();
+		byte[] buffer = ArrayUtils.getTempByteArray(8192); int length; try {
+		while((length = inputStream.read(buffer)) != -1)
+			result.write(buffer, 0, length);
+		result.close(); return result.toByteArray();
+	} finally { result.reset(); } }
+
+	public static String toString(InputStream inputStream, Charset charset) throws IOException { return new String(getBytes(inputStream), charset); }
+	@Deprecated public static String toString(InputStream inputStream) throws IOException { return toString(inputStream, StandardCharsets.UTF_8); }
 }

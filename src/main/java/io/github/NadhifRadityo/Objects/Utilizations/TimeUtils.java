@@ -3,7 +3,7 @@ package io.github.NadhifRadityo.Objects.Utilizations;
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
 
-public final class TimeUtils {
+public class TimeUtils {
 	private TimeUtils() {
 		
 	}

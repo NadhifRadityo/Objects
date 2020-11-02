@@ -1,106 +1,130 @@
 package io.github.NadhifRadityo.Objects.List;
 
-import io.github.NadhifRadityo.Objects.Exception.ThrowsRunnable;
+import io.github.NadhifRadityo.Objects.Object.Comparator;
 import io.github.NadhifRadityo.Objects.Object.DeadableObject;
-import io.github.NadhifRadityo.Objects.Utilizations.ExceptionUtils;
+import io.github.NadhifRadityo.Objects.Utilizations.Algorithms.Sorting.Sorting;
+import io.github.NadhifRadityo.Objects.Utilizations.MapUtils;
+import io.github.NadhifRadityo.Objects.Utilizations.NumberUtils;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Spliterator;
 import java.util.function.Consumer;
 
 public class QueueList<E> implements DeadableObject, Iterable<E> {
+	protected static final Comparator<Map.Entry<Object, Long>> FROM_LATEST = Comparator.reverse(java.util.Comparator.comparingLong(Map.Entry::getValue));
+	protected static final Comparator<Map.Entry<Object, Long>> FROM_OLDEST = Comparator.natural(java.util.Comparator.comparingLong(Map.Entry::getValue));
+
 	protected final Map<E, Long> map;
-	protected final boolean deadAllowed;
-	protected volatile boolean dead = false;
+	protected final boolean isDeadAllowed;
+	private volatile boolean isDead = false;
 	private volatile boolean isWaiting = false;
-	
-	public QueueList(boolean deadAllowed) {
-		this.map = Collections.synchronizedMap(new HashMap<>());
-		this.deadAllowed = deadAllowed;
-	} public QueueList() { this(true); }
-	
-	@Override public boolean isDead() { return dead; }
+	private volatile boolean isChanged = true;
+	private volatile boolean lastFromOldest = false;
+
+	public QueueList(boolean isDeadAllowed) {
+		this.map = Collections.synchronizedMap(new LinkedHashMap<>());
+		this.isDeadAllowed = isDeadAllowed;
+	}
+	public QueueList() { this(true); }
+
+	@Override public boolean isDead() { return isDead; }
 	@Override public void setDead() { quit(); }
-	
+	public Map.Entry<E, Long>[] getMap() { return map.entrySet().toArray(new Map.Entry[0]); }
+
 	public synchronized Long add(E e) { return add(e, System.currentTimeMillis()); }
 	public synchronized Long add(E e, long returnAt) {
-		assertDead();
+		assertNotDead();
 		final Long returnVal = map.put(e, returnAt);
+		isChanged = true;
 		notifyAll();
 		return returnVal;
 	}
 	public synchronized void addAll(Map<? extends E, ? extends Long> m) {
-		assertDead();
+		assertNotDead();
 		map.putAll(m);
+		isChanged = true;
 		notifyAll();
 	}
 	public synchronized Long addIfAbsent(E obj) {
 		return addIfAbsent(obj, System.currentTimeMillis());
 	}
 	public synchronized Long addIfAbsent(E obj, long returnAt) {
-		assertDead();
+		assertNotDead();
 		final Long returnVal = map.putIfAbsent(obj, returnAt);
+		isChanged = true;
 		notifyAll();
 		return returnVal;
 	}
-	
+
 	public synchronized Long remove(E o) {
-		assertDead();
+		assertNotDead();
 		final Long returnVal = map.remove(o);
 		notifyAll();
 		return returnVal;
 	}
 	public synchronized boolean remove(E obj, long returnAt) {
-		assertDead();
+		assertNotDead();
 		final boolean returnVal = map.remove(obj, returnAt);
 		notifyAll();
 		return returnVal;
 	}
-	
-	private synchronized Entry<E, Long> getSoonestEntry() {
-		Entry<E, Long> result = null;
-		for(Entry<E, Long> entry : map.entrySet()) {
-			if(result != null && entry.getValue() >= result.getValue()) continue;
-			result = entry;
-		} return result;
+
+	private synchronized Entry<E, Long> getSortedEntry(boolean fromOldest) {
+		if((isChanged || lastFromOldest != fromOldest) && map.size() > 1) {
+			// Suspected as nearly sorted array
+			lastFromOldest = fromOldest;
+			if(fromOldest) Sorting.INSERTION_SORT.sort(map, FROM_OLDEST);
+			else Sorting.SHELL_SORT.sort(map, FROM_LATEST);
+			isChanged = false;
+		} return MapUtils.getHead((LinkedHashMap<E, Long>) MapUtils.getSourceMap(map));
 	}
-	public synchronized E get() {
-		if(map.size() == 0) assertDead();
-		while(map.size() == 0) { isWaiting = true;
-			ExceptionUtils.doSilentException(false, (ThrowsRunnable) this::wait);
-		} isWaiting = false;
-		
-		Entry<E, Long> value = getSoonestEntry(); long now;
-		while(value.getValue() > (now = System.currentTimeMillis())) {
-			try { wait(value.getValue() - now); } catch(InterruptedException ignored) { }
-			value = getSoonestEntry(); if(value == null) return get();
+	private synchronized Entry<E, Long> get0(boolean fromOldest) {
+		Entry<E, Long> value = null;
+		while(value == null) {
+			while(map.size() == 0) { isWaiting = true;
+				try { wait(); } catch (InterruptedException ignored) { }
+			} isWaiting = false;
+			value = getSortedEntry(fromOldest);
+		} return value;
+	}
+	public synchronized E get(boolean fromOldest) {
+		if(map.size() == 0) assertNotDead();
+		Entry<E, Long> value = get0(fromOldest);
+		long scheduled; long now;
+		while((scheduled = NumberUtils.primitive(value.getValue(), 0L)) > (now = System.currentTimeMillis())) {
+			try { wait(scheduled - now); } catch(InterruptedException ignored) { } value = get0(fromOldest);
 		} map.remove(value.getKey()); return value.getKey();
-	}
-	public synchronized Map<E, Long> values() { return Collections.unmodifiableMap(map); }
-	
+	} public synchronized E get() { return get(true); }
+
 	public synchronized int size() {
-		assertDead();
+		assertNotDead();
 		return map.size();
-	}	
+	}
 	public synchronized boolean isWaiting() {
-		assertDead();
+		assertNotDead();
 		return isWaiting;
 	}
 	public synchronized boolean contains(E o) {
-		assertDead();
+		assertNotDead();
 		return map.containsKey(o);
 	}
 	public synchronized boolean containsReturnAt(long returnAt) {
-		assertDead();
+		assertNotDead();
 		return map.containsValue(returnAt);
 	}
-	
+	public void clear() { map.clear(); }
+	public boolean isEmpty() { return map.isEmpty(); }
+
 	public synchronized void quit() {
-		if(!deadAllowed) throw new IllegalStateException("Not allowed to dead.");
-		if(dead) return;
+		if(!isDeadAllowed) throw new IllegalStateException("Not allowed to dead.");
+		if(isDead) return;
 		map.put(null, Long.MIN_VALUE);
 		notifyAll();
-		this.dead = true;
+		this.isDead = true;
 	}
 
 	@Override public Iterator<E> iterator() { return map.keySet().iterator(); }

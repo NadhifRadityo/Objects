@@ -1,8 +1,8 @@
 package io.github.NadhifRadityo.Objects.Pool;
 
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import io.github.NadhifRadityo.Objects.Pool.Impl.BasePoolConfig;
 
-public class PoolConfig extends GenericObjectPoolConfig {
-	
-	@Override public PoolConfig clone() { return (PoolConfig) super.clone(); }
+@SuppressWarnings({"jol"})
+public class PoolConfig<T> extends BasePoolConfig<T, PooledObject<T>> {
+
 }
