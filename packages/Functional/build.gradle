@@ -1,0 +1,22 @@
+plugins {
+    id 'java'
+}
+
+apply from: '../../common.gradle'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    CONFIG['LIBRARY_DEFAULT'].each { implementation it }
+    CONFIG['LIBRARY_JNA'].each { implementation it }
+    CONFIG['LIBRARY_ECLIPSE_COLLECTION'].each { implementation it }
+
+    testImplementation CONFIG['TESTLIBRARY_IMPLEMENTATION']
+    testRuntimeOnly CONFIG['TESTLIBRARY_RUNTIME']
+}
+
+test {
+    useJUnitPlatform()
+}

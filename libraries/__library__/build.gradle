@@ -1,0 +1,22 @@
+plugins {
+    id 'java'
+}
+
+apply from: '../../common.gradle'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'commons-cli:commons-cli:1.4'
+    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'org.jsoup:jsoup:1.14.1'
+
+    testImplementation CONFIG['TESTLIBRARY_IMPLEMENTATION']
+    testRuntimeOnly CONFIG['TESTLIBRARY_RUNTIME']
+}
+
+test {
+    useJUnitPlatform()
+}

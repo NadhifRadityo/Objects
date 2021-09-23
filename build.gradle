@@ -1,0 +1,20 @@
+plugins {
+    id 'java'
+}
+
+apply from: 'common.gradle'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project(':packages:Functional')
+
+    testImplementation CONFIG['TESTLIBRARY_IMPLEMENTATION']
+    testRuntimeOnly CONFIG['TESTLIBRARY_RUNTIME']
+}
+
+test {
+    useJUnitPlatform()
+}
