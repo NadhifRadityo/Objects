@@ -21,13 +21,14 @@ public class StreamUtils {
 	@groovy.transform.ThreadInterrupt
 	public static void copy(InputStream inputStream, OutputStream outputStream, Consumer<Long> progress) throws IOException {
 		byte[] buffer = getTempByteArray(COPY_CACHE_SIZE);
-		if(progress != null) progress.accept(0L);
+		if(progress != null) progress.accept(-1L);
 		long length = 0; int read;
 		while(!Thread.currentThread().isInterrupted() &&
 				(read = inputStream.read(buffer, 0, buffer.length)) != -1) {
 			outputStream.write(buffer, 0, read); length += read;
 			if(progress != null) progress.accept(length);
 		}
+		if(progress != null) progress.accept(-2L);
 		if(Thread.currentThread().isInterrupted())
 			throw new InterruptedIOException();
 	}

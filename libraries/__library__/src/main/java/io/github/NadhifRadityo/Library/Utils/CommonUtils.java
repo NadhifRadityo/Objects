@@ -17,6 +17,9 @@ import java.util.function.Consumer;
 
 import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.debug;
 import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.info;
+import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progressDo;
+import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progressEnd;
+import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progressStart;
 import static io.github.NadhifRadityo.Library.Utils.StreamUtils.copy;
 
 public class CommonUtils {
@@ -61,12 +64,19 @@ public class CommonUtils {
 			long[] speeds = null;
 			int speedsIndex = 0;
 			public void accept(Long length) {
-				if(speeds == null) {
+				if(length == -1) {
 					startTime = System.currentTimeMillis();
 					lastTime = System.currentTimeMillis();
 					speeds = new long[30];
 					Arrays.fill(speeds, -1L);
+					progressStart(speeds, "Downloading file", "0%");
+					return;
 				}
+				if(length == -2) {
+					progressEnd(speeds);
+					return;
+				}
+				progressDo(speeds, String.format("%.2f%%", length * 100.0f / (float) totalSize));
 				float alpha = 0.9f;
 
 				long now = System.currentTimeMillis();
@@ -114,7 +124,7 @@ public class CommonUtils {
 				.append(String.join("", Collections.nCopies((int) Math.log10(total) - (current == 0 ? 0 : (int) Math.log10(current)), " ")))
 				.append(String.format(" %d/%d, ETA: %s, Speed: %s/s", current, total, etaHms, humanReadableByteCount(speed)));
 
-		info(downloadProgressCache.toString());
+		info(downloadProgressCache.toString().replaceAll("%", "%%"));
 		downloadProgressCache.setLength(0);
 	}
 	public static String humanReadableByteCount(long bytes) {

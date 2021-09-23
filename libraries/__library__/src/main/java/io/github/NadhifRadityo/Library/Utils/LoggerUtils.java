@@ -1,11 +1,61 @@
 package io.github.NadhifRadityo.Library.Utils;
 
 import groovy.lang.Closure;
+import org.gradle.api.logging.LogLevel;
+import org.gradle.internal.logging.text.StyledTextOutput;
 
 import static io.github.NadhifRadityo.Library.LibraryEntry.getProject;
 import static io.github.NadhifRadityo.Library.Utils.ExceptionUtils.throwableToString;
 
 public class LoggerUtils {
+	public static void logger_create(Object... args) {
+		Closure<Void> logger_create = (Closure<Void>) getProject().findProperty("ext_common$logger_init");
+		logger_create.call(args);
+	}
+	public static void loggerCreate(Object identifier, String loggerCategory) {
+		logger_create(identifier, loggerCategory);
+	}
+	public static void loggerCreate(Object identifier, Class<?> loggerCategory) {
+		logger_create(identifier, loggerCategory);
+	}
+	public static void loggerCreate(Object identifier, String loggerCategory, LogLevel logLevel) {
+		logger_create(identifier, loggerCategory, logLevel);
+	}
+	public static void loggerCreate(Object identifier, Class<?> loggerCategory, LogLevel logLevel) {
+		logger_create(identifier, loggerCategory, logLevel);
+	}
+	public static void loggerCreate(String loggerCategory) {
+		logger_create(null, loggerCategory);
+	}
+	public static void loggerCreate(Class<?> loggerCategory) {
+		logger_create(null, loggerCategory);
+	}
+	public static void loggerCreate(String loggerCategory, LogLevel logLevel) {
+		logger_create(null, loggerCategory, logLevel);
+	}
+	public static void loggerCreate(Class<?> loggerCategory, LogLevel logLevel) {
+		logger_create(null, loggerCategory, logLevel);
+	}
+
+	public static void logger_destroy(Object... args) {
+		Closure<Void> logger_destroy = (Closure<Void>) getProject().findProperty("ext_common$logger_destroy");
+		logger_destroy.call(args);
+	}
+	public static void loggerDestroy() {
+		logger_destroy();
+	}
+
+	public static StyledTextOutput logger_instance(Object... args) {
+		Closure<StyledTextOutput> logger_instance = (Closure<StyledTextOutput>) getProject().findProperty("ext_common$logger_instance");
+		return logger_instance.call(args);
+	}
+	public static StyledTextOutput loggerInstance(Object identifier) {
+		return logger_instance(identifier);
+	}
+	public static StyledTextOutput loggerInstance() {
+		return logger_instance((Object) null);
+	}
+	
 	public static boolean disableDebugPrint = false;
 
 	protected static void parseFormat(Object... format) {
