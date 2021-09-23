@@ -35,13 +35,13 @@ if($_.isDaemonProbablyUnstable())
     ext_load_load()
 if(ext_load_available())
     ext_load_run(ext_modules_root_directory(), ext_modules_loaded_modules())
-task libraryConfig {
+task libraryLoad {
     String[] depends = new String[] { 'compileKotlin', 'compileJava', 'processResources', 'classes' }
     def anyChanged = { -> Stream.of(depends).map({ tasks.getByName(it) }).filter({
         !it.state.upToDate && !it.state.skipped && !it.state.noSource }).count() > 0 }
 
     group = 'library'
-    description = 'Config library scripts.'
+    description = 'Load library scripts to daemon cache.'
     for(def depend : depends) dependsOn depend
     doFirst {
         if($_.isDaemonProbablyUnstable() || anyChanged())
@@ -53,9 +53,9 @@ task libraryConfig {
             ext_load_load()
     }
 }
-task libraryClean {
+task libraryUnload {
     group = 'library'
-    description = 'Clear library scripts.'
+    description = 'Unload library scripts from daemon cache.'
     onlyIf {
         !$_.isDaemonProbablyUnstable()
     }

@@ -14,6 +14,7 @@ import java.util.jar.Manifest;
 import static io.github.NadhifRadityo.Library.Utils.a_getString;
 import static io.github.NadhifRadityo.Library.Utils.classForName0;
 import static io.github.NadhifRadityo.Library.Utils.createJSONFile;
+import static io.github.NadhifRadityo.Library.Utils.exception;
 import static io.github.NadhifRadityo.Library.Utils.getFileString;
 import static io.github.NadhifRadityo.Library.Utils.mkdir;
 import static io.github.NadhifRadityo.Library.Utils.mkfile;
@@ -60,7 +61,7 @@ public class LibraryEntry {
 				moduleManifest = new Manifest(manifestFileStream);
 				moduleEntry = classForName0(a_getString(moduleManifest.getMainAttributes(), "Module-Entry"));
 			} catch(Exception e) {
-				warn("Error reading manifest file \"%s\"\n%s", manifestFile.getAbsolutePath(), e);
+				warn("Error reading manifest file \"%s\"\n%s", manifestFile.getPath(), exception(e));
 				continue;
 			}
 
@@ -98,7 +99,7 @@ public class LibraryEntry {
 					if(path != null) break;
 				}
 			if(path == null) return null;
-			configurations.properties.setProperty(key, path.getAbsolutePath());
+			configurations.properties.setProperty(key, path.getCanonicalPath());
 			return null;
 		};
 		putExecutable.get("java", new String[] { "java8", "java9", "java11", "java13", "java17", "gvm19java8", "gvm20java8", "gvm20java11", "rlyjava15", "rlyjava16", "pnmjava14", "pnmjava16", "zuljava15" });

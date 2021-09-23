@@ -3,6 +3,7 @@ package io.github.NadhifRadityo.Library;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonWriter;
+import groovy.lang.Closure;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.xml.sax.InputSource;
@@ -24,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.Reader;
@@ -42,6 +44,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLDecoder;
 import java.nio.ByteOrder;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
@@ -63,6 +66,7 @@ import java.util.jar.Attributes;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static io.github.NadhifRadityo.Library.LibraryEntry.__PROJECT__;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_MAC_OSX;
 import static org.apache.commons.lang3.SystemUtils.IS_OS_SOLARIS;
@@ -81,7 +85,7 @@ public class Utils {
 	public static final int COPY_CACHE_SIZE = 65536;
 
 	public static <T> Class<? extends T> classForName(String classname) {
-		try { return (Class<? extends T>) Class.forName(classname); } catch(Exception e) { return null; }
+		try { return (Class<? extends T>) Class.forName(classname); } catch(Exception e) { exception(e); return null; }
 	}
 	public static <T> Class<? extends T> classForName0(String classname) throws ClassNotFoundException {
 		return (Class<? extends T>) Class.forName(classname);
@@ -95,7 +99,7 @@ public class Utils {
 			modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
 			field.setAccessible(true);
 			field.set(object, newValue);
-		} } catch(Throwable e) { exception = e; }
+		} } catch(Throwable e) { exception = exception(e); }
 		if(!useUnsafe && exception == null) return;
 		try {
 			Object fieldObject = object != null ? object : unsafe.staticFieldBase(field);
@@ -103,7 +107,7 @@ public class Utils {
 			unsafe.putObject(fieldObject, fieldOffset, newValue);
 		} catch(Throwable e1) {
 			if(exception != null) e1.addSuppressed(exception);
-			throw e1;
+			throw new Error(exception(e1));
 		}
 	}
 
@@ -144,14 +148,18 @@ public class Utils {
 		return result;
 	}
 
+	@groovy.transform.ThreadInterrupt
 	public static void copy(InputStream inputStream, OutputStream outputStream, Consumer<Long> progress) throws IOException {
 		byte[] buffer = getTempByteArray(COPY_CACHE_SIZE);
 		if(progress != null) progress.accept(0L);
 		long length = 0; int read;
-		while((read = inputStream.read(buffer, 0, buffer.length)) != -1) {
+		while(!Thread.currentThread().isInterrupted() &&
+				(read = inputStream.read(buffer, 0, buffer.length)) != -1) {
 			outputStream.write(buffer, 0, read); length += read;
 			if(progress != null) progress.accept(length);
 		}
+		if(Thread.currentThread().isInterrupted())
+			throw new InterruptedIOException();
 	}
 	public static byte[] getBytes(InputStream inputStream) throws IOException {
 		ByteArrayOutputStream outputStream = getTempOutputBuffer();
@@ -168,16 +176,16 @@ public class Utils {
 	public static String getString(InputStream inputStream, Charset charset) throws IOException { return new String(getBytes(inputStream), charset); }
 	public static void writeString(String string, OutputStream outputStream, Charset charset) throws IOException { byte[] bytes = string.getBytes(charset); writeBytes(bytes, 0, bytes.length, outputStream); }
 
-	public static byte[] getFileBytes(File file) throws IOException { debug("Getting contents from file: %s", file.getAbsolutePath()); try(FileInputStream fis = new FileInputStream(file)) { return getBytes(fis); } }
+	public static byte[] getFileBytes(File file) throws IOException { debug("Getting contents from file: %s", file.getPath()); try(FileInputStream fis = new FileInputStream(file)) { return getBytes(fis); } }
 	public static byte[] getFileBytes(String path) throws IOException { return getFileBytes(new File(path)); }
-	public static String getFileString(File file, Charset charset) throws IOException { debug("Getting contents from file: %s", file.getAbsolutePath()); try(FileInputStream fis = new FileInputStream(file)) { return getString(fis, charset); } }
+	public static String getFileString(File file, Charset charset) throws IOException { debug("Getting contents from file: %s", file.getPath()); try(FileInputStream fis = new FileInputStream(file)) { return getString(fis, charset); } }
 	public static String getFileString(String path, Charset charset) throws IOException { return getFileString(new File(path), charset); }
 	public static String getFileString(File file) throws IOException { return getFileString(file, StandardCharsets.UTF_8); }
 	public static String getFileString(String path) throws IOException { return getFileString(path, StandardCharsets.UTF_8); }
 
-	public static void writeFileBytes(File file, byte[] bytes, int off, int len) throws IOException { debug("Writing contents to file: %s", file.getAbsolutePath()); try(FileOutputStream fos = new FileOutputStream(file)) { writeBytes(bytes, off, len, fos); } }
+	public static void writeFileBytes(File file, byte[] bytes, int off, int len) throws IOException { debug("Writing contents to file: %s", file.getPath()); try(FileOutputStream fos = new FileOutputStream(file)) { writeBytes(bytes, off, len, fos); } }
 	public static void writeFileBytes(String path, byte[] bytes, int off, int len) throws IOException { writeFileBytes(new File(path), bytes, off, len); }
-	public static void writeFileString(File file, String string, Charset charset) throws IOException { debug("Writing contents to file: %s", file.getAbsolutePath()); try(FileOutputStream fos = new FileOutputStream(file)) { writeString(string, fos, charset); } }
+	public static void writeFileString(File file, String string, Charset charset) throws IOException { debug("Writing contents to file: %s", file.getPath()); try(FileOutputStream fos = new FileOutputStream(file)) { writeString(string, fos, charset); } }
 	public static void writeFileString(String path, String string, Charset charset) throws IOException { writeFileString(new File(path), string, charset); }
 	public static void writeFileString(File file, String string) throws IOException { writeFileString(file, string, StandardCharsets.UTF_8); }
 	public static void writeFileString(String path, String string) throws IOException { writeFileString(path, string, StandardCharsets.UTF_8); }
@@ -196,7 +204,7 @@ public class Utils {
 	public static File mkfile(File parent, String... children) {
 		File result = file(parent, children);
 		if(result.exists()) return result;
-		debug("Making file: %s", result.getAbsolutePath());
+		debug("Making file: %s", result.getPath());
 		mkdir(result.getParentFile());
 		try { if(result.createNewFile()) return result;
 		} catch(IOException e) { throw new Error(e); }
@@ -205,7 +213,7 @@ public class Utils {
 	public static File mkfile(String... children) {
 		File result = file(children);
 		if(result.exists()) return result;
-		debug("Making file: %s", result.getAbsolutePath());
+		debug("Making file: %s", result.getPath());
 		mkdir(result.getParentFile());
 		try { if(result.createNewFile()) return result;
 		} catch(IOException e) { throw new Error(e); }
@@ -214,20 +222,20 @@ public class Utils {
 	public static File mkdir(File parent, String... children) {
 		File result = file(parent, children);
 		if(result.exists()) return result;
-		debug("Making directory: %s", result.getAbsolutePath());
+		debug("Making directory: %s", result.getPath());
 		if(result.mkdirs()) return result;
 		throw new IllegalStateException("Cannot make directory");
 	}
 	public static File mkdir(String... children) {
 		File result = file(children);
 		if(result.exists()) return result;
-		debug("Making directory: %s", result.getAbsolutePath());
+		debug("Making directory: %s", result.getPath());
 		if(result.mkdirs()) return result;
 		throw new IllegalStateException("Cannot make directory");
 	}
 	public static void delfile0(File file) {
 		if(!file.exists()) return;
-		debug("Deleting file: %s", file.getAbsolutePath());
+		debug("Deleting file: %s", file.getPath());
 		if(file.delete()) return;
 		throw new IllegalStateException("Cannot delete file");
 	}
@@ -407,7 +415,7 @@ public class Utils {
 		return bytes;
 	}
 	public static byte[] checksumJavaNative(File file, String digest) throws Exception {
-		debug("Creating java checksum %s: %s", digest, file.getAbsolutePath());
+		debug("Creating java checksum %s: %s", digest, file.getPath());
 		try(InputStream fileInputStream = new FileInputStream(file)) {
 			MessageDigest messageDigest = MessageDigest.getInstance(digest);
 			byte[] buffer = getTempByteArray(8192); int read;
@@ -423,21 +431,21 @@ public class Utils {
 		return messageDigest.digest();
 	}
 	public static byte[] checksumExeCertutil(File exe, File file, String digest) throws Exception {
-		debug("Creating exe certutil (%s) checksum %s: %s", exe.getAbsolutePath(), digest, file.getAbsolutePath());
-		return hexStringToBytes(getCommandOutput(exe.getAbsolutePath(), "-hashfile", file.getAbsolutePath(), digest).split("\n")[1].trim());
+		debug("Creating exe certutil (%s) checksum %s: %s", exe.getPath(), digest, file.getPath());
+		return hexStringToBytes(getCommandOutput(exe.getCanonicalPath(), "-hashfile", file.getCanonicalPath(), digest).split("\n")[1].trim());
 	}
 	public static byte[] checksumExeOpenssl(File exe, File file, String digest) throws Exception {
-		debug("Creating exe openssl (%s) checksum %s: %s", exe.getAbsolutePath(), digest, file.getAbsolutePath());
-		String prefix = digest.toUpperCase() + "(" + file.getAbsolutePath() + ")= ";
-		return hexStringToBytes(getCommandOutput(exe.getAbsolutePath(), digest, file.getAbsolutePath()).substring(prefix.length()).trim());
+		debug("Creating exe openssl (%s) checksum %s: %s", exe.getPath(), digest, file.getPath());
+		String prefix = digest.toUpperCase() + "(" + file.getCanonicalPath() + ")= ";
+		return hexStringToBytes(getCommandOutput(exe.getCanonicalPath(), digest, file.getCanonicalPath()).substring(prefix.length()).trim());
 	}
 	public static byte[] checksumExeMdNsum(File exe, File file, int N) throws Exception {
-		debug("Creating exe md%ssum (%s) checksum: %s", N, exe.getAbsolutePath(), file.getAbsolutePath());
-		return hexStringToBytes(getCommandOutput(exe.getAbsolutePath(), file.getAbsolutePath()).substring(1, 33).trim());
+		debug("Creating exe md%ssum (%s) checksum: %s", N, exe.getPath(), file.getPath());
+		return hexStringToBytes(getCommandOutput(exe.getCanonicalPath(), file.getCanonicalPath()).substring(1, 33).trim());
 	}
 	public static byte[] checksumExeShaNsum(File exe, File file, int N) throws Exception {
-		debug("Creating exe sha%ssum (%s) checksum: %s", N, exe.getAbsolutePath(), file.getAbsolutePath());
-		return hexStringToBytes(getCommandOutput(exe.getAbsolutePath(), file.getAbsolutePath()).substring(1, 41).trim());
+		debug("Creating exe sha%ssum (%s) checksum: %s", N, exe.getPath(), file.getPath());
+		return hexStringToBytes(getCommandOutput(exe.getCanonicalPath(), file.getCanonicalPath()).substring(1, 41).trim());
 	}
 	protected static String getHashExpected(Object object) throws Exception {
 		String expected;
@@ -547,7 +555,7 @@ public class Utils {
 		String stringOut = XMLToString(object);
 		mkfile(target);
 		writeFileString(target, stringOut, StandardCharsets.UTF_8);
-		info("Configurations written to: %s", target.getAbsolutePath());
+		info("Configurations written to: %s", target.getPath());
 		return stringOut;
 	}
 
@@ -567,7 +575,7 @@ public class Utils {
 		String stringOut = JSONToString(object);
 		mkfile(target);
 		writeFileString(target, stringOut, StandardCharsets.UTF_8);
-		info("Configurations written to: %s", target.getAbsolutePath());
+		info("Configurations written to: %s", target.getPath());
 		return stringOut;
 	}
 
@@ -763,7 +771,7 @@ public class Utils {
 						continue;
 					Method converter = null;
 					try { converter = CLASS_GRAALVM_Value.getMethod("as" + name.replaceFirst("is", ""));
-					} catch(Exception ignored) { } if(converter == null) continue;
+					} catch(Exception e) { exception(e); } if(converter == null) continue;
 					convertToJavaType.put(method, converter);
 				}
 			}
@@ -775,7 +783,8 @@ public class Utils {
 					Object value = METHOD_GRAALVM_Value_execute.invoke(function, (Object) args);
 					for(Map.Entry<Method, Method> convert : convertToJavaType.entrySet()) {
 						boolean typeCorrect = false;
-						try { typeCorrect = (boolean) convert.getKey().invoke(value); } catch(Exception ignored) { }
+						try { typeCorrect = (boolean) convert.getKey().invoke(value);
+						} catch(Exception e) { exception(e); }
 						if(!typeCorrect) continue;
 						return convert.getValue().invoke(value);
 					}
@@ -836,6 +845,21 @@ public class Utils {
 			throw new Error(e);
 		}
 	}
+	public static <E extends Throwable> E exception(E e) {
+		if(e instanceof InterruptedException)
+			throw new MustNotCatchThisError(e);
+		if(e instanceof ClosedByInterruptException)
+			throw new MustNotCatchThisError(e);
+		if(e instanceof InterruptedIOException)
+			throw new MustNotCatchThisError(e);
+		return e;
+	}
+	private static class MustNotCatchThisError extends Error {
+		public MustNotCatchThisError(Throwable e) {
+			super(e);
+			error("%s", e);
+		}
+	}
 
 	// https://stackoverflow.com/questions/3537706/how-to-unescape-a-java-string-literal-in-java
 	public static String unescapeJavaString(String string) {
@@ -892,9 +916,14 @@ public class Utils {
 				format[i] = throwableToString((Throwable) object);
 		}
 	}
-	public static void log(String text, Object... format) { parseFormat(format); for(String line : String.format(text, format).split("\n")) System.out.println("[LOG] " + line); }
-	public static void info(String text, Object... format) { parseFormat(format); for(String line : String.format(text, format).split("\n")) System.out.println("[INFO] " + line); }
-	public static void debug(String text, Object... format) { if(disableDebugPrint) return; parseFormat(format); for(String line : String.format(text, format).split("\n")) System.out.println("[DEBUG] " + line); }
-	public static void warn(String text, Object... format) { parseFormat(format); for(String line : String.format(text, format).split("\n")) System.out.println("[WARN] " + line); }
-	public static void error(String text, Object... format) { parseFormat(format); for(String line : String.format(text, format).split("\n")) System.out.println("[ERROR] " + line); }
+	public static void println_impl(String text) {
+		Closure<Void> println_impl = (Closure<Void>) __PROJECT__.findProperty("ext_common$logger_println_impl");
+		if(println_impl == null) { System.out.println(text); return; }
+		println_impl.call(text);
+	}
+	public static void log(String text, Object... format) { parseFormat(format); for(String line : String.format(text, format).split("\n")) println_impl("[LOG] " + line); }
+	public static void info(String text, Object... format) { parseFormat(format); for(String line : String.format(text, format).split("\n")) println_impl("[INFO] " + line); }
+	public static void debug(String text, Object... format) { if(disableDebugPrint) return; parseFormat(format); for(String line : String.format(text, format).split("\n")) println_impl("[DEBUG] " + line); }
+	public static void warn(String text, Object... format) { parseFormat(format); for(String line : String.format(text, format).split("\n")) println_impl("[WARN] " + line); }
+	public static void error(String text, Object... format) { parseFormat(format); for(String line : String.format(text, format).split("\n")) println_impl("[ERROR] " + line); }
 }

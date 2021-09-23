@@ -13,7 +13,7 @@ class $ {
 				.map{it.substring(0, 1).toUpperCase() + it.substring(1)}.toArray(String[]::new))
 		String id = "${String.join('#', path)}?$name"
 		extendedProjects.put(id, false)
-		$this.log 'fbblack', "Configure ${String.join('/', path)} <$name> -> $id"
+		$this.pdebug "Configure ${String.join('/', path)} <$name> -> $id"
 		$this.include id
 	}
 	static def apply() {
@@ -27,7 +27,7 @@ class $ {
 			String name = project.name.substring(splitIndex + 1)
 			project.projectDir = new File(String.join('/', path))
 			project.name = name
-			$this.log 'fbgreen', "Imported ${String.join('/', path)} -> $name settings"
+			$this.pinfo "Imported ${String.join('/', path)} -> $name settings"
 			assert project.projectDir.isDirectory()
 			assert project.buildFile.isFile()
 		}

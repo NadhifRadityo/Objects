@@ -28,7 +28,7 @@ class $ {
 			METHOD_Library_entry = CLASS_Library.getDeclaredMethod('entry', DefaultProject.class, File.class, Map.class)
 			METHOD_Library_entry.setAccessible(true)
 		} catch(Exception e) {
-			$this.log 'fred', 'Error while loading library entry point\n', e
+			$this.perror 'Error while loading library entry point\n', e
 		}
 		return classLoader
 	}
@@ -39,7 +39,7 @@ class $ {
 		try {
 			METHOD_Library_entry.invoke(null, $this.project, rootDirectory, modules)
 		} catch(Exception e) {
-			$this.log 'fred', 'Error while running library entry point\n', e
+			$this.perror 'Error while running library entry point\n', e
 		}
 	}
 }

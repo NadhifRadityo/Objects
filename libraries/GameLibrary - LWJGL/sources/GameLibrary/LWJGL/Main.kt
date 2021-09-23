@@ -22,7 +22,6 @@ class Main : LibraryModule() {
 		val mavenProvider = getDefaultMavenProvider()
 		val dependencyConfigsDir = file(staticDir, "dependencies")
 		val dependencyFetchedDir = file(staticDir, "fetched")
-		log(property("config.Test"))
 		task(unique("clearDependencyCache")).apply {
 			onlyIf { dependencyConfigsDir.exists() }
 			doLast { delfile(dependencyConfigsDir) }

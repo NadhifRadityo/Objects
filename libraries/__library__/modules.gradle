@@ -1,3 +1,6 @@
+import java.nio.file.Path
+import java.nio.file.Paths
+
 require(this, '/common.gradle')
 
 class $ {
@@ -5,16 +8,18 @@ class $ {
 	static Map<String, File> loadedModules = new HashMap<>()
 
 	static File root_directory() {
-		return $this.project.buildscript.sourceFile.parentFile.parentFile
+		Path currentPath = Paths.get(System.getProperty("user.dir"))
+		Path librariesPath = $this.project.buildscript.sourceFile.parentFile.parentFile.toPath()
+		return currentPath.relativize(librariesPath).toFile()
 	}
 	static void module(String path) {
 		String moduleIdentifier = path.toLowerCase().replaceAll('[^A-Za-z0-9]', '_')
 		File modulePath = new File(root_directory(), path)
 		if(loadedModules.containsKey(moduleIdentifier)) {
-			$this.log 'fred', "Library module $path has the same identifier"
+			$this.pwarn "Library module $path has the same identifier"
 			return
 		}
-		$this.log "Imported library module $path"
+		$this.pinfo "Imported library module $path"
 		loadedModules.put(moduleIdentifier, modulePath)
 		$this.sourceSets {
 			main.kotlin { srcDir "../$path/sources" }

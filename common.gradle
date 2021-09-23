@@ -17,20 +17,20 @@ class $ {
 		$that.version 'LATEST'
 	}
 	static void require(def $that, Object... scripts) {
-		for(def script : scripts) {
+		for(Object script : scripts) {
 			if(script instanceof String && script.startsWith('/'))
-				script = new File($that.rootDir, script as String)
+				script = new File($that.rootDir, script)
 			else script = $that.file(script)
-			def scriptFile = script as File
-			def scriptFileName = scriptFile.getName()
+			File scriptFile = script as File
+			String scriptFileName = scriptFile.getName()
 			if(!scriptFileName.endsWith('.gradle')) {
-				$that.log 'fyellow', "Cannot import file \"$scriptFileName\", extension not valid"
+				$that.pwarn "Cannot import file \"$scriptFileName\", extension not valid"
 				continue
 			}
-			def importAction = importActions.get(scriptFile.getCanonicalPath())
+			Consumer<Object> importAction = importActions.get(scriptFile.getCanonicalPath())
 			if(importAction != null) importAction.accept($that)
-			def scriptName = scriptFileName.substring(0, scriptFileName.length() - '.gradle'.length())
-			def importedTag = "ext_${scriptName}_${'$imported'}"
+			String scriptName = scriptFileName.substring(0, scriptFileName.length() - '.gradle'.length())
+			String importedTag = "ext_${scriptName}_${'$imported'}"
 			if($this.ext.has(importedTag) || $that.ext.has(importedTag)) continue
 			$that.apply from: $that.relativePath(scriptFile)
 		}
@@ -57,6 +57,11 @@ class logger {
 	static escapeCodes = Stream.of(('fblack|30 fred|31 fgreen|32 fyellow|33 fblue|34 fmagenta|35 fcyan|36 fwhite|37 fbblack|90 fbred|91 fbgreen|92 fbyellow|93 fbblue|94 fbmagenta|95 fbcyan|96 fbwhite|97 freset|39 ' +
 					'bblack|40 bred|41 bgreen|42 byellow|43 bblue|44 bmagenta|45 bcyan|46 bwhite|47 bbblack|100 bbred|101 bbgreen|102 bbyellow|103 bbblue|104 bbmagenta|105 bbcyan|106 bbwhite|107 breset|49').split(' '))
 					.map(v -> v.split('\\|')).collect(Collectors.<String[], String, String>toMap(v -> v[0], v -> "\033[${v[1]}m"))
+	static Object[] injectLog = new Object[] { 'fwhite' }
+	static Object[] injectInfo = new Object[] { 'fbgreen' }
+	static Object[] injectDebug = new Object[] { 'fbblack' }
+	static Object[] injectWarn = new Object[] { 'fyellow' }
+	static Object[] injectError = new Object[] { 'fred' }
 
 	static void create(String logCategory) {
 		out = ($this.project as DefaultProject).services.get(StyledTextOutputFactory).create(logCategory)
@@ -64,34 +69,49 @@ class logger {
 	static boolean available() {
 		return out != null
 	}
-	static void __log_impl(String s) {
-		if(!available()) { println s; return }
-		out.println(s)
-	}
-	static String __to_string(Object obj) {
+	static Object __identify_object(Object obj) {
 		if(obj instanceof Throwable) {
 			StringWriter stringWriter = new StringWriter()
 			PrintWriter printWriter = new PrintWriter(stringWriter)
 			obj.printStackTrace(printWriter)
 			return stringWriter.toString()
 		}
-		return obj.toString()
+		return obj
 	}
-	static void log(Object... args) {
-		args = Arrays.copyOf(args, args.length + 2)
-		args[args.length - 2] = 'freset'
-		args[args.length - 1] = 'breset'
-		for(def i = 0; i < args.length; i++) {
-			def arg = args[i]
-			def argString = __to_string(arg)
-			def escapeCode = escapeCodes.get(argString)
-			args[i] = escapeCode != null ? escapeCode : argString
+	static void println_impl(Object... args) {
+		for(int i = 0; i < args.length; i++) {
+			Object arg = args[i]
+			Object identifiedArg = __identify_object(arg)
+			String escapeCode = escapeCodes.get(identifiedArg)
+			args[i] = escapeCode != null ? escapeCode : identifiedArg
 		}
-		if(args[0] == "§format") {
-			__log_impl(String.format(args[1], Arrays.copyOfRange(args, 2, args.length)))
-			return
-		}
-		__log_impl(String.join('', (String[]) args))
+		String[] stringArgs = Stream.of(args).map(Object::toString).toArray(String[]::new)
+		String compiledString = String.join('', stringArgs)
+		compiledString += escapeCodes.get('freset')
+		compiledString += escapeCodes.get('breset')
+		if(!available()) { println compiledString; return }
+		out.println(compiledString)
+	}
+	static Object[] __inject_additional(Object[] inject, Object[] args) {
+		Object[] newArgs = new Object[args.length + inject.length]
+		System.arraycopy(inject, 0, newArgs, 0, inject.length)
+		System.arraycopy(args, 0, newArgs, inject.length, args.length)
+		return newArgs
+	}
+	static void plog(Object... args) {
+		println_impl(__inject_additional(injectLog, args))
+	}
+	static void pinfo(Object... args) {
+		println_impl(__inject_additional(injectInfo, args))
+	}
+	static void pdebug(Object... args) {
+		println_impl(__inject_additional(injectDebug, args))
+	}
+	static void pwarn(Object... args) {
+		println_impl(__inject_additional(injectWarn, args))
+	}
+	static void perror(Object... args) {
+		println_impl(__inject_additional(injectError, args))
 	}
 	static void destroy() {
 		out = null
@@ -100,7 +120,7 @@ class logger {
 class utils {
 	static def $this
 
-	static def __invalid_type() {
+	static Throwable __invalid_type() {
 		throw new Error('Invalid type')
 	}
 	static Project as_project(Object project) {
@@ -162,7 +182,12 @@ ext {
 	ext_common_remove_import_action = $.&remove_import_action
 	ext_common$logger_create = logger.&create
 	ext_common$logger_available = logger.&available
-	ext_common$logger_log = logger.&log
+	ext_common$logger_println_impl = logger.&println_impl
+	ext_common$logger_plog = logger.&plog
+	ext_common$logger_pinfo = logger.&pinfo
+	ext_common$logger_pdebug = logger.&pdebug
+	ext_common$logger_pwarn = logger.&pwarn
+	ext_common$logger_perror = logger.&perror
 	ext_common$logger_destroy = logger.&destroy
 	ext_common$utils_as_project = utils.&as_project
 	ext_common$utils_as_task = utils.&as_task
@@ -172,12 +197,22 @@ ext {
 	ext_common$utils_is_running_on_debug = utils.&is_running_on_debug
 	ext_common$utils_is_daemon_probably_unstable = utils.&is_daemon_probably_unstable
 	require = $.&require
-	log = logger.&log
+	println_impl = logger.&println_impl
+	plog = logger.&plog
+	pinfo = logger.&pinfo
+	pdebug = logger.&pdebug
+	pwarn = logger.&pwarn
+	perror = logger.&perror
 }
 
 class EXPORT_GLOBAL_FUNCTION {
 	def require(def $that, Object... scripts) { return $.require($that, scripts) }
-	def log(Object... args) { return logger.log(args); }
+	def println(Object... args) { return logger.println_impl(args) }
+	def plog(Object... args) { return logger.plog(args) }
+	def pinfo(Object... args) { return logger.pinfo(args) }
+	def pdebug(Object... args) { return logger.pdebug(args) }
+	def pwarn(Object... args) { return logger.pwarn(args) }
+	def perror(Object... args) { return logger.perror(args) }
 	def forwardTask(Object project, filter, exec = {}) { return utils.forward_task(project, filter, exec) }
 	def runAfterAnotherTask(Object tasks, Object project = null) { return utils.run_after_another_task(tasks, project) }
 	def isSingleUseDaemon() { return utils.is_single_use_daemon() }

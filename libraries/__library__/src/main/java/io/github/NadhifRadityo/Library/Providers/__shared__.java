@@ -19,6 +19,7 @@ import static io.github.NadhifRadityo.Library.Utils.HASH_EXE_SHANSUM;
 import static io.github.NadhifRadityo.Library.Utils.HASH_JAVA_NATIVE;
 import static io.github.NadhifRadityo.Library.Utils.copyAllProperties;
 import static io.github.NadhifRadityo.Library.Utils.error;
+import static io.github.NadhifRadityo.Library.Utils.exception;
 import static io.github.NadhifRadityo.Library.Utils.file;
 import static io.github.NadhifRadityo.Library.Utils.info;
 import static io.github.NadhifRadityo.Library.Utils.warn;
@@ -61,7 +62,7 @@ public class __shared__ {
 
 			boolean wasDownloaded = itemFile.exists();
 			if(wasDownloaded) {
-				info("File already downloaded, validating... (%s)", itemFile.getAbsolutePath());
+				info("File already downloaded, validating... (%s)", itemFile.getPath());
 				Object[] validationResult = validate.get();
 				boolean anyPassed = (boolean) validationResult[1];
 				boolean anyNotPassed = (boolean) validationResult[2];
@@ -73,7 +74,7 @@ public class __shared__ {
 
 			fileValidationCallback.get(dependency, item, itemFile, itemFileCallback, VALIDATE_REQUEST_FETCH, download);
 			if(wasDownloaded) {
-				info("File already downloaded, validating... (%s)", itemFile.getAbsolutePath());
+				info("File already downloaded, validating... (%s)", itemFile.getPath());
 				Object[] validationResult = validate.get();
 				boolean anyPassed = (boolean) validationResult[1];
 				boolean allError = (boolean) validationResult[3];
@@ -115,7 +116,7 @@ public class __shared__ {
 				Boolean passed = provider.get(targetFile, checksumFile);
 				results[i] = passed ? VALIDATE_RESULT_PASSED : VALIDATE_RESULT_NOT_PASSED;
 				continue L0;
-			} catch(Throwable e) { error("Error while validating checksum,\n%s", e); } }
+			} catch(Throwable e) { error("Error while validating checksum,\n%s", exception(e)); } }
 			results[i] = VALIDATE_RESULT_ERROR;
 		}
 		return results;
