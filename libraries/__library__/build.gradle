@@ -1,7 +1,5 @@
-import java.util.stream.Stream
-
 plugins {
-    id 'java'
+    id 'org.jetbrains.kotlin.jvm' version "1.5.30"
 }
 
 buildDir = '../__target__/__sources__/'
@@ -15,12 +13,7 @@ repositories {
 
 dependencies {
     compileOnly gradleApi()
-    implementation CONFIG['LIBRARY_COMMONS_LANG']
-    implementation 'commons-cli:commons-cli:1.4'
-    implementation 'com.google.code.gson:gson:2.8.6'
-    implementation 'org.jsoup:jsoup:1.14.1'
 
-    testCompileOnly gradleApi()
     testImplementation CONFIG['TESTLIBRARY_IMPLEMENTATION']
     testRuntimeOnly CONFIG['TESTLIBRARY_RUNTIME']
 }
@@ -28,39 +21,3 @@ dependencies {
 test {
     useJUnitPlatform()
 }
-
-def createRunLibTask = { ->
-    String[] stages = new String[] { 'RELEASE', 'DEBUG' }
-    String[] phases = new String[] { 'CLEAN', 'CONFIG', 'FETCH', 'BUILD', 'VALIDATE' }
-    String directory = new File(project.rootDir, 'libraries').getAbsolutePath()
-    String[] depends = new String[] { 'compileJava', 'processResources', 'classes', 'compileTestJava', 'processTestResources', 'testClasses' }
-    for(String stage : stages) {
-        List<Task> tasks = new ArrayList<>()
-        for(String phase : phases) {
-            Task task = task("run_${stage.toLowerCase()}_${phase.toLowerCase()}") {
-                group = 'library'
-                description = "Run ${phase.toLowerCase()} phase and target ${stage.toLowerCase()} config"
-                for(def depend : depends) dependsOn depend
-                def args = new String[] { '-s', stage, '-p', phase, '-d', directory }
-                doFirst {
-                    if(Stream.of(depends).map({ this.tasks.getByName(it) }).filter({
-                        !it.state.upToDate && !it.state.skipped && !it.state.noSource }).count() > 0)
-                        ext_load_clear()
-                }
-                doLast {
-                    ext_load_load()
-                    ext_load_run(args)
-                }
-            }
-            tasks.add(task)
-        }
-        ext_common_run_after_another_task(tasks)
-        task("run_${stage.toLowerCase()}") {
-            group = 'library'
-            description = "Run target ${stage.toLowerCase()} config"
-            dependsOn tasks.toArray()
-        }
-    }
-
-}
-createRunLibTask()

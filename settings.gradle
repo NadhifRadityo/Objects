@@ -1,15 +1,44 @@
-rootProject.name = 'Objects'
-include 'libraries#__library__$Library'
-include 'packages#Functional'
-
-rootProject.children.each { project ->
-	int splitIndex = project.name.indexOf('$')
-	List<String> path = Arrays.asList((splitIndex != -1 ? project.name.substring(0, splitIndex) : project.name).split("#"))
-	String name = (splitIndex != -1 ? project.name.substring(splitIndex + 1) : String.join('$', path.stream()
-			.map{it.substring(0, 1).toUpperCase() + it.substring(1)}.toArray(String[]::new)))
-	project.projectDir = new File(settingsDir, String.join('/', path))
-	project.name = name
-	println "Imported ${String.join('/', path)} -> $name settings"
-	assert project.projectDir.isDirectory()
-	assert project.buildFile.isFile()
+class GLOBAL {
+	protected static final Map<String, Boolean> extendedProjects = new HashMap<>()
 }
+
+def extend = { String projectPath, String projectName = null ->
+	int splitIndex = projectPath.indexOf(':')
+	List<String> path = Arrays.asList((splitIndex != -1 ? projectPath.substring(0, splitIndex) : projectPath).split('/'))
+	String name = projectName != null ? projectName : splitIndex != -1 ? projectPath.substring(splitIndex + 1) : String.join('$', path.stream()
+			.map{it.substring(0, 1).toUpperCase() + it.substring(1)}.toArray(String[]::new))
+	String id = "${String.join('#', path)}?$name"
+	GLOBAL.extendedProjects.put(id, false)
+	println "Configure ${String.join('/', path)} <$name> -> $id"
+	include id
+}
+def apply = { ->
+	rootProject.children.each { project ->
+		String projectName = project.name
+		Boolean applied = GLOBAL.extendedProjects.get(projectName)
+		if(applied == null || applied) return
+		GLOBAL.extendedProjects.put(projectName, true)
+		int splitIndex = projectName.indexOf('?')
+		List<String> path = Arrays.asList(projectName.substring(0, splitIndex).split("#"))
+		String name = project.name.substring(splitIndex + 1)
+		project.projectDir = new File(String.join('/', path))
+		project.name = name
+		println "Imported ${String.join('/', path)} -> $name settings"
+		assert project.projectDir.isDirectory()
+		assert project.buildFile.isFile()
+	}
+}
+def extended_projects = { ->
+	return Collections.unmodifiableMap(GLOBAL.extendedProjects)
+}
+
+ext {
+	ext_settings_extend = extend
+	ext_settings_apply = apply
+	ext_settings_extended_projects = extended_projects
+}
+
+rootProject.name = 'Objects'
+extend('libraries/__library__', 'Library')
+extend('packages/Functional')
+apply()
