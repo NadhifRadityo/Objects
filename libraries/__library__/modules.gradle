@@ -1,0 +1,47 @@
+import java.nio.file.Path
+import java.nio.file.Paths
+
+require(this, '/common.gradle')
+
+class $ {
+	static def $this
+	static Map<String, File> loadedModules = new HashMap<>()
+
+	static File root_directory() {
+		Path currentPath = Paths.get(System.getProperty("user.dir"))
+		Path librariesPath = $this.project.buildscript.sourceFile.parentFile.parentFile.toPath()
+		return currentPath.relativize(librariesPath).toFile()
+	}
+	static void module(String path) {
+		String moduleIdentifier = path.toLowerCase().replaceAll('[^A-Za-z0-9]', '_')
+		File modulePath = new File(root_directory(), path)
+		if(loadedModules.containsKey(moduleIdentifier)) {
+			$this.pwarn "Library module $path has the same identifier"
+			return
+		}
+		$this.pinfo "Imported library module $path"
+		loadedModules.put(moduleIdentifier, modulePath)
+		$this.sourceSets {
+			main.kotlin { srcDir "../$path/sources" }
+			main.resources { srcDir "../$path/resources" }
+		}
+	}
+	static Map<String, File> loaded_modules() {
+		return Collections.unmodifiableMap(loadedModules)
+	}
+}
+{
+	$.$this = this
+	$.loadedModules.clear()
+}
+
+ext {
+	ext_modules_$imported = true
+	ext_modules_root_directory = $.&root_directory
+	ext_modules_module = $.&module
+	ext_modules_loaded_modules = $.&loaded_modules
+}
+
+def module = $.&module
+module('GameLibrary - LWJGL')
+//module('GameLibrary - Jogamp')

@@ -1,0 +1,421 @@
+import org.gradle.api.internal.project.ProjectInternal
+import org.gradle.internal.logging.progress.ProgressLogger
+import org.gradle.internal.logging.progress.ProgressLoggerFactory
+import org.gradle.internal.logging.text.StyledTextOutput
+import org.gradle.internal.logging.text.StyledTextOutputFactory
+import org.gradle.launcher.daemon.server.scaninfo.DaemonScanInfo
+
+import java.lang.management.ManagementFactory
+import java.util.function.Consumer
+import java.util.stream.Collectors
+import java.util.stream.Stream
+import java.util.Optional
+
+class $ {
+	static def $this
+	static Map<String, Consumer<Object>> importActions = new HashMap<>()
+
+	static void default_group_version(def $that) {
+		$that.group 'io.github.NadhifRadityo.Objects'
+		$that.version 'LATEST'
+	}
+	static void require(def $that, Object... scripts) {
+		for(Object script : scripts) {
+			if(script instanceof String && script.startsWith('/'))
+				script = new File($that.rootDir, script)
+			else script = $that.file(script)
+			File scriptFile = script as File
+			String scriptFileName = scriptFile.getName()
+			if(!scriptFileName.endsWith('.gradle')) {
+				logger.pwarn "Cannot import file \"$scriptFileName\", extension not valid"
+				continue
+			}
+			Consumer<Object> importAction = importActions.get(scriptFile.getCanonicalPath())
+			if(importAction != null) importAction.accept($that)
+			String scriptName = scriptFileName.substring(0, scriptFileName.length() - '.gradle'.length())
+			String importedTag = "ext_${scriptName}_${'$imported'}"
+			if($this.ext.has(importedTag) || $that.ext.has(importedTag)) continue
+			$that.apply from: $that.relativePath(scriptFile)
+		}
+	}
+	static void add_import_action(File file, Consumer<Object> action) {
+		importActions.put(file.getCanonicalPath(), action)
+	}
+	static void remove_import_action(File file) {
+		importActions.remove(file.getCanonicalPath())
+	}
+	static void __default_import_action(def $that) {
+		if($that.extensions.findByType(EXPORT_GLOBAL_FUNCTION) == null)
+			$that.extensions.create('$_', EXPORT_GLOBAL_FUNCTION)
+		if($that.ext.find('export_functions_only') == null) {
+			default_group_version($that)
+			if(!logger.logger_available())
+				logger.logger_init()
+			if(!progress.progress_available())
+				progress.progress_init()
+		}
+	}
+}
+class logger {
+	static def $this
+	static StyledTextOutputFactory factory
+	static Map<Integer, StyledTextOutput> instances
+
+	static void logger_init() {
+		factory = utils.as_service(StyledTextOutputFactory)
+		instances = new HashMap<>()
+	}
+	static void logger_deinit() {
+		factory = null
+		instances = null
+	}
+	static boolean logger_available() {
+		return factory != null
+	}
+
+//	static void logger_create(Object identifier = null, String loggerCategory) {
+//	static void logger_create(Object identifier = null, String loggerCategory, LogLevel logLevel) {
+//	static void logger_create(Object identifier = null, Class<?> loggerCategory) {
+//	static void logger_create(Object identifier = null, Class<?> loggerCategory, LogLevel logLevel) {
+	static void logger_create(Object identifier = null, Object... args) {
+		StyledTextOutput instance = factory.&create.call(args)
+		instances.put(System.identityHashCode(identifier), instance)
+	}
+	static void logger_destroy(Object identifier = null) {
+		instances.remove(System.identityHashCode(identifier))
+	}
+	static StyledTextOutput logger_instance(Object identifier = null) {
+		return instances.get(System.identityHashCode(identifier))
+	}
+
+	static void __on_print(Object identifier, Consumer<StyledTextOutput> callback) {
+		StyledTextOutput instance = logger_instance(identifier)
+		if(instance != null) { callback.accept(instance); return }
+		logger_create(identifier, Optional.ofNullable(identifier?.toString()).orElse('default'))
+		callback.accept(logger_instance(identifier))
+	}
+//	static void logger_append(Object identifier = null, char c) {
+//	static void logger_append(Object identifier = null, CharSequence csq) {
+//	static void logger_append(Object identifier = null, CharSequence csq, int start, int end) {
+	static void logger_append(Object identifier = null, Object... args) {
+		__on_print(identifier) { it.&append.call(args) }
+	}
+	static void logger_style(Object identifier = null, StyledTextOutput.Style style) {
+		__on_print(identifier) { it.style(style) }
+	}
+	static void logger_text(Object identifier = null, Object text) {
+		__on_print(identifier) { it.text(text) }
+	}
+//	static void logger_println(Object identifier = null, Object text) {
+//	static void logger_println(Object identifier = null) {
+	static void logger_println(Object identifier = null, Object... args) {
+		__on_print(identifier) { it.&println.call(args) }
+	}
+	static void logger_format(Object identifier = null, String pattern, Object... args) {
+		__on_print(identifier) { it.format(pattern, args) }
+	}
+	static void logger_formatln(Object identifier = null, String pattern, Object... args) {
+		__on_print(identifier) { it.formatln(pattern, args) }
+	}
+	static void logger_exception(Object identifier = null, Throwable throwable) {
+		__on_print(identifier) { it.exception(throwable) }
+	}
+
+	static escapeCodes = Stream.of(('fblack|30 fred|31 fgreen|32 fyellow|33 fblue|34 fmagenta|35 fcyan|36 fwhite|37 fbblack|90 fbred|91 fbgreen|92 fbyellow|93 fbblue|94 fbmagenta|95 fbcyan|96 fbwhite|97 freset|39 ' +
+					'bblack|40 bred|41 bgreen|42 byellow|43 bblue|44 bmagenta|45 bcyan|46 bwhite|47 bbblack|100 bbred|101 bbgreen|102 bbyellow|103 bbblue|104 bbmagenta|105 bbcyan|106 bbwhite|107 breset|49').split(' '))
+					.map(v -> v.split('\\|')).collect(Collectors.<String[], String, String>toMap(v -> v[0], v -> "\033[${v[1]}m"))
+	static Object[] injectLog = new Object[] { 'fwhite' }
+	static Object[] injectInfo = new Object[] { 'fbgreen' }
+	static Object[] injectDebug = new Object[] { 'fbblack' }
+	static Object[] injectWarn = new Object[] { 'fyellow' }
+	static Object[] injectError = new Object[] { 'fred' }
+
+	static Object __identify_object(Object obj) {
+		if(obj instanceof Throwable) {
+			StringWriter stringWriter = new StringWriter()
+			PrintWriter printWriter = new PrintWriter(stringWriter)
+			obj.printStackTrace(printWriter)
+			return stringWriter.toString()
+		}
+		return obj
+	}
+	static void println_impl(Object... args) {
+		for(int i = 0; i < args.length; i++) {
+			Object arg = args[i]
+			Object identifiedArg = __identify_object(arg)
+			String escapeCode = escapeCodes.get(identifiedArg)
+			args[i] = escapeCode != null ? escapeCode : identifiedArg
+		}
+		String[] stringArgs = Stream.of(args).map(Object::toString).toArray(String[]::new)
+		String compiledString = String.join('', stringArgs)
+		compiledString += escapeCodes.get('freset')
+		compiledString += escapeCodes.get('breset')
+		if(!logger_available()) { println compiledString; return }
+		logger_println(null, compiledString)
+	}
+	static Object[] __inject_additional(Object[] inject, Object[] args) {
+		Object[] newArgs = new Object[args.length + inject.length]
+		System.arraycopy(inject, 0, newArgs, 0, inject.length)
+		System.arraycopy(args, 0, newArgs, inject.length, args.length)
+		return newArgs
+	}
+	static void plog(Object... args) {
+		println_impl(__inject_additional(injectLog, args))
+	}
+	static void pinfo(Object... args) {
+		println_impl(__inject_additional(injectInfo, args))
+	}
+	static void pdebug(Object... args) {
+		println_impl(__inject_additional(injectDebug, args))
+	}
+	static void pwarn(Object... args) {
+		println_impl(__inject_additional(injectWarn, args))
+	}
+	static void perror(Object... args) {
+		println_impl(__inject_additional(injectError, args))
+	}
+}
+class progress {
+	static def $this
+	static ProgressLoggerFactory factory
+	static Map<Integer, ProgressLogger> instances
+
+	static void progress_init() {
+		factory = utils.as_service(ProgressLoggerFactory)
+		instances = new HashMap<>()
+	}
+	static void progress_deinit() {
+		factory = null
+		instances = null
+	}
+	static boolean progress_available() {
+		return factory != null
+	}
+
+//	static void progress_create(Object identifier = null, String loggerCategory) {
+//	static void progress_create(Object identifier = null, Class<?> loggerCategory) {
+//	static void progress_create(Object identifier = null, Class<?> loggerCategory, BuildOperationDescriptor buildOperationDescriptor) {
+//	static void progress_create(Object identifier = null, Class<?> loggerCategory, ProgressLogger parent) {
+	static void progress_create(Object identifier = null, Object... args) {
+		ProgressLogger instance = factory.&newOperation.call(args)
+		instances.put(System.identityHashCode(identifier), instance)
+	}
+	static void progress_destroy(Object identifier = null) {
+		instances.remove(System.identityHashCode(identifier))
+	}
+	static ProgressLogger progress_instance(Object identifier = null) {
+		return instances.get(System.identityHashCode(identifier))
+	}
+
+	static void __on_start(Object identifier, Consumer<ProgressLogger> callback) {
+		ProgressLogger instance = progress_instance(identifier)
+		if(instance != null) { callback.accept(instance); return }
+		progress_create(identifier, Optional.ofNullable(identifier?.toString()).orElse('default'))
+		callback.accept(progress_instance(identifier))
+	}
+	static void __on_do(Object identifier, Consumer<ProgressLogger> callback) {
+		__on_start(identifier, callback)
+	}
+	static void __on_end(Object identifier, Consumer<ProgressLogger> callback) {
+		__on_start(identifier) {
+			callback.accept(it)
+			progress_destroy(identifier)
+		}
+	}
+//	static void progress_start(Object identifier = null, String description, String status) {
+//	static void progress_start(Object identifier = null, String status) {
+//	static void progress_start(Object identifier = null) {
+	static void progress_start(Object identifier = null, Object... args) {
+		__on_start(identifier) { args.length == 2 ? it.&start.call(args) : it.&started.call(args) }
+	}
+//	static void progress_do(Object identifier = null, String status) {
+//	static void progress_do(Object identifier = null, String status, boolean failing) {
+	static void progress_do(Object identifier = null, Object... args) {
+		__on_do(identifier) { it.&progress.call(args) }
+	}
+//	static void progress_end(Object identifier = null) {
+//	static void progress_end(Object identifier = null, String status, boolean failed) {
+	static void progress_end(Object identifier = null, Object... args) {
+		__on_end(identifier) { it.&completed.call(args) }
+	}
+}
+class utils {
+	static def $this
+
+	static Throwable __invalid_type() {
+		throw new Error('Invalid type')
+	}
+	static Project as_project(Object project) {
+		if(project == null) return $this.project
+		if(project instanceof Project) return project
+		if(project instanceof String) return $this.project(project)
+		throw __invalid_type()
+	}
+	static Task as_task(Object task, Object project = null) {
+		if(task instanceof Task) return task
+		if(task instanceof String) return as_project(project).tasks.getByName(task)
+		throw __invalid_type()
+	}
+	static <T> T as_service(Class<T> clazz, Object project = null) {
+		return (as_project(project) as ProjectInternal).services.get(clazz)
+	}
+	static void forward_task(Object project, filter, exec = {}) {
+		Project project0 = as_project(project)
+		project0.tasks.stream().filter(filter).collect(Collectors.<Task, Task, Task>toMap({
+			project0.task(it.name) { group = it.group; dependsOn it } }, { it })).forEach(exec)
+	}
+	static void run_after_another_task(Object tasks, Object project = null) {
+		if(tasks instanceof Collection) tasks = tasks.toArray()
+		for(int i = 0; i < tasks.length; i++) tasks[i] = as_task(tasks[i], project)
+		for(int i = 1; i < tasks.length; i++) tasks[i].mustRunAfter(tasks[i - 1])
+	}
+	static boolean is_single_use_daemon(Object project = null) {
+		return as_service(DaemonScanInfo, project).isSingleUse()
+	}
+	static boolean is_running_on_debug() {
+		return ManagementFactory.getRuntimeMXBean().getInputArguments().stream().filter({ it.indexOf('-agentlib:jdwp') != -1 }).count() > 0
+	}
+	static boolean is_daemon_probably_unstable(Object project = null) {
+		return is_single_use_daemon(project) || is_running_on_debug()
+	}
+}
+{
+	$.$this = this
+	logger.$this = this
+	progress.$this = this
+	utils.$this = this
+	$.importActions.clear()
+	$.add_import_action(buildscript.sourceFile, $.&__default_import_action)
+	$.__default_import_action(this)
+}
+
+ext {
+	CONFIG = [:]
+	CONFIG['LIBRARY_SPOTBUGS'] = ['com.github.spotbugs:spotbugs-annotations:4.4.0']
+	CONFIG['LIBRARY_COMMONS_LANG'] = ['org.apache.commons:commons-lang3:3.12.0', 'commons-io:commons-io:2.6']
+	CONFIG['LIBRARY_JNA'] = ['net.java.dev.jna:jna:5.9.0', 'net.java.dev.jna:jna-platform:5.9.0']
+	CONFIG['LIBRARY_ECLIPSE_COLLECTION'] = ['org.eclipse.collections:eclipse-collections:10.4.0', 'org.eclipse.collections:eclipse-collections-api:10.4.0']
+	CONFIG['LIBRARY_DEPRECATED'] = ['org.apache.httpcomponents:httpclient:4.5.12', 'net.oneandone.reflections8:reflections8:0.11.7', 'org.jogamp.gluegen:gluegen-rt-main:2.3.1', 'org.json:json:20180813', 'org.apache.commons:commons-pool2:2.8.0']
+	CONFIG['LIBRARY_DEFAULT'] = CONFIG['LIBRARY_SPOTBUGS'] + CONFIG['LIBRARY_COMMONS_LANG'] + CONFIG['LIBRARY_DEPRECATED'];
+
+	CONFIG['TESTLIBRARY_IMPLEMENTATION'] = 'org.junit.jupiter:junit-jupiter-api:5.7.2'
+	CONFIG['TESTLIBRARY_RUNTIME'] = 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
+
+	ext_common_$imported = true
+	ext_common_default_group_version = $.&default_group_version
+	ext_common_require = $.&require
+	ext_common_add_import_action = $.&add_import_action
+	ext_common_remove_import_action = $.&remove_import_action
+
+	ext_common$logger_init = logger.&logger_init
+	ext_common$logger_deinit = logger.&logger_deinit
+	ext_common$logger_available = logger.&logger_available
+	ext_common$logger_create = logger.&logger_create
+	ext_common$logger_destroy = logger.&logger_destroy
+	ext_common$logger_instance = logger.&logger_instance
+	ext_common$logger_append = logger.&logger_append
+	ext_common$logger_style = logger.&logger_style
+	ext_common$logger_text = logger.&logger_text
+	ext_common$logger_println = logger.&logger_println
+	ext_common$logger_format = logger.&logger_format
+	ext_common$logger_formatln = logger.&logger_formatln
+	ext_common$logger_exception = logger.&logger_exception
+	ext_common$println_impl = logger.&println_impl
+	ext_common$plog = logger.&plog
+	ext_common$pinfo = logger.&pinfo
+	ext_common$pdebug = logger.&pdebug
+	ext_common$pwarn = logger.&pwarn
+	ext_common$perror = logger.&perror
+
+	ext_common$progress_init = progress.&progress_init
+	ext_common$progress_deinit = progress.&progress_deinit
+	ext_common$progress_available = progress.&progress_available
+	ext_common$progress_create = progress.&progress_create
+	ext_common$progress_destroy = progress.&progress_destroy
+	ext_common$progress_instance = progress.&progress_instance
+	ext_common$progress_start = progress.&progress_start
+	ext_common$progress_do = progress.&progress_do
+	ext_common$progress_end = progress.&progress_end
+
+	ext_common$utils_as_project = utils.&as_project
+	ext_common$utils_as_task = utils.&as_task
+	ext_common$utils_as_service = utils.&as_service
+	ext_common$utils_forward_task = utils.&forward_task
+	ext_common$utils_run_after_another_task = utils.&run_after_another_task
+	ext_common$utils_is_single_use_daemon = utils.&is_single_use_daemon
+	ext_common$utils_is_running_on_debug = utils.&is_running_on_debug
+	ext_common$utils_is_daemon_probably_unstable = utils.&is_daemon_probably_unstable
+
+	// Default
+	require = $.&require
+
+	logger_init = logger.&logger_init
+	logger_deinit = logger.&logger_deinit
+	logger_available = logger.&logger_available
+	logger_create = logger.&logger_create
+	logger_destroy = logger.&logger_destroy
+	logger_instance = logger.&logger_instance
+	logger_append = logger.&logger_append
+	logger_style = logger.&logger_style
+	logger_text = logger.&logger_text
+	logger_println = logger.&logger_println
+	logger_format = logger.&logger_format
+	logger_formatln = logger.&logger_formatln
+	logger_exception = logger.&logger_exception
+	println_impl = logger.&println_impl
+	plog = logger.&plog
+	pinfo = logger.&pinfo
+	pdebug = logger.&pdebug
+	pwarn = logger.&pwarn
+	perror = logger.&perror
+
+	progress_init = progress.&progress_init
+	progress_deinit = progress.&progress_deinit
+	progress_available = progress.&progress_available
+	progress_create = progress.&progress_create
+	progress_destroy = progress.&progress_destroy
+	progress_instance = progress.&progress_instance
+	progress_start = progress.&progress_start
+	progress_do = progress.&progress_do
+	progress_end = progress.&progress_end
+}
+
+class EXPORT_GLOBAL_FUNCTION {
+	def require(Object... args) { return $.&require.call(args) }
+
+	def loggerInit(Object... args) { return logger.&logger_init.call(args) }
+	def loggerDeinit(Object... args) { return logger.&logger_deinit.call(args) }
+	def loggerAvailable(Object... args) { return logger.&logger_available.call(args) }
+	def loggerCreate(Object... args) { return logger.&logger_create.call(args) }
+	def loggerDestroy(Object... args) { return logger.&logger_destroy.call(args) }
+	def loggerInstance(Object... args) { return logger.&logger_instance.call(args) }
+	def loggerAppend(Object... args) { return logger.&logger_append.call(args) }
+	def loggerStyle(Object... args) { return logger.&logger_style.call(args) }
+	def loggerText(Object... args) { return logger.&logger_text.call(args) }
+	def loggerPrintln(Object... args) { return logger.&logger_println.call(args) }
+	def loggerFormat(Object... args) { return logger.&logger_format.call(args) }
+	def loggerFormatln(Object... args) { return logger.&logger_formatln.call(args) }
+	def loggerException(Object... args) { return logger.&logger_exception.call(args) }
+	def printlnImpl(Object... args) { return logger.&println_impl.call(args) }
+	def plog(Object... args) { return logger.&plog.call(args) }
+	def pinfo(Object... args) { return logger.&pinfo.call(args) }
+	def pdebug(Object... args) { return logger.&pdebug.call(args) }
+	def pwarn(Object... args) { return logger.&pwarn.call(args) }
+	def perror(Object... args) { return logger.&perror.call(args) }
+
+	def progressInit(Object... args) { return progress.&progress_init.call(args) }
+	def progressDeinit(Object... args) { return progress.&progress_deinit.call(args) }
+	def progressAvailable(Object... args) { return progress.&progress_available.call(args) }
+	def progressCreate(Object... args) { return progress.&progress_create.call(args) }
+	def progressDestroy(Object... args) { return progress.&progress_destroy.call(args) }
+	def progressInstance(Object... args) { return progress.&progress_instance.call(args) }
+	def progressStart(Object... args) { return progress.&progress_start.call(args) }
+	def progressDo(Object... args) { return progress.&progress_do.call(args) }
+	def progressEnd(Object... args) { return progress.&progress_end.call(args) }
+
+	def forwardTask(Object... args) { return utils.&forward_task.call(args) }
+	def runAfterAnotherTask(Object... args) { return utils.&run_after_another_task.call(args) }
+	def isSingleUseDaemon(Object... args) { return utils.&is_single_use_daemon.call(args) }
+	def isRunningOnDebug(Object... args) { return utils.&is_running_on_debug.call(args) }
+	def isDaemonProbablyUnstable(Object... args) { return utils.&is_daemon_probably_unstable.call(args) }
+}

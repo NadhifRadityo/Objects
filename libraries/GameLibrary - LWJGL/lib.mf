@@ -1,0 +1,5 @@
+Module-Entry: GameLibrary.LWJGL.Main
+Module-Unique: GameLibrary.LWJGL
+
+name: config
+Test: Hello

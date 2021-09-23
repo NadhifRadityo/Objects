@@ -1,0 +1,56 @@
+ext.set('export_functions_only', true)
+apply from: 'common.gradle'
+ext.set('export_functions_only', null)
+
+class $ {
+	static def $this
+	static Map<String, Boolean> extendedProjects = new HashMap<>()
+
+	static def extend(String projectPath, String projectName = null) {
+		int splitIndex = projectPath.indexOf(':')
+		List<String> path = Arrays.asList((splitIndex != -1 ? projectPath.substring(0, splitIndex) : projectPath).split('/'))
+		String name = projectName != null ? projectName : splitIndex != -1 ? projectPath.substring(splitIndex + 1) : String.join('$', path.stream()
+				.map{it.substring(0, 1).toUpperCase() + it.substring(1)}.toArray(String[]::new))
+		String id = "${String.join('#', path)}?$name"
+		extendedProjects.put(id, false)
+		$this.pdebug "Configure ${String.join('/', path)} <$name> -> $id"
+		$this.include id
+	}
+	static def apply() {
+		$this.rootProject.children.each { project ->
+			String projectName = project.name
+			Boolean applied = extendedProjects.get(projectName)
+			if(applied == null || applied) return
+			extendedProjects.put(projectName, true)
+			int splitIndex = projectName.indexOf('?')
+			List<String> path = Arrays.asList(projectName.substring(0, splitIndex).split("#"))
+			String name = project.name.substring(splitIndex + 1)
+			project.projectDir = new File(String.join('/', path))
+			project.name = name
+			$this.pinfo "Imported ${String.join('/', path)} -> $name settings"
+			assert project.projectDir.isDirectory()
+			assert project.buildFile.isFile()
+		}
+	}
+	static def extended_projects() {
+		return Collections.unmodifiableMap(extendedProjects)
+	}
+}
+{
+	$.$this = this
+	$.extendedProjects.clear()
+	rootProject.name = 'Objects'
+}
+
+ext {
+	ext_settings_$imported = true
+	ext_settings_extend = $.&extend
+	ext_settings_apply = $.&apply
+	ext_settings_extended_projects = $.&extended_projects
+}
+
+def extend = $.&extend
+def apply = $.&apply
+extend('libraries/__library__', 'Library')
+extend('packages/Functional')
+apply()

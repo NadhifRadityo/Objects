@@ -1,0 +1,15 @@
+plugins {
+    id 'java'
+}
+
+apply from: 'common.gradle'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation project('Packages$Functional')
+}
+
+$_.forwardTask('Library', { it.group == 'library' })

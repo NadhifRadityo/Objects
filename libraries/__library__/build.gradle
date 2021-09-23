@@ -1,0 +1,65 @@
+import java.util.stream.Stream
+
+plugins {
+    id 'java'
+    id 'org.jetbrains.kotlin.jvm' version '1.5.30'
+}
+
+buildDir = '../__target__/__sources__/'
+require(this, '/common.gradle', 'modules.gradle', 'load.gradle')
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly gradleApi()
+    implementation CONFIG['LIBRARY_COMMONS_LANG']
+    implementation 'commons-cli:commons-cli:1.4'
+    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'org.jsoup:jsoup:1.14.1'
+
+    testImplementation CONFIG['TESTLIBRARY_IMPLEMENTATION']
+    testRuntimeOnly CONFIG['TESTLIBRARY_RUNTIME']
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// This part requires Gradle Daemon to cache the ClassLoader.
+// If the Daemon is single use, then this has no information
+// about the cached ClassLoader. And forcefully, have to load
+// latest compilation no matter what.
+if($_.isDaemonProbablyUnstable())
+    ext_load_load()
+if(ext_load_available())
+    ext_load_run(ext_modules_root_directory(), ext_modules_loaded_modules())
+task libraryLoad {
+    String[] depends = new String[] { 'compileKotlin', 'compileJava', 'processResources', 'classes' }
+    def anyChanged = { -> Stream.of(depends).map({ tasks.getByName(it) }).filter({
+        !it.state.upToDate && !it.state.skipped && !it.state.noSource }).count() > 0 }
+
+    group = 'library'
+    description = 'Load library scripts to daemon cache.'
+    for(def depend : depends) dependsOn depend
+    doFirst {
+        if($_.isDaemonProbablyUnstable() || anyChanged())
+            ext_load_clear()
+    }
+    doLast {
+        if($_.isDaemonProbablyUnstable()) return
+        if(!ext_load_available() || anyChanged())
+            ext_load_load()
+    }
+}
+task libraryUnload {
+    group = 'library'
+    description = 'Unload library scripts from daemon cache.'
+    onlyIf {
+        !$_.isDaemonProbablyUnstable()
+    }
+    doLast {
+        ext_load_clear()
+    }
+}
