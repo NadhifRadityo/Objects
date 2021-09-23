@@ -1,7 +1,6 @@
 package GameLibrary.LWJGL;
 
-import io.github.NadhifRadityo.Objects.Library.Constants.JSON_configurationsRoot;
-import io.github.NadhifRadityo.Objects.Library.Constants.Stage;
+import io.github.NadhifRadityo.Objects.Library.Constants.JSON_moduleRoot;
 import io.github.NadhifRadityo.Objects.Library.Library;
 
 import java.io.File;
@@ -16,36 +15,35 @@ import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.download;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.generateDefaultAndNativeLibrary;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.mavenSonatypeDependencyParser;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.parseDependency;
-import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.putDependencies;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.search;
 import static io.github.NadhifRadityo.Objects.Library.Utils.getCommandOutput;
 
 public class Main extends Library implements STATIC {
-	public static void CLEAN(Stage stage, JSON_configurationsRoot.$module module) throws Exception {
+	public static void CLEAN(JSON_moduleRoot module) throws Exception {
 		File buildDirectory = __static_dir();
-		for(JSON_configurationsRoot.$module.$dependency dependency : module.dependencies)
+		for(JSON_moduleRoot.$dependency dependency : module.dependencies)
 			delete(dependency, buildDirectory);
 		if(!buildDirectory.delete())
 			warn("Couldn't delete folder");
 	}
 
-	public static void CONFIG(Stage stage, JSON_configurationsRoot.$module module) throws Exception {
-		List<JSON_configurationsRoot.$module.$dependency> dependencies = new ArrayList<>();
+	public static void CONFIG(JSON_moduleRoot module) throws Exception {
+		List<JSON_moduleRoot.$dependency> dependencies = new ArrayList<>();
 		for(String ARTIFACT : ARTIFACTS) {
-			JSON_configurationsRoot.$module.$dependency dependency = search(module.properties, MAVEN_SONATYPE, GROUP, ARTIFACT, false)[0];
+			JSON_moduleRoot.$dependency dependency = search(module.properties, MAVEN_SONATYPE, GROUP, ARTIFACT, false)[0];
 			parseDependency(dependency, mavenSonatypeDependencyParser(NATIVE_DIR));
 			dependencies.add(dependency);
 		}
-		putDependencies(module, dependencies.toArray(new JSON_configurationsRoot.$module.$dependency[0]));
+		module.dependencies = dependencies.toArray(new JSON_moduleRoot.$dependency[0]);
 	}
 
-	public static void FETCH(Stage stage, JSON_configurationsRoot.$module module) throws Exception {
+	public static void FETCH(JSON_moduleRoot module) throws Exception {
 		File staticDirectory = __static_dir();
-		for(JSON_configurationsRoot.$module.$dependency dependency : module.dependencies)
+		for(JSON_moduleRoot.$dependency dependency : module.dependencies)
 			download(dependency, staticDirectory);
 	}
 
-	public static void BUILD(Stage stage, JSON_configurationsRoot.$module module) throws Exception {
+	public static void BUILD(JSON_moduleRoot module) throws Exception {
 		File staticDirectory = __static_dir();
 		File buildDirectory = __build_dir();
 

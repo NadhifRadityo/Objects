@@ -13,11 +13,11 @@ public enum Provider {
 	public final short id;
 	public final ThrowsReferencedCallback<Void> PHASE_PRE;
 	public final ThrowsReferencedCallback<Void> PHASE_POST;
-	public final ThrowsReferencedCallback<JSON_configurationsRoot.$module.$dependency[]> SEARCH;
+	public final ThrowsReferencedCallback<JSON_moduleRoot.$dependency[]> SEARCH;
 	public final ThrowsReferencedCallback<boolean[]> DOWNLOAD;
 	public final ThrowsReferencedCallback<boolean[]> DELETE;
 
-	Provider(int id, ThrowsReferencedCallback<Void> PHASE_PRE, ThrowsReferencedCallback<Void> PHASE_POST, ThrowsReferencedCallback<JSON_configurationsRoot.$module.$dependency[]> SEARCH, ThrowsReferencedCallback<boolean[]> DOWNLOAD, ThrowsReferencedCallback<boolean[]> DELETE) {
+	Provider(int id, ThrowsReferencedCallback<Void> PHASE_PRE, ThrowsReferencedCallback<Void> PHASE_POST, ThrowsReferencedCallback<JSON_moduleRoot.$dependency[]> SEARCH, ThrowsReferencedCallback<boolean[]> DOWNLOAD, ThrowsReferencedCallback<boolean[]> DELETE) {
 		this.id = (short) id;
 		this.PHASE_PRE = PHASE_PRE;
 		this.PHASE_POST = PHASE_POST;

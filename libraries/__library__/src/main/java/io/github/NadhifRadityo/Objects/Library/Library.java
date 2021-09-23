@@ -1,6 +1,7 @@
 package io.github.NadhifRadityo.Objects.Library;
 
-import io.github.NadhifRadityo.Objects.Library.Constants.JSON_configurationsRoot;
+import io.github.NadhifRadityo.Objects.Library.Constants.JSON_mainRoot;
+import io.github.NadhifRadityo.Objects.Library.Constants.JSON_moduleRoot;
 import io.github.NadhifRadityo.Objects.Library.Constants.Phase;
 import io.github.NadhifRadityo.Objects.Library.Constants.Provider;
 import io.github.NadhifRadityo.Objects.Library.Constants.Stage;
@@ -18,9 +19,8 @@ import java.io.StringReader;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
@@ -72,21 +72,21 @@ public class Library {
 		__STAGE__ = stage;
 		__DIRECTORY__ = directory;
 		__ADDITIONAL__ = additional;
-		__TARGETS__ = targets;
-		__BUILD_DIRECTORY__ = new File(__DIRECTORY__, "__build__");
+		__BUILD_DIRECTORY__ = new File(__DIRECTORY__, "__target__");
 
 		File configFile = new File(__BUILD_DIRECTORY__, stage.name().toLowerCase() + ".json");
-		JSON_configurationsRoot configurations = null;
+		JSON_mainRoot configurations = null;
 		if(configFile.exists()) {
-			configurations = toJson(getFileString(configFile), JSON_configurationsRoot.class);
+			configurations = toJson(getFileString(configFile), JSON_mainRoot.class);
 			if(configurations != null)
 				configurations.properties.putAll(additional);
 		} else if(!configFile.createNewFile())
 			throw new Error("Cannot create configuration file");
 		if(configurations == null) {
-			configurations = new JSON_configurationsRoot();
+			configurations = new JSON_mainRoot();
 			configurations.properties = additional;
 		}
+		__MAIN_ROOT__ = configurations;
 
 		File[] listFiles = directory.listFiles();
 		if(targets == null && listFiles != null)
@@ -95,7 +95,7 @@ public class Library {
 		if(targets == null)
 			throw new IllegalArgumentException("Target not specified");
 
-		List<LibraryPack> libraryPacks = new ArrayList<>();
+		List<ModulePack> modulePacks = new ArrayList<>();
 		for(String target : targets) {
 			File manifestFile = new File(directory, target + File.separator + "lib.mf");
 			log("Checking \"%s\" library manager... %s", target, manifestFile.exists() ? "yes" : "no");
@@ -107,110 +107,119 @@ public class Library {
 			Attributes mainAttributes = manifest.getMainAttributes();
 			Class<?> mainClass = null; try { mainClass = Class.forName(mainAttributes.getValue("Main-Class")); } catch(Exception ignored) { }
 			Class<?> testClass = null; try { testClass = Class.forName(mainAttributes.getValue("Test-Class")); } catch(Exception ignored) { }
-			LibraryPack libraryPack = new LibraryPack(target, manifest, mainClass, testClass);
-			libraryPacks.add(libraryPack);
+			File moduleConfigFile = new File(__BUILD_DIRECTORY__, target + File.separator + stage.name().toLowerCase() + ".json");
+			JSON_moduleRoot moduleRoot = null;
+			if(moduleConfigFile.exists()) {
+				moduleRoot = toJson(getFileString(moduleConfigFile), JSON_moduleRoot.class);
+				if(moduleRoot != null)
+					moduleRoot.properties = extendProperties(moduleRoot.properties, __MAIN_ROOT__.properties, false);
+			} else if(!moduleConfigFile.createNewFile())
+				throw new Error("Cannot create configuration file");
+			if(moduleRoot == null) {
+				moduleRoot = new JSON_moduleRoot();
+				moduleRoot.name = target;
+				moduleRoot.properties = new Properties(__MAIN_ROOT__.properties);
+			}
+			ModulePack modulePack = new ModulePack(target, manifest, mainClass, testClass, moduleRoot);
+			modulePacks.add(modulePack);
 		}
+		__TARGETS__ = Collections.unmodifiableList(modulePacks);
 
 		if(phase == Phase.CONFIG)
 			defaultPropertiesConfig(configurations);
-		preProvider(phase, stage, directory, configurations, libraryPacks);
-		Map<String, JSON_configurationsRoot.$module> modules = readModules(phase, stage, directory, configurations, libraryPacks);
-		preModules(phase, stage, directory, configurations, libraryPacks, modules);
-		runModules(phase, stage, directory, configurations, libraryPacks, modules);
-		postModules(phase, stage, directory, configurations, libraryPacks, modules);
-		writeModules(phase, stage, directory, configurations, libraryPacks, modules);
-		postProvider(phase, stage, directory, configurations, libraryPacks);
+		preProvider();
+		readModules();
+		preModules();
+		runModules();
+		postModules();
+		writeModules();
+		postProvider();
 		if(phase == Phase.CONFIG) {
 			String stringOut = createJSONFile(configurations, configFile);
-			info(stringOut.replaceAll("%", "%%"));
+//			info(stringOut.replaceAll("%", "%%"));
+			for(ModulePack modulePack : __TARGETS__) {
+				File moduleConfigFile = new File(__BUILD_DIRECTORY__, modulePack.name + File.separator + stage.name().toLowerCase() + ".json");
+				stringOut = createJSONFile(modulePack.moduleRoot, moduleConfigFile);
+//				info(stringOut.replaceAll("%", "%%"));
+			}
 		}
 	}
 
-	protected static void preProvider(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks) throws Exception {
+	protected static void preProvider() throws Exception {
 		for(Provider provider : Provider.values())
-			provider.PHASE_PRE.get(phase, stage, directory, configurations, libraryPacks);
+			provider.PHASE_PRE.get(__TARGETS__);
 	}
-	protected static void postProvider(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks) throws Exception {
+	protected static void postProvider() throws Exception {
 		for(Provider provider : Provider.values())
-			provider.PHASE_POST.get(phase, stage, directory, configurations, libraryPacks);
+			provider.PHASE_POST.get(__TARGETS__);
 	}
 
-	protected static Map<String, JSON_configurationsRoot.$module> readModules(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks) throws Exception {
-		Map<String, JSON_configurationsRoot.$module> modules = new HashMap<>();
-		if(configurations.modules != null) for(JSON_configurationsRoot.$module module : configurations.modules) {
-			module.properties = extendProperties(module.properties, configurations.properties, false);
-			if(module.dependencies == null) continue;
-			for(JSON_configurationsRoot.$module.$dependency dependency : module.dependencies) {
-				dependency.properties = extendProperties(dependency.properties, module.properties, false);
+	protected static void readModules() throws Exception {
+		for(ModulePack modulePack : __TARGETS__) {
+			JSON_moduleRoot moduleRoot = modulePack.moduleRoot;
+			moduleRoot.properties = extendProperties(moduleRoot.properties, __MAIN_ROOT__.properties, false);
+			if(moduleRoot.dependencies == null) continue;
+			for(JSON_moduleRoot.$dependency dependency : moduleRoot.dependencies) {
+				dependency.properties = extendProperties(dependency.properties, moduleRoot.properties, false);
 				if(dependency.items == null) continue;
-				for(JSON_configurationsRoot.$module.$dependency.$item item : dependency.items) {
+				for(JSON_moduleRoot.$dependency.$item item : dependency.items) {
 					item.properties = extendProperties(item.properties, dependency.properties, false);
 				}
 			}
-			modules.put(module.name, module);
-		}
-		libraryPacks.stream().map(l -> l.name).filter(n -> !modules.containsKey(n)).forEach(l -> {
-			JSON_configurationsRoot.$module module = new JSON_configurationsRoot.$module();
-			module.name = l;
-			module.properties = new Properties(configurations.properties);
-			module.dependencies = new JSON_configurationsRoot.$module.$dependency[0];
-			modules.put(l, module);
-		});
-		return modules;
-	}
-	protected static void preModules(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks, Map<String, JSON_configurationsRoot.$module> modules) throws Exception {
-		for(LibraryPack libraryPack : libraryPacks) {
-			Class<?> CLASS_$ANY = phase != Phase.VALIDATE ? libraryPack.mainClass : libraryPack.testClass;
-			Method METHOD_$ANY_PRE__MODULES; try { METHOD_$ANY_PRE__MODULES = CLASS_$ANY.getMethod("PRE_MODULES", Stage.class,
-					JSON_configurationsRoot.$module.class); } catch(NoSuchMethodException ignored) { continue; }
-			__CURRENT__ = libraryPack;
-			__CURRENT_DIR__ = new File(directory, libraryPack.name);
-			log("Executing \"%s\" library manager... pre modules", libraryPack.name);
-			JSON_configurationsRoot.$module module = modules.get(libraryPack.name);
-			METHOD_$ANY_PRE__MODULES.invoke(null, stage, module);
 		}
 	}
-	protected static void runModules(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks, Map<String, JSON_configurationsRoot.$module> modules) throws Exception {
-		for(LibraryPack libraryPack : libraryPacks) {
-			Class<?> CLASS_$ANY = phase != Phase.VALIDATE ? libraryPack.mainClass : libraryPack.testClass;
-			Method METHOD_$ANY_$PHASE; try { METHOD_$ANY_$PHASE = CLASS_$ANY.getMethod(phase.name(), Stage.class,
-					JSON_configurationsRoot.$module.class); } catch(NoSuchMethodException ignored) { continue; }
-			__CURRENT__ = libraryPack;
-			__CURRENT_DIR__ = new File(directory, libraryPack.name);
-			log("Executing \"%s\" library manager... %s (%s)", libraryPack.name, phase.name().toLowerCase(), stage.name().toLowerCase());
-			JSON_configurationsRoot.$module module = modules.get(libraryPack.name);
-			METHOD_$ANY_$PHASE.invoke(null, stage, module);
+	protected static void preModules() throws Exception {
+		for(ModulePack modulePack : __TARGETS__) {
+			Class<?> CLASS_$ANY = __PHASE__ != Phase.VALIDATE ? modulePack.mainClass : modulePack.testClass;
+			Method METHOD_$ANY_PRE__MODULES; try { METHOD_$ANY_PRE__MODULES = CLASS_$ANY.getMethod("PRE_MODULES",
+					JSON_moduleRoot.class); } catch(NoSuchMethodException ignored) { continue; }
+			__CURRENT__ = modulePack;
+			__CURRENT_DIR__ = new File(__DIRECTORY__, modulePack.name);
+			log("Executing \"%s\" library manager... pre modules", modulePack.name);
+			JSON_moduleRoot module = modulePack.moduleRoot;
+			METHOD_$ANY_PRE__MODULES.invoke(null, module);
 		}
 	}
-	protected static void postModules(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks, Map<String, JSON_configurationsRoot.$module> modules) throws Exception {
-		for(LibraryPack libraryPack : libraryPacks) {
-			Class<?> CLASS_$ANY = phase != Phase.VALIDATE ? libraryPack.mainClass : libraryPack.testClass;
-			Method METHOD_$ANY_POST__MODULES; try { METHOD_$ANY_POST__MODULES = CLASS_$ANY.getMethod("POST_MODULES", Stage.class,
-					JSON_configurationsRoot.$module.class); } catch(NoSuchMethodException ignored) { continue; }
-			__CURRENT__ = libraryPack;
-			__CURRENT_DIR__ = new File(directory, libraryPack.name);
-			log("Executing \"%s\" library manager... post modules", libraryPack.name);
-			JSON_configurationsRoot.$module module = modules.get(libraryPack.name);
-			METHOD_$ANY_POST__MODULES.invoke(null, stage, module);
+	protected static void runModules() throws Exception {
+		for(ModulePack modulePack : __TARGETS__) {
+			Class<?> CLASS_$ANY = __PHASE__ != Phase.VALIDATE ? modulePack.mainClass : modulePack.testClass;
+			Method METHOD_$ANY_$PHASE; try { METHOD_$ANY_$PHASE = CLASS_$ANY.getMethod(__PHASE__.name(),
+					JSON_moduleRoot.class); } catch(NoSuchMethodException ignored) { continue; }
+			__CURRENT__ = modulePack;
+			__CURRENT_DIR__ = new File(__DIRECTORY__, modulePack.name);
+			log("Executing \"%s\" library manager... %s (%s)", modulePack.name, __PHASE__.name().toLowerCase(), __STAGE__.name().toLowerCase());
+			JSON_moduleRoot module = modulePack.moduleRoot;
+			METHOD_$ANY_$PHASE.invoke(null, module);
 		}
 	}
-	protected static void writeModules(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks, Map<String, JSON_configurationsRoot.$module> modules) throws Exception {
-		configurations.modules = modules.values().toArray(new JSON_configurationsRoot.$module[0]);
-		configurations.properties = copyNonDefaultProperties(configurations.properties, true);
-		for(JSON_configurationsRoot.$module module : modules.values()) {
-			module.properties = copyNonDefaultProperties(module.properties, true);
-			if(module.dependencies == null) continue;
-			for(JSON_configurationsRoot.$module.$dependency dependency : module.dependencies) {
+	protected static void postModules() throws Exception {
+		for(ModulePack modulePack : __TARGETS__) {
+			Class<?> CLASS_$ANY = __PHASE__ != Phase.VALIDATE ? modulePack.mainClass : modulePack.testClass;
+			Method METHOD_$ANY_POST__MODULES; try { METHOD_$ANY_POST__MODULES = CLASS_$ANY.getMethod("POST_MODULES",
+					JSON_moduleRoot.class); } catch(NoSuchMethodException ignored) { continue; }
+			__CURRENT__ = modulePack;
+			__CURRENT_DIR__ = new File(__DIRECTORY__, modulePack.name);
+			log("Executing \"%s\" library manager... post modules", modulePack.name);
+			JSON_moduleRoot module = modulePack.moduleRoot;
+			METHOD_$ANY_POST__MODULES.invoke(null, module);
+		}
+	}
+	protected static void writeModules() throws Exception {
+		for(ModulePack modulePack : __TARGETS__) {
+			JSON_moduleRoot moduleRoot = modulePack.moduleRoot;
+			moduleRoot.properties = copyNonDefaultProperties(moduleRoot.properties, true);
+			if(moduleRoot.dependencies == null) continue;
+			for(JSON_moduleRoot.$dependency dependency : moduleRoot.dependencies) {
 				dependency.properties = copyNonDefaultProperties(dependency.properties, true);
 				if(dependency.items == null) continue;
-				for(JSON_configurationsRoot.$module.$dependency.$item item : dependency.items) {
+				for(JSON_moduleRoot.$dependency.$item item : dependency.items) {
 					item.properties = copyNonDefaultProperties(item.properties, true);
 				}
 			}
 		}
 	}
 
-	protected static void defaultPropertiesConfig(JSON_configurationsRoot configurations) throws Exception {
+	protected static void defaultPropertiesConfig(JSON_mainRoot configurations) throws Exception {
 		ThrowsReferencedCallback<Void> putExecutable = (args) -> {
 			String executable = args.length >= 1 ? (String) args[0] : null;
 			String[] alternatives = args.length >= 2 ? (String[]) args[1] : null;
@@ -226,9 +235,9 @@ public class Library {
 			configurations.properties.setProperty(key, path.getAbsolutePath());
 			return null;
 		};
-		putExecutable.get("java", new String[] { "java8", "java9", "java11", "java13", "gvm19java8", "gvm20java8", "gvm20java11", "rlyjava15", "rlyjava16", "pnmjava14", "pnmjava16", "zuljava15" });
-		putExecutable.get("javac", new String[] { "javac8", "javac9", "javac11", "javac13", "gvm19javac8", "gvm20javac8", "gvm20javac11", "rlyjavac15", "rlyjavac16", "pnmjavac14", "pnmjavac16", "zuljavac15" });
-		putExecutable.get("jar", new String[] { "jar8", "jar9", "jar11", "jar13", "gvm19jar8", "gvm20jar8", "gvm20jar11", "rlyjar15", "rlyjar16", "pnmjar14", "pnmjar16", "zuljar15" });
+		putExecutable.get("java", new String[] { "java8", "java9", "java11", "java13", "java17", "gvm19java8", "gvm20java8", "gvm20java11", "rlyjava15", "rlyjava16", "pnmjava14", "pnmjava16", "zuljava15" });
+		putExecutable.get("javac", new String[] { "javac8", "javac9", "javac11", "javac13", "javac17", "gvm19javac8", "gvm20javac8", "gvm20javac11", "rlyjavac15", "rlyjavac16", "pnmjavac14", "pnmjavac16", "zuljavac15" });
+		putExecutable.get("jar", new String[] { "jar8", "jar9", "jar11", "jar13", "jar17", "gvm19jar8", "gvm20jar8", "gvm20jar11", "rlyjar15", "rlyjar16", "pnmjar14", "pnmjar16", "zuljar15" });
 		putExecutable.get("certutil");
 		putExecutable.get("openssl");
 		putExecutable.get("md5sum");
@@ -253,26 +262,51 @@ public class Library {
 	public static void warn(String text, Object... format) { parseFormat(format); for(String line : String.format(text, format).split("\n")) System.out.println("[WARN] " + line); }
 	public static void error(String text, Object... format) { parseFormat(format); for(String line : String.format(text, format).split("\n")) System.out.println("[ERROR] " + line); }
 
-	protected static Phase __PHASE__;
-	protected static Stage __STAGE__;
-	protected static File __DIRECTORY__;
-	protected static Properties __ADDITIONAL__;
-	protected static String[] __TARGETS__;
-	protected static File __BUILD_DIRECTORY__;
+	private static Phase __PHASE__;
+	private static Stage __STAGE__;
+	private static File __DIRECTORY__;
+	private static Properties __ADDITIONAL__;
+	private static List<ModulePack> __TARGETS__;
+	private static File __BUILD_DIRECTORY__;
+	private static JSON_mainRoot __MAIN_ROOT__;
 
-	protected static LibraryPack __CURRENT__;
-	protected static File __CURRENT_DIR__;
+	private static ModulePack __CURRENT__;
+	private static File __CURRENT_DIR__;
 
-	public static File __build_dir() {
-		File buildDirectory = new File(__BUILD_DIRECTORY__, __CURRENT__.name + File.separator + __STAGE__.name().toLowerCase());
-		if(!buildDirectory.exists() && !buildDirectory.mkdirs())
+	public static Phase phase() { return __PHASE__; }
+	public static Stage stage() { return __STAGE__; }
+	public static File directory() { return __DIRECTORY__; }
+	public static Properties additional() { return __ADDITIONAL__; }
+	public static List<ModulePack> targets() { return __TARGETS__; }
+	public static File buildDirectory() { return __BUILD_DIRECTORY__; }
+	public static JSON_mainRoot mainRoot() { return __MAIN_ROOT__; }
+
+	public static ModulePack current() { return __CURRENT__; }
+	public static File currentDir() { return __CURRENT_DIR__; }
+
+	public static File __target_dir(ModulePack modulePack, String subDirectory) {
+		File targetDir = new File(__BUILD_DIRECTORY__, modulePack.name + File.separator + subDirectory);
+		if(!targetDir.exists() && !targetDir.mkdirs())
 			throw new IllegalArgumentException();
-		return buildDirectory;
+		return targetDir;
+	}
+	public static File __target_dir(ModulePack modulePack) {
+		return __target_dir(modulePack, "");
+	}
+	public static File __build_dir(ModulePack modulePack) {
+		return __target_dir(modulePack, __STAGE__.name().toLowerCase());
+	}
+	public static File __static_dir(ModulePack modulePack) {
+		return __target_dir(modulePack, "__static__");
+	}
+
+	public static File __target_dir() {
+		return __target_dir(__CURRENT__);
+	}
+	public static File __build_dir() {
+		return __build_dir(__CURRENT__);
 	}
 	public static File __static_dir() {
-		File buildDirectory = new File(__BUILD_DIRECTORY__, __CURRENT__.name + File.separator + "__static__");
-		if(!buildDirectory.exists() && !buildDirectory.mkdirs())
-			throw new IllegalArgumentException();
-		return buildDirectory;
+		return __static_dir(__CURRENT__);
 	}
 }

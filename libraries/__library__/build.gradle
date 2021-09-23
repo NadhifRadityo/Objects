@@ -4,7 +4,7 @@ plugins {
     id 'java'
 }
 
-buildDir = '../__build__/__sources__/'
+buildDir = '../__target__/__sources__/'
 apply from: '../../common.gradle'
 apply from: 'libraries.gradle'
 apply from: 'load.gradle'
@@ -15,6 +15,7 @@ repositories {
 
 dependencies {
     compileOnly gradleApi()
+    implementation CONFIG['LIBRARY_COMMONS_LANG']
     implementation 'commons-cli:commons-cli:1.4'
     implementation 'com.google.code.gson:gson:2.8.6'
     implementation 'org.jsoup:jsoup:1.14.1'

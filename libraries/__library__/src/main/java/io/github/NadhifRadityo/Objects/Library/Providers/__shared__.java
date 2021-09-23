@@ -1,7 +1,7 @@
 package io.github.NadhifRadityo.Objects.Library.Providers;
 
 import io.github.NadhifRadityo.Objects.Library.Constants.Action;
-import io.github.NadhifRadityo.Objects.Library.Constants.JSON_configurationsRoot;
+import io.github.NadhifRadityo.Objects.Library.Constants.JSON_moduleRoot;
 import io.github.NadhifRadityo.Objects.Library.ReferencedCallback;
 import io.github.NadhifRadityo.Objects.Library.ThrowsReferencedCallback;
 
@@ -31,11 +31,11 @@ public class __shared__ {
 	public static int DOWNLOAD_CHECKSUM_NOT_PASSED = -1;
 	public static int DOWNLOAD_MAX_RETRY = 3;
 	
-	public static boolean[] downloadDefault(JSON_configurationsRoot.$module.$dependency dependency, File currentDir, ThrowsReferencedCallback<Void> _download, ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> _hashes) throws Exception {
+	public static boolean[] downloadDefault(JSON_moduleRoot.$dependency dependency, File currentDir, ThrowsReferencedCallback<Void> _download, ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> _hashes) throws Exception {
 		boolean[] result = new boolean[dependency.items.length];
 		int retry = 0;
 		for(int i = 0; i < dependency.items.length; i++) {
-			JSON_configurationsRoot.$module.$dependency.$item item = dependency.items[i];
+			JSON_moduleRoot.$dependency.$item item = dependency.items[i];
 			String dir = item.directory;
 			String name = item.name;
 			long act = item.actions;
@@ -126,10 +126,10 @@ public class __shared__ {
 		return result;
 	}
 
-	public static boolean[] deleteDefault(JSON_configurationsRoot.$module.$dependency dependency, File currentDir, ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> _hashes) throws Exception {
+	public static boolean[] deleteDefault(JSON_moduleRoot.$dependency dependency, File currentDir, ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> _hashes) throws Exception {
 		boolean[] result = new boolean[dependency.items.length];
 		for(int i = 0; i < dependency.items.length; i++) {
-			JSON_configurationsRoot.$module.$dependency.$item item = dependency.items[i];
+			JSON_moduleRoot.$dependency.$item item = dependency.items[i];
 			String dir = item.directory;
 			String name = item.name;
 			long act = item.actions;

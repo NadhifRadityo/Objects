@@ -1,7 +1,7 @@
 package io.github.NadhifRadityo.Objects.Library;
 
 import io.github.NadhifRadityo.Objects.Library.Constants.Action;
-import io.github.NadhifRadityo.Objects.Library.Constants.JSON_configurationsRoot;
+import io.github.NadhifRadityo.Objects.Library.Constants.JSON_moduleRoot;
 import io.github.NadhifRadityo.Objects.Library.Constants.Provider;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -15,7 +15,6 @@ import java.util.stream.Stream;
 
 import static io.github.NadhifRadityo.Objects.Library.Library.error;
 import static io.github.NadhifRadityo.Objects.Library.Utils.createXMLFile;
-import static io.github.NadhifRadityo.Objects.Library.Utils.extendProperties;
 import static io.github.NadhifRadityo.Objects.Library.Utils.newXMLDocument;
 import static io.github.NadhifRadityo.Objects.Library.Utils.p_setObject;
 import static io.github.NadhifRadityo.Objects.Library.Utils.pn_getObject;
@@ -27,7 +26,7 @@ public class LibraryUtils {
 	public static long SONATYPE_MAVEN = Provider.SONATYPE.id | Provider.MAVEN.id << 16;
 	public static long MAVEN_SONATYPE = Provider.MAVEN.id | Provider.SONATYPE.id << 16;
 
-	public static JSON_configurationsRoot.$module.$dependency[] search(Properties properties, long providers, Object... args) throws Exception {
+	public static JSON_moduleRoot.$dependency[] search(Properties properties, long providers, Object... args) throws Exception {
 		Object[] newArgs = new Object[args.length + 1];
 		newArgs[0] = properties;
 		System.arraycopy(args, 0, newArgs, 1, args.length);
@@ -36,10 +35,10 @@ public class LibraryUtils {
 			short providerId = (short) ((providers >> i * 8 * 2) & 0xFFFF);
 			Provider provider = Provider.fromId(providerId);
 			if(provider == null) { error("Invalid provider: %s", providerId); continue; }
-			ThrowsReferencedCallback<JSON_configurationsRoot.$module.$dependency[]> search = provider.SEARCH;
+			ThrowsReferencedCallback<JSON_moduleRoot.$dependency[]> search = provider.SEARCH;
 			if(search == null) continue;
 			try {
-				JSON_configurationsRoot.$module.$dependency[] result = search.get(newArgs);
+				JSON_moduleRoot.$dependency[] result = search.get(newArgs);
 				if(result != null) return result;
 			} catch(Exception e) { error("Error while doing provider: %s,\n%s", providerId, e); }
 		} return null;
@@ -47,8 +46,8 @@ public class LibraryUtils {
 
 	public static ReferencedCallback<Boolean> mavenSonatypeDependencyParser(String nativeDir) {
 		return args -> {
-			JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[0];
-			JSON_configurationsRoot.$module.$dependency dependency = (JSON_configurationsRoot.$module.$dependency) args[1];
+			JSON_moduleRoot.$dependency.$item item = (JSON_moduleRoot.$dependency.$item) args[0];
+			JSON_moduleRoot.$dependency dependency = (JSON_moduleRoot.$dependency) args[1];
 			if(!Provider.MAVEN.equals(dependency.source) && !Provider.SONATYPE.equals(dependency.source))
 				return true;
 			String name = item.name;
@@ -76,8 +75,8 @@ public class LibraryUtils {
 	}
 	public static ReferencedCallback<Boolean> htmlDirDependencyParser(ReferencedCallback<Boolean> filter, ReferencedCallback<String> typeProvider, String nativeDir) {
 		return args -> {
-			JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[0];
-			JSON_configurationsRoot.$module.$dependency dependency = (JSON_configurationsRoot.$module.$dependency) args[1];
+			JSON_moduleRoot.$dependency.$item item = (JSON_moduleRoot.$dependency.$item) args[0];
+			JSON_moduleRoot.$dependency dependency = (JSON_moduleRoot.$dependency) args[1];
 			if(!Provider.HTML_DIR_LISTING.equals(dependency.source))
 				return true;
 			if(!filter.get(item, dependency)) return false;
@@ -95,23 +94,12 @@ public class LibraryUtils {
 			return true;
 		};
 	}
-	public static void parseDependency(JSON_configurationsRoot.$module.$dependency dependency, ReferencedCallback<Boolean> callback) {
+	public static void parseDependency(JSON_moduleRoot.$dependency dependency, ReferencedCallback<Boolean> callback) {
 		dependency.items = Stream.of(dependency.items).filter(item -> callback.get(item, dependency))
-				.toArray(JSON_configurationsRoot.$module.$dependency.$item[]::new);
-	}
-	public static void putDependencies(JSON_configurationsRoot.$module module, JSON_configurationsRoot.$module.$dependency... dependencies) {
-		module.dependencies = dependencies;
-		if(module.dependencies == null) return;
-		for(JSON_configurationsRoot.$module.$dependency dependency : module.dependencies) {
-			dependency.properties = extendProperties(dependency.properties, module.properties, false);
-			if(dependency.items == null) continue;
-			for(JSON_configurationsRoot.$module.$dependency.$item item : dependency.items) {
-				item.properties = extendProperties(item.properties, dependency.properties, false);
-			}
-		}
+				.toArray(JSON_moduleRoot.$dependency.$item[]::new);
 	}
 
-	public static boolean[] download(JSON_configurationsRoot.$module.$dependency dependency, File currentDir, Object... args) throws Exception {
+	public static boolean[] download(JSON_moduleRoot.$dependency dependency, File currentDir, Object... args) throws Exception {
 		Object[] newArgs = new Object[args.length + 2];
 		newArgs[0] = dependency;
 		newArgs[1] = currentDir;
@@ -120,7 +108,7 @@ public class LibraryUtils {
 		return provider != null ? provider.get(newArgs) : null;
 	}
 
-	public static boolean[] delete(JSON_configurationsRoot.$module.$dependency dependency, File currentDir, Object... args) throws Exception {
+	public static boolean[] delete(JSON_moduleRoot.$dependency dependency, File currentDir, Object... args) throws Exception {
 		Object[] newArgs = new Object[args.length + 2];
 		newArgs[0] = dependency;
 		newArgs[1] = currentDir;
@@ -129,13 +117,13 @@ public class LibraryUtils {
 		return provider != null ? provider.get(newArgs) : null;
 	}
 
-	public static <T> T createLibrary(JSON_configurationsRoot.$module module, File currentDir, ThrowsReferencedCallback<T> provider) throws Exception {
-		List<JSON_configurationsRoot.$module.$dependency.$item> classes = new ArrayList<>();
-		List<JSON_configurationsRoot.$module.$dependency.$item> javadoc = new ArrayList<>();
-		List<JSON_configurationsRoot.$module.$dependency.$item> sources = new ArrayList<>();
-		for(JSON_configurationsRoot.$module.$dependency dependency : module.dependencies) {
+	public static <T> T createLibrary(JSON_moduleRoot module, File currentDir, ThrowsReferencedCallback<T> provider) throws Exception {
+		List<JSON_moduleRoot.$dependency.$item> classes = new ArrayList<>();
+		List<JSON_moduleRoot.$dependency.$item> javadoc = new ArrayList<>();
+		List<JSON_moduleRoot.$dependency.$item> sources = new ArrayList<>();
+		for(JSON_moduleRoot.$dependency dependency : module.dependencies) {
 			for(int i = 0; i < dependency.items.length; i++) {
-				JSON_configurationsRoot.$module.$dependency.$item item = dependency.items[i];
+				JSON_moduleRoot.$dependency.$item item = dependency.items[i];
 				String type = pn_getObject(item.properties, "type");
 				if(type == null) continue;
 
@@ -145,16 +133,16 @@ public class LibraryUtils {
 				if(types.contains("sources")) sources.add(item);
 			}
 		}
-		return createLibrary(module.name, currentDir, provider, classes.toArray(new JSON_configurationsRoot.$module.$dependency.$item[0]),
-				javadoc.toArray(new JSON_configurationsRoot.$module.$dependency.$item[0]), sources.toArray(new JSON_configurationsRoot.$module.$dependency.$item[0]));
+		return createLibrary(module.name, currentDir, provider, classes.toArray(new JSON_moduleRoot.$dependency.$item[0]),
+				javadoc.toArray(new JSON_moduleRoot.$dependency.$item[0]), sources.toArray(new JSON_moduleRoot.$dependency.$item[0]));
 	}
-	public static <T> T createLibrary(String moduleName, File currentDir, ThrowsReferencedCallback<T> provider, JSON_configurationsRoot.$module.$dependency.$item[] classes, JSON_configurationsRoot.$module.$dependency.$item[] javadoc, JSON_configurationsRoot.$module.$dependency.$item[] sources) throws Exception {
+	public static <T> T createLibrary(String moduleName, File currentDir, ThrowsReferencedCallback<T> provider, JSON_moduleRoot.$dependency.$item[] classes, JSON_moduleRoot.$dependency.$item[] javadoc, JSON_moduleRoot.$dependency.$item[] sources) throws Exception {
 		List<File> classesFile = null;
 		List<File> javadocFile = null;
 		List<File> sourcesFile = null;
 		if(classes != null && classes.length > 0) {
 			classesFile = new ArrayList<>();
-			for(JSON_configurationsRoot.$module.$dependency.$item item : classes) {
+			for(JSON_moduleRoot.$dependency.$item item : classes) {
 				String dir = item.directory;
 				String name = item.name;
 				long act = item.actions;
@@ -170,7 +158,7 @@ public class LibraryUtils {
 		}
 		if(javadoc != null && javadoc.length > 0) {
 			javadocFile = new ArrayList<>();
-			for(JSON_configurationsRoot.$module.$dependency.$item item : javadoc) {
+			for(JSON_moduleRoot.$dependency.$item item : javadoc) {
 				String dir = item.directory;
 				String name = item.name;
 				long act = item.actions;
@@ -186,7 +174,7 @@ public class LibraryUtils {
 		}
 		if(sources != null && sources.length > 0) {
 			sourcesFile = new ArrayList<>();
-			for(JSON_configurationsRoot.$module.$dependency.$item item : sources) {
+			for(JSON_moduleRoot.$dependency.$item item : sources) {
 				String dir = item.directory;
 				String name = item.name;
 				long act = item.actions;
@@ -264,7 +252,7 @@ public class LibraryUtils {
 		};
 	}
 
-	public static void generateDefaultAndNativeLibrary(JSON_configurationsRoot.$module module, File staticDirectory, File buildDirectory, String LIBRARY_NAME, String LIBRARY_NATIVE_NAME, String NATIVE_NAME, String JAR_NAME) throws Exception {
+	public static void generateDefaultAndNativeLibrary(JSON_moduleRoot module, File staticDirectory, File buildDirectory, String LIBRARY_NAME, String LIBRARY_NATIVE_NAME, String NATIVE_NAME, String JAR_NAME) throws Exception {
 		Document out = newXMLDocument(null);
 		Element intellijLibrary = createLibrary(module, staticDirectory, asIntelliJLibrary(out));
 		createXMLFile(intellijLibrary, new File(buildDirectory, LIBRARY_NAME + ".xml"));

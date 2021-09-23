@@ -1,8 +1,7 @@
 package GameLibrary.Jogamp;
 
-import io.github.NadhifRadityo.Objects.Library.Constants.JSON_configurationsRoot;
+import io.github.NadhifRadityo.Objects.Library.Constants.JSON_moduleRoot;
 import io.github.NadhifRadityo.Objects.Library.Constants.Provider;
-import io.github.NadhifRadityo.Objects.Library.Constants.Stage;
 import io.github.NadhifRadityo.Objects.Library.Library;
 import io.github.NadhifRadityo.Objects.Library.Providers.HTMLDirListingProvider;
 import io.github.NadhifRadityo.Objects.Library.ReferencedCallback;
@@ -33,7 +32,6 @@ import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.download;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.generateDefaultAndNativeLibrary;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.htmlDirDependencyParser;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.parseDependency;
-import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.putDependencies;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.search;
 import static io.github.NadhifRadityo.Objects.Library.Providers.HTMLDirListingProvider.GLOBAL_PROPERTIES_HTML_DIR_LISTING_HASHES;
 import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.hashesAvailable;
@@ -46,16 +44,16 @@ import static io.github.NadhifRadityo.Objects.Library.Utils.pn_getObject;
 import static io.github.NadhifRadityo.Objects.Library.Utils.writeFileString;
 
 public class Main extends Library implements STATIC {
-	public static void CLEAN(Stage stage, JSON_configurationsRoot.$module module) throws Exception {
+	public static void CLEAN(JSON_moduleRoot module) throws Exception {
 		File buildDirectory = __static_dir();
-		for(JSON_configurationsRoot.$module.$dependency dependency : module.dependencies)
+		for(JSON_moduleRoot.$dependency dependency : module.dependencies)
 			delete(dependency, buildDirectory, hashes);
 		if(!buildDirectory.delete())
 			warn("Couldn't delete folder");
 	}
 
-	public static void CONFIG(Stage stage, JSON_configurationsRoot.$module module) throws Exception {
-		List<JSON_configurationsRoot.$module.$dependency> dependencies = new ArrayList<>();
+	public static void CONFIG(JSON_moduleRoot module) throws Exception {
+		List<JSON_moduleRoot.$dependency> dependencies = new ArrayList<>();
 		String[] blacklistFiles = new String[] { "www/", "javadoc/", "javadoc_dev/" };
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 		ThrowsReferencedCallback<org.jsoup.nodes.Document> getSource = (args) -> {
@@ -89,15 +87,15 @@ public class Main extends Library implements STATIC {
 		ThrowsReferencedCallback<HTMLDirListingProvider.HTMLFileDetails[]> versionProvider = (args) ->
 				Stream.of(fileProvider.get(args)).filter(n -> n.name.startsWith(AT_LEAST_VERSION)).toArray(HTMLDirListingProvider.HTMLFileDetails[]::new);
 		{
-			JSON_configurationsRoot.$module.$dependency dependency = search(module.properties, Provider.HTML_DIR_LISTING.id, VERSION_LIST, getSource, versionProvider, fileProvider)[0];
+			JSON_moduleRoot.$dependency dependency = search(module.properties, Provider.HTML_DIR_LISTING.id, VERSION_LIST, getSource, versionProvider, fileProvider)[0];
 			parseDependency(dependency, htmlDirDependencyParser((args) -> {
-				JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[0];
+				JSON_moduleRoot.$dependency.$item item = (JSON_moduleRoot.$dependency.$item) args[0];
 				String name = item.name;
 				String path = pn_getObject(item.properties, "path");
 				boolean directory = pn_getBoolean(item.properties, "directory");
 				return !directory && (path.startsWith("jar") || (path.equals("") && name.contains(CHECKSUM_FILE)));
 			}, (args) -> {
-				JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[0];
+				JSON_moduleRoot.$dependency.$item item = (JSON_moduleRoot.$dependency.$item) args[0];
 				String name = item.name;
 				String path = pn_getObject(item.properties, "path");
 				if(name.endsWith(".pom")) return "pom";
@@ -107,22 +105,22 @@ public class Main extends Library implements STATIC {
 			}, NATIVE_DIR));
 			// Important to make the signature file on first index
 			dependency.items = Stream.of(dependency.items).sorted((i1, i2) -> i1.name.contains(CHECKSUM_FILE) ? -1 : i2.name.contains(CHECKSUM_FILE) ? 1 : 0)
-					.toArray(JSON_configurationsRoot.$module.$dependency.$item[]::new);
+					.toArray(JSON_moduleRoot.$dependency.$item[]::new);
 			Stream.of(dependency.items).filter(i -> i.name.equals(CHECKSUM_FILE)).findFirst().ifPresent(i -> {
 //				p_setObject(i.properties, GLOBAL_PROPERTIES_HTML_DIR_LISTING_HASHES);
 			});
 			dependencies.add(dependency);
 		}
-		putDependencies(module, dependencies.toArray(new JSON_configurationsRoot.$module.$dependency[0]));
+		module.dependencies = dependencies.toArray(new JSON_moduleRoot.$dependency[0]);
 	}
 
-	public static void FETCH(Stage stage, JSON_configurationsRoot.$module module) throws Exception {
+	public static void FETCH(JSON_moduleRoot module) throws Exception {
 		File staticDirectory = __static_dir();
 		ThrowsReferencedCallback<Void> download = (args) -> {
 			File target = (File) args[0];
 			String childLink = (String) args[1];
 			ReferencedCallback<File> getFile = (ReferencedCallback<File>) args[2];
-			JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[3];
+			JSON_moduleRoot.$dependency.$item item = (JSON_moduleRoot.$dependency.$item) args[3];
 			String extension = (String) args[4];
 			String name = item.name;
 			String path = pn_getObject(item.properties, "path");
@@ -137,11 +135,11 @@ public class Main extends Library implements STATIC {
 				downloadFile(new URL(childLink), fos);
 			} return null;
 		};
-		for(JSON_configurationsRoot.$module.$dependency dependency : module.dependencies)
+		for(JSON_moduleRoot.$dependency dependency : module.dependencies)
 			download(dependency, staticDirectory, download, hashes);
 	}
 
-	public static void BUILD(Stage stage, JSON_configurationsRoot.$module module) throws Exception {
+	public static void BUILD(JSON_moduleRoot module) throws Exception {
 		File staticDirectory = __static_dir();
 		File buildDirectory = __build_dir();
 
@@ -157,7 +155,7 @@ public class Main extends Library implements STATIC {
 
 	public static ReferencedCallback<String> fileHash;
 	public static ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> hashes;
-	public static void PRE_MODULES(Stage stage, JSON_configurationsRoot.$module module) throws Exception {
+	public static void PRE_MODULES(JSON_moduleRoot module) throws Exception {
 		fileHash = new ReferencedCallback<String>() {
 			final File hashFile = new File(__static_dir(), CHECKSUM_FILE);
 			Map<String, String> fileHashes = null;
@@ -177,7 +175,7 @@ public class Main extends Library implements STATIC {
 			}
 		};
 		hashes = (args) -> {
-			JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[0];
+			JSON_moduleRoot.$dependency.$item item = (JSON_moduleRoot.$dependency.$item) args[0];
 			if(item.properties.containsKey(GLOBAL_PROPERTIES_HTML_DIR_LISTING_HASHES))
 				return hashesAvailable(item.properties, p_getObject(item.properties, GLOBAL_PROPERTIES_HTML_DIR_LISTING_HASHES));
 			String name = item.name;

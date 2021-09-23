@@ -1,11 +1,10 @@
 package io.github.NadhifRadityo.Objects.Library.Providers;
 
 import io.github.NadhifRadityo.Objects.Library.CURL;
-import io.github.NadhifRadityo.Objects.Library.Constants.JSON_configurationsRoot;
+import io.github.NadhifRadityo.Objects.Library.Constants.JSON_mainRoot;
+import io.github.NadhifRadityo.Objects.Library.Constants.JSON_moduleRoot;
 import io.github.NadhifRadityo.Objects.Library.Constants.Phase;
 import io.github.NadhifRadityo.Objects.Library.Constants.Provider;
-import io.github.NadhifRadityo.Objects.Library.Constants.Stage;
-import io.github.NadhifRadityo.Objects.Library.LibraryPack;
 import io.github.NadhifRadityo.Objects.Library.ReferencedCallback;
 import io.github.NadhifRadityo.Objects.Library.ThrowsReferencedCallback;
 
@@ -22,6 +21,8 @@ import java.util.Properties;
 
 import static io.github.NadhifRadityo.Objects.Library.Library.debug;
 import static io.github.NadhifRadityo.Objects.Library.Library.info;
+import static io.github.NadhifRadityo.Objects.Library.Library.mainRoot;
+import static io.github.NadhifRadityo.Objects.Library.Library.phase;
 import static io.github.NadhifRadityo.Objects.Library.Library.warn;
 import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.DEFAULT_HASH_OPTIONS_MD5_SHA1;
 import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.deleteDefault;
@@ -41,21 +42,11 @@ import static io.github.NadhifRadityo.Objects.Library.Utils.urlToUri;
 
 public class MavenProvider {
 	public static ThrowsReferencedCallback<Void> PHASE_PRE = (args) -> {
-		Phase phase = (Phase) args[0];
-		Stage stage = (Stage) args[1];
-		File directory = (File) args[2];
-		JSON_configurationsRoot configurations = (JSON_configurationsRoot) args[3];
-		List<LibraryPack> libraryPacks = (List<LibraryPack>) args[4];
-		phase_pre(phase, stage, directory, configurations, libraryPacks);
+		phase_pre();
 		return null;
 	};
 	public static ThrowsReferencedCallback<Void> PHASE_POST = (args) -> {
-		Phase phase = (Phase) args[0];
-		Stage stage = (Stage) args[1];
-		File directory = (File) args[2];
-		JSON_configurationsRoot configurations = (JSON_configurationsRoot) args[3];
-		List<LibraryPack> libraryPacks = (List<LibraryPack>) args[4];
-		phase_post(phase, stage, directory, configurations, libraryPacks);
+		phase_post();
 		return null;
 	};
 	
@@ -63,13 +54,15 @@ public class MavenProvider {
 	public static final String GLOBAL_PROPERTIES_MAVEN_DOWNLOAD = "mavenDownload";
 	public static final String GLOBAL_PROPERTIES_MAVEN_HASHES = "mavenHashes";
 
-	public static void phase_pre(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks) {
+	public static void phase_pre() {
+		Phase phase = phase();
+		JSON_mainRoot mainRoot = mainRoot();
 		switch(phase) {
 			case CLEAN: { break; }
 			case CONFIG: {
-				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_MAVEN_SEARCH, "(g, a) => `https://search.maven.org/solrsearch/select?q=g:\"${g}\"+AND+a:\"${a}\"&core=gav&wt=json`");
-				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_MAVEN_DOWNLOAD, "(g, a, v, f) => `https://search.maven.org/remotecontent?filepath=${g.replace(/\\./g, '/')}/${a}/${v}/${f}`");
-				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_MAVEN_HASHES, String.join(",", DEFAULT_HASH_OPTIONS_MD5_SHA1(configurations.properties)));
+				mainRoot.properties.putIfAbsent(GLOBAL_PROPERTIES_MAVEN_SEARCH, "(g, a) => `https://search.maven.org/solrsearch/select?q=g:\"${g}\"+AND+a:\"${a}\"&core=gav&wt=json`");
+				mainRoot.properties.putIfAbsent(GLOBAL_PROPERTIES_MAVEN_DOWNLOAD, "(g, a, v, f) => `https://search.maven.org/remotecontent?filepath=${g.replace(/\\./g, '/')}/${a}/${v}/${f}`");
+				mainRoot.properties.putIfAbsent(GLOBAL_PROPERTIES_MAVEN_HASHES, String.join(",", DEFAULT_HASH_OPTIONS_MD5_SHA1(mainRoot.properties)));
 				break;
 			}
 			case FETCH: { break; }
@@ -77,7 +70,8 @@ public class MavenProvider {
 			case VALIDATE: { break; }
 		}
 	}
-	public static void phase_post(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks) {
+	public static void phase_post() {
+		Phase phase = phase();
 		switch(phase) {
 			case CLEAN: { break; }
 			case CONFIG: { break; }
@@ -87,7 +81,7 @@ public class MavenProvider {
 		}
 	}
 
-	public static ThrowsReferencedCallback<JSON_configurationsRoot.$module.$dependency[]> SEARCH = (args) -> {
+	public static ThrowsReferencedCallback<JSON_moduleRoot.$dependency[]> SEARCH = (args) -> {
 		Properties properties = (Properties) args[0];
 		String group = (String) args[1];
 		String artifact = (String) args[2];
@@ -96,12 +90,12 @@ public class MavenProvider {
 		return search(properties, group, artifact);
 	};
 	public static ThrowsReferencedCallback<boolean[]> DOWNLOAD = (args) -> {
-		JSON_configurationsRoot.$module.$dependency dependency = (JSON_configurationsRoot.$module.$dependency) args[0];
+		JSON_moduleRoot.$dependency dependency = (JSON_moduleRoot.$dependency) args[0];
 		File currentDir = (File) args[1];
 		return download(dependency, currentDir);
 	};
 	public static ThrowsReferencedCallback<boolean[]> DELETE = (args) -> {
-		JSON_configurationsRoot.$module.$dependency dependency = (JSON_configurationsRoot.$module.$dependency) args[0];
+		JSON_moduleRoot.$dependency dependency = (JSON_moduleRoot.$dependency) args[0];
 		File currentDir = (File) args[1];
 		return delete(dependency, currentDir);
 	};
@@ -111,7 +105,7 @@ public class MavenProvider {
 	public static final String DEPENDENCY_PROPERTIES_VERSION = "version";
 	public static final String DEPENDENCY_PROPERTIES_TIMESTAMP = "timestamp";
 	
-	public static JSON_configurationsRoot.$module.$dependency[] search(Properties properties, String group, String artifact) throws Exception {
+	public static JSON_moduleRoot.$dependency[] search(Properties properties, String group, String artifact) throws Exception {
 		CURL curl = new CURL();
 		curl.setUrl(formattedUrl((String) runJavascript(p_getObject(properties, GLOBAL_PROPERTIES_MAVEN_SEARCH), group, artifact)));
 		curl.setRequestMethod(CURL.RequestMethod.GET);
@@ -119,7 +113,7 @@ public class MavenProvider {
 		curl.setOnConnect((args) -> toJson(((URLConnection) args[0]).getInputStream(), JSON_mavenSearch.class));
 		JSON_mavenSearch mavenSearch = (JSON_mavenSearch) curl.build(StandardCharsets.UTF_8);
 
-		List<JSON_configurationsRoot.$module.$dependency> results = new ArrayList<>();
+		List<JSON_moduleRoot.$dependency> results = new ArrayList<>();
 		JSON_mavenSearch.$response.$doc[] docs = mavenSearch.response.docs;
 		for(JSON_mavenSearch.$response.$doc doc : docs) {
 			String id = doc.id;
@@ -131,7 +125,7 @@ public class MavenProvider {
 			debug("g=\"%s\" a=\"%s\" id=\"%s\" v=\"%s\" ec=\"%s\" timestamp=\"%s\"", g, a, id, v, String.join(";", Arrays.asList(ec)), timestamp);
 			if(!group.equals(g) || !artifact.equals(a)) continue;
 
-			JSON_configurationsRoot.$module.$dependency result = new JSON_configurationsRoot.$module.$dependency();
+			JSON_moduleRoot.$dependency result = new JSON_moduleRoot.$dependency();
 			result.id = id;
 			result.source = Provider.MAVEN;
 			result.properties = new Properties(properties);
@@ -139,9 +133,9 @@ public class MavenProvider {
 			p_setObject(result.properties, DEPENDENCY_PROPERTIES_ARTIFACT, a);
 			p_setObject(result.properties, DEPENDENCY_PROPERTIES_VERSION, v);
 			p_setLong(result.properties, DEPENDENCY_PROPERTIES_TIMESTAMP, timestamp);
-			result.items = new JSON_configurationsRoot.$module.$dependency.$item[ec.length];
+			result.items = new JSON_moduleRoot.$dependency.$item[ec.length];
 			for(int i = 0; i < result.items.length; i++) {
-				JSON_configurationsRoot.$module.$dependency.$item item = new JSON_configurationsRoot.$module.$dependency.$item();
+				JSON_moduleRoot.$dependency.$item item = new JSON_moduleRoot.$dependency.$item();
 				item.name = a + "-" + v + ec[i];
 				item.properties = new Properties(result.properties);
 				result.items[i] = item;
@@ -149,9 +143,9 @@ public class MavenProvider {
 			results.add(result);
 		}
 		results.sort((v1, v2) -> Long.compare(p_getLong(v2.properties, DEPENDENCY_PROPERTIES_TIMESTAMP), p_getLong(v1.properties, DEPENDENCY_PROPERTIES_TIMESTAMP)));
-		return results.toArray(new JSON_configurationsRoot.$module.$dependency[0]);
+		return results.toArray(new JSON_moduleRoot.$dependency[0]);
 	}
-	public static boolean[] download(JSON_configurationsRoot.$module.$dependency dependency, File currentDir) throws Exception {
+	public static boolean[] download(JSON_moduleRoot.$dependency dependency, File currentDir) throws Exception {
 		String group = pn_getObject(dependency.properties, DEPENDENCY_PROPERTIES_GROUP);
 		String artifact = pn_getObject(dependency.properties, DEPENDENCY_PROPERTIES_ARTIFACT);
 		String version = pn_getObject(dependency.properties, DEPENDENCY_PROPERTIES_VERSION);
@@ -159,7 +153,7 @@ public class MavenProvider {
 
 		ThrowsReferencedCallback<Void> download = (args) -> {
 			ReferencedCallback<File> getFile = (ReferencedCallback<File>) args[0];
-			JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[1];
+			JSON_moduleRoot.$dependency.$item item = (JSON_moduleRoot.$dependency.$item) args[1];
 			String extension = (String) args[2];
 			File target = getFile.get(extension);
 			if(!target.exists() && !target.createNewFile())
@@ -169,14 +163,14 @@ public class MavenProvider {
 			} return null;
 		};
 		ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> hashes = (args) -> {
-			JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[0];
+			JSON_moduleRoot.$dependency.$item item = (JSON_moduleRoot.$dependency.$item) args[0];
 			return hashesAvailable(item.properties, p_getObject(item.properties, GLOBAL_PROPERTIES_MAVEN_HASHES));
 		};
 		return downloadDefault(dependency, currentDir, download, hashes);
 	}
-	public static boolean[] delete(JSON_configurationsRoot.$module.$dependency dependency, File currentDir) throws Exception {
+	public static boolean[] delete(JSON_moduleRoot.$dependency dependency, File currentDir) throws Exception {
 		ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> hashes = (args) -> {
-			JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[0];
+			JSON_moduleRoot.$dependency.$item item = (JSON_moduleRoot.$dependency.$item) args[0];
 			return hashesAvailable(item.properties, p_getObject(item.properties, GLOBAL_PROPERTIES_MAVEN_HASHES));
 		};
 		return deleteDefault(dependency, currentDir, hashes);

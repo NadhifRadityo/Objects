@@ -1,11 +1,10 @@
 package io.github.NadhifRadityo.Objects.Library.Providers;
 
 import io.github.NadhifRadityo.Objects.Library.CURL;
-import io.github.NadhifRadityo.Objects.Library.Constants.JSON_configurationsRoot;
+import io.github.NadhifRadityo.Objects.Library.Constants.JSON_mainRoot;
+import io.github.NadhifRadityo.Objects.Library.Constants.JSON_moduleRoot;
 import io.github.NadhifRadityo.Objects.Library.Constants.Phase;
 import io.github.NadhifRadityo.Objects.Library.Constants.Provider;
-import io.github.NadhifRadityo.Objects.Library.Constants.Stage;
-import io.github.NadhifRadityo.Objects.Library.LibraryPack;
 import io.github.NadhifRadityo.Objects.Library.ReferencedCallback;
 import io.github.NadhifRadityo.Objects.Library.ThrowsReferencedCallback;
 
@@ -24,6 +23,8 @@ import java.util.Properties;
 
 import static io.github.NadhifRadityo.Objects.Library.Library.debug;
 import static io.github.NadhifRadityo.Objects.Library.Library.info;
+import static io.github.NadhifRadityo.Objects.Library.Library.mainRoot;
+import static io.github.NadhifRadityo.Objects.Library.Library.phase;
 import static io.github.NadhifRadityo.Objects.Library.Library.warn;
 import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.DEFAULT_HASH_OPTIONS_MD5_SHA1;
 import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.deleteDefault;
@@ -47,21 +48,11 @@ import static io.github.NadhifRadityo.Objects.Library.Utils.writeFileString;
 
 public class SonatypeProvider {
 	public static ThrowsReferencedCallback<Void> PHASE_PRE = (args) -> {
-		Phase phase = (Phase) args[0];
-		Stage stage = (Stage) args[1];
-		File directory = (File) args[2];
-		JSON_configurationsRoot configurations = (JSON_configurationsRoot) args[3];
-		List<LibraryPack> libraryPacks = (List<LibraryPack>) args[4];
-		phase_pre(phase, stage, directory, configurations, libraryPacks);
+		phase_pre();
 		return null;
 	};
 	public static ThrowsReferencedCallback<Void> PHASE_POST = (args) -> {
-		Phase phase = (Phase) args[0];
-		Stage stage = (Stage) args[1];
-		File directory = (File) args[2];
-		JSON_configurationsRoot configurations = (JSON_configurationsRoot) args[3];
-		List<LibraryPack> libraryPacks = (List<LibraryPack>) args[4];
-		phase_post(phase, stage, directory, configurations, libraryPacks);
+		phase_post();
 		return null;
 	};
 
@@ -71,15 +62,17 @@ public class SonatypeProvider {
 	public static final String GLOBAL_PROPERTIES_SONATYPE_DOWNLOAD = "sonatypeDownload";
 	public static final String GLOBAL_PROPERTIES_SONATYPE_HASHES = "sonatypeHashes";
 
-	public static void phase_pre(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks) {
+	public static void phase_pre() {
+		Phase phase = phase();
+		JSON_mainRoot mainRoot = mainRoot();
 		switch(phase) {
 			case CLEAN: { break; }
 			case CONFIG: {
-				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_SONATYPE_SEARCH, "(g, a, s) => `https://oss.sonatype.org/service/local/repositories/${s?'snapshots':'releases'}/index_content/?_dc=${Date.now()}&groupIdHint=${g}&artifactIdHint=${a}`");
-				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_SONATYPE_VERSION_INFO, "(g, a, v, s, c, e) => `https://oss.sonatype.org/service/local/artifact/maven/resolve?_dc=${Date.now()}&r=${s?'snapshots':'releases'}&g=${g}&a=${a}&v=${v}&isLocal=true&e=${e}${c && `&c=${c}` || ''}`");
-				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_SONATYPE_FILE_INFO, "(g, a, v, s, f) => `https://oss.sonatype.org/service/local/repositories/${s?'snapshots':'releases'}/content/${g.replace(/\\./g, '/')}/${a}/${v}/${f}?_dc=${Date.now()}&describe=info&isLocal=true`");
-				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_SONATYPE_DOWNLOAD, "(g, a, v, s, c, e) => `https://oss.sonatype.org/service/local/artifact/maven/redirect?r=${s?'snapshots':'releases'}&g=${g}&a=${a}&v=${v}&e=${e}${c && `&c=${c}` || ''}`");
-				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_SONATYPE_HASHES, String.join(",", DEFAULT_HASH_OPTIONS_MD5_SHA1(configurations.properties)));
+				mainRoot.properties.putIfAbsent(GLOBAL_PROPERTIES_SONATYPE_SEARCH, "(g, a, s) => `https://oss.sonatype.org/service/local/repositories/${s?'snapshots':'releases'}/index_content/?_dc=${Date.now()}&groupIdHint=${g}&artifactIdHint=${a}`");
+				mainRoot.properties.putIfAbsent(GLOBAL_PROPERTIES_SONATYPE_VERSION_INFO, "(g, a, v, s, c, e) => `https://oss.sonatype.org/service/local/artifact/maven/resolve?_dc=${Date.now()}&r=${s?'snapshots':'releases'}&g=${g}&a=${a}&v=${v}&isLocal=true&e=${e}${c && `&c=${c}` || ''}`");
+				mainRoot.properties.putIfAbsent(GLOBAL_PROPERTIES_SONATYPE_FILE_INFO, "(g, a, v, s, f) => `https://oss.sonatype.org/service/local/repositories/${s?'snapshots':'releases'}/content/${g.replace(/\\./g, '/')}/${a}/${v}/${f}?_dc=${Date.now()}&describe=info&isLocal=true`");
+				mainRoot.properties.putIfAbsent(GLOBAL_PROPERTIES_SONATYPE_DOWNLOAD, "(g, a, v, s, c, e) => `https://oss.sonatype.org/service/local/artifact/maven/redirect?r=${s?'snapshots':'releases'}&g=${g}&a=${a}&v=${v}&e=${e}${c && `&c=${c}` || ''}`");
+				mainRoot.properties.putIfAbsent(GLOBAL_PROPERTIES_SONATYPE_HASHES, String.join(",", DEFAULT_HASH_OPTIONS_MD5_SHA1(mainRoot.properties)));
 				break;
 			}
 			case FETCH: { break; }
@@ -87,7 +80,8 @@ public class SonatypeProvider {
 			case VALIDATE: { break; }
 		}
 	}
-	public static void phase_post(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks) {
+	public static void phase_post() {
+		Phase phase = phase();
 		switch(phase) {
 			case CLEAN: { break; }
 			case CONFIG: { break; }
@@ -97,7 +91,7 @@ public class SonatypeProvider {
 		}
 	}
 
-	public static ThrowsReferencedCallback<JSON_configurationsRoot.$module.$dependency[]> SEARCH = (args) -> {
+	public static ThrowsReferencedCallback<JSON_moduleRoot.$dependency[]> SEARCH = (args) -> {
 		Properties properties = (Properties) args[0];
 		String group = (String) args[1];
 		String artifact = (String) args[2];
@@ -105,12 +99,12 @@ public class SonatypeProvider {
 		return search(properties, group, artifact, snapshots);
 	};
 	public static ThrowsReferencedCallback<boolean[]> DOWNLOAD = (args) -> {
-		JSON_configurationsRoot.$module.$dependency dependency = (JSON_configurationsRoot.$module.$dependency) args[0];
+		JSON_moduleRoot.$dependency dependency = (JSON_moduleRoot.$dependency) args[0];
 		File currentDir = (File) args[1];
 		return download(dependency, currentDir);
 	};
 	public static ThrowsReferencedCallback<boolean[]> DELETE = (args) -> {
-		JSON_configurationsRoot.$module.$dependency dependency = (JSON_configurationsRoot.$module.$dependency) args[0];
+		JSON_moduleRoot.$dependency dependency = (JSON_moduleRoot.$dependency) args[0];
 		File currentDir = (File) args[1];
 		return delete(dependency, currentDir);
 	};
@@ -122,7 +116,7 @@ public class SonatypeProvider {
 	public static final String DEPENDENCY_PROPERTIES_SNAPSHOT = "snapshot";
 	public static final String ITEM_PROPERTIES_CLASSIFIER = "classifier";
 
-	public static JSON_configurationsRoot.$module.$dependency[] search(Properties properties, String group, String artifact, boolean snapshots) throws Exception {
+	public static JSON_moduleRoot.$dependency[] search(Properties properties, String group, String artifact, boolean snapshots) throws Exception {
 		CURL curl = new CURL();
 		curl.setUrl(formattedUrl((String) runJavascript(p_getObject(properties, GLOBAL_PROPERTIES_SONATYPE_SEARCH), group, artifact, snapshots)));
 		curl.setRequestMethod(CURL.RequestMethod.GET);
@@ -166,7 +160,7 @@ public class SonatypeProvider {
 			infoCurl.setOnConnect((_args) -> toJson(((URLConnection) _args[0]).getInputStream(), JSON_sonatypeSearch_describeInfo.class));
 			return ((JSON_sonatypeSearch_describeInfo) infoCurl.build(StandardCharsets.UTF_8)).data;
 		};
-		List<JSON_configurationsRoot.$module.$dependency> results = new ArrayList<>();
+		List<JSON_moduleRoot.$dependency> results = new ArrayList<>();
 		for(JSON_sonatypeSearch.$children version : versions.children) {
 			JSON_sonatypeSearch_resolveInfo.$data versionInfo = getVersionInfo.get(version);
 			String id = versionInfo.groupId + ":" + versionInfo.artifactId + ":" + (versionInfo.baseVersion != null ? versionInfo.baseVersion : versionInfo.version);
@@ -179,7 +173,7 @@ public class SonatypeProvider {
 			debug("g=\"%s\" a=\"%s\" id=\"%s\" v=\"%s\" ec=\"%s\" timestamp=\"%s\" snapshot=\"%s\"", g, a, id, v, String.join(";", Arrays.asList(ec)), timestamp, snapshot);
 			if(!group.equals(g) || !artifact.equals(a)) continue;
 
-			JSON_configurationsRoot.$module.$dependency result = new JSON_configurationsRoot.$module.$dependency();
+			JSON_moduleRoot.$dependency result = new JSON_moduleRoot.$dependency();
 			result.id = id;
 			result.source = Provider.SONATYPE;
 			result.properties = new Properties(properties);
@@ -188,14 +182,14 @@ public class SonatypeProvider {
 			p_setObject(result.properties, DEPENDENCY_PROPERTIES_VERSION, v);
 			p_setLong(result.properties, DEPENDENCY_PROPERTIES_TIMESTAMP, timestamp);
 			p_setBoolean(result.properties, DEPENDENCY_PROPERTIES_SNAPSHOT, snapshot);
-			result.items = new JSON_configurationsRoot.$module.$dependency.$item[version.children.length + 1];
+			result.items = new JSON_moduleRoot.$dependency.$item[version.children.length + 1];
 			{
-				JSON_configurationsRoot.$module.$dependency.$item pomItem = result.items[0] = new JSON_configurationsRoot.$module.$dependency.$item();
+				JSON_moduleRoot.$dependency.$item pomItem = result.items[0] = new JSON_moduleRoot.$dependency.$item();
 				pomItem.name = a + "-" + v + ".pom";
 				pomItem.properties = new Properties(result.properties);
 			}
 			for(int i = 1; i < result.items.length; i++) {
-				JSON_configurationsRoot.$module.$dependency.$item item = new JSON_configurationsRoot.$module.$dependency.$item();
+				JSON_moduleRoot.$dependency.$item item = new JSON_moduleRoot.$dependency.$item();
 				JSON_sonatypeSearch.$children children = version.children[i - 1];
 				item.name = children.nodeName;
 				item.properties = new Properties(result.properties);
@@ -205,9 +199,9 @@ public class SonatypeProvider {
 			results.add(result);
 		}
 		results.sort((v1, v2) -> Long.compare(p_getLong(v2.properties, DEPENDENCY_PROPERTIES_TIMESTAMP), p_getLong(v1.properties, DEPENDENCY_PROPERTIES_TIMESTAMP)));
-		return results.toArray(new JSON_configurationsRoot.$module.$dependency[0]);
+		return results.toArray(new JSON_moduleRoot.$dependency[0]);
 	}
-	public static boolean[] download(JSON_configurationsRoot.$module.$dependency dependency, File currentDir) throws Exception {
+	public static boolean[] download(JSON_moduleRoot.$dependency dependency, File currentDir) throws Exception {
 		String group = pn_getObject(dependency.properties, DEPENDENCY_PROPERTIES_GROUP);
 		String artifact = pn_getObject(dependency.properties, DEPENDENCY_PROPERTIES_ARTIFACT);
 		String version = pn_getObject(dependency.properties, DEPENDENCY_PROPERTIES_VERSION);
@@ -217,7 +211,7 @@ public class SonatypeProvider {
 		Map<String, String> cachedHashes = new HashMap<>();
 		ThrowsReferencedCallback<Void> download = (args) -> {
 			ReferencedCallback<File> getFile = (ReferencedCallback<File>) args[0];
-			JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[1];
+			JSON_moduleRoot.$dependency.$item item = (JSON_moduleRoot.$dependency.$item) args[1];
 			String extension = (String) args[2];
 			File target = getFile.get(extension);
 			if(extension.equals(".md5") || extension.equals(".sha1")) {
@@ -260,14 +254,14 @@ public class SonatypeProvider {
 			} return null;
 		};
 		ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> hashes = (args) -> {
-			JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[0];
+			JSON_moduleRoot.$dependency.$item item = (JSON_moduleRoot.$dependency.$item) args[0];
 			return hashesAvailable(item.properties, p_getObject(item.properties, GLOBAL_PROPERTIES_SONATYPE_HASHES));
 		};
 		return downloadDefault(dependency, currentDir, download, hashes);
 	}
-	public static boolean[] delete(JSON_configurationsRoot.$module.$dependency dependency, File currentDir) throws Exception {
+	public static boolean[] delete(JSON_moduleRoot.$dependency dependency, File currentDir) throws Exception {
 		ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> hashes = (args) -> {
-			JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[0];
+			JSON_moduleRoot.$dependency.$item item = (JSON_moduleRoot.$dependency.$item) args[0];
 			return hashesAvailable(item.properties, p_getObject(item.properties, GLOBAL_PROPERTIES_SONATYPE_HASHES));
 		};
 		return deleteDefault(dependency, currentDir, hashes);
