@@ -64,7 +64,13 @@ import static io.github.NadhifRadityo.Objects.Library.Library.debug;
 import static io.github.NadhifRadityo.Objects.Library.Library.error;
 import static io.github.NadhifRadityo.Objects.Library.Library.info;
 import static io.github.NadhifRadityo.Objects.Library.Library.warn;
-import static org.apache.commons.lang3.SystemUtils.*;
+import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
+import static org.apache.commons.lang3.SystemUtils.IS_OS_MAC_OSX;
+import static org.apache.commons.lang3.SystemUtils.IS_OS_SOLARIS;
+import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
+import static org.apache.commons.lang3.SystemUtils.JAVA_VERSION;
+import static org.apache.commons.lang3.SystemUtils.OS_ARCH;
+import static org.apache.commons.lang3.SystemUtils.OS_NAME;
 
 @SuppressWarnings({"DuplicatedCode", "unused"})
 public class Utils {
@@ -375,7 +381,6 @@ public class Utils {
 		return (args) -> checksumExeShaNsum(exe, (File) args[0], N);
 	}
 
-	public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("win");
 	public static String getCommandOutput(File basedir, String... arguments) throws Exception {
 		debug("Executing command: %s", String.join(" ", arguments));
 		ProcessBuilder processBuilder = new ProcessBuilder(arguments);
@@ -392,7 +397,7 @@ public class Utils {
 		return getCommandOutput(null, arguments);
 	}
 	public static File searchPath(String executable) throws Exception {
-		if(IS_WINDOWS) {
+		if(IS_OS_WINDOWS) {
 			String path = getCommandOutput("where", executable);
 			if(path == null || path.isEmpty()) return null;
 			return new File(path.trim().split("\r\n")[0]);
