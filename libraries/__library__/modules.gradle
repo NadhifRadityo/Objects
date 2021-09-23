@@ -1,0 +1,25 @@
+class GLOBAL {
+	protected static final Map<String, File> loadedModules = new HashMap<>()
+}
+GLOBAL.loadedModules.clear()
+
+def module = { String libraryPath, String libraryName = null ->
+	if(libraryName == null) libraryName = libraryPath.replaceAll('/', '$')
+	File libDirectory = new File(project.buildscript.sourceFile.parentFile.parentFile, libraryPath)
+	GLOBAL.loadedModules.put(libraryName, libDirectory)
+	sourceSets {
+		main.kotlin { srcDir "../$libraryPath/sources" }
+		main.resources { srcDir "../$libraryPath/resources" }
+	}
+}
+def loaded_modules = { ->
+	return Collections.unmodifiableMap(GLOBAL.loadedModules)
+}
+
+ext {
+	ext_libraries_module = module
+	ext_libraries_loaded_modules = loaded_modules
+}
+
+module('GameLibrary - LWJGL')
+//module('GameLibrary - Jogamp')

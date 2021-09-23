@@ -1,10 +1,13 @@
+import java.util.stream.Stream
+
 plugins {
-    id 'org.jetbrains.kotlin.jvm' version "1.5.30"
+    id 'java'
+    id 'org.jetbrains.kotlin.jvm' version '1.5.30'
 }
 
 buildDir = '../__target__/__sources__/'
 apply from: '../../common.gradle'
-apply from: 'libraries.gradle'
+apply from: 'modules.gradle'
 apply from: 'load.gradle'
 
 repositories {
@@ -13,6 +16,10 @@ repositories {
 
 dependencies {
     compileOnly gradleApi()
+    implementation CONFIG['LIBRARY_COMMONS_LANG']
+    implementation 'commons-cli:commons-cli:1.4'
+    implementation 'com.google.code.gson:gson:2.8.6'
+    implementation 'org.jsoup:jsoup:1.14.1'
 
     testImplementation CONFIG['TESTLIBRARY_IMPLEMENTATION']
     testRuntimeOnly CONFIG['TESTLIBRARY_RUNTIME']
@@ -20,4 +27,41 @@ dependencies {
 
 test {
     useJUnitPlatform()
+}
+
+// This part requires Gradle Daemon to cache the ClassLoader.
+// If the Daemon is single use, then this has no information
+// about the cached ClassLoader. And forcefully, have to load
+// last compilation no matter what.
+if(ext_common_is_single_use_daemon())
+    ext_load_load()
+if(ext_load_available())
+    ext_load_run(ext_libraries_loaded_modules())
+task libraryConfig {
+    String[] depends = new String[] { 'compileKotlin', 'compileJava', 'processResources', 'classes' }
+    def anyChanged = { -> Stream.of(depends).map({ tasks.getByName(it) }).filter({
+        !it.state.upToDate && !it.state.skipped && !it.state.noSource }).count() > 0 }
+
+    group = 'library'
+    description = 'Config library scripts.'
+    for(def depend : depends) dependsOn depend
+    doFirst {
+        if(ext_common_is_single_use_daemon() || anyChanged())
+            ext_load_clear()
+    }
+    doLast {
+        if(ext_common_is_single_use_daemon()) return
+        if(!ext_load_available() || anyChanged())
+            ext_load_load()
+    }
+}
+task libraryClean {
+    group = 'library'
+    description = 'Clear library scripts.'
+    onlyIf {
+        !ext_common_is_single_use_daemon()
+    }
+    doLast {
+        ext_load_clear()
+    }
 }

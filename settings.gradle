@@ -1,6 +1,7 @@
 class GLOBAL {
 	protected static final Map<String, Boolean> extendedProjects = new HashMap<>()
 }
+GLOBAL.extendedProjects.clear()
 
 def extend = { String projectPath, String projectName = null ->
 	int splitIndex = projectPath.indexOf(':')

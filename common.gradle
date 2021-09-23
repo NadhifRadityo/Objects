@@ -1,3 +1,6 @@
+import org.gradle.api.internal.project.DefaultProject
+import org.gradle.launcher.daemon.server.scaninfo.DaemonScanInfo
+
 group 'io.github.NadhifRadityo.Objects'
 version 'LATEST'
 
@@ -16,12 +19,16 @@ def as_task = { Object task, Object project = null ->
 	throw __invalid_type()
 }
 def forward_task = { Object project, filter, exec = {} ->
-	(as_project(project) as Project).tasks.stream().filter(filter).map({ task(it.name) { group = it.group; dependsOn it } }).forEach(exec)
+	(as_project(project) as Project).tasks.stream().filter(filter)
+			.map({ task(it.name) { group = it.group; dependsOn it } }).forEach(exec)
 }
 def run_after_another_task = { Object tasks, Object project = null ->
 	if(tasks instanceof Collection) tasks = tasks.toArray()
 	for(int i = 0; i < tasks.length; i++) tasks[i] = as_task(tasks[i], project)
 	for(int i = 1; i < tasks.length; i++) (tasks[i] as Task).mustRunAfter(tasks[i - 1])
+}
+def is_single_use_daemon = {
+	return (project as DefaultProject).services.get(DaemonScanInfo).isSingleUse()
 }
 
 ext {
@@ -40,4 +47,5 @@ ext {
 	ext_common_as_task = as_task
 	ext_common_forward_task = forward_task
 	ext_common_run_after_another_task = run_after_another_task
+	ext_common_is_single_use_daemon = is_single_use_daemon
 }

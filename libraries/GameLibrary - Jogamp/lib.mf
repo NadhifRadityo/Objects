@@ -1,2 +1,1 @@
 Main-Class: GameLibrary.Jogamp.Main
-Test-Class: GameLibrary.Jogamp.Test

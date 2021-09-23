@@ -1,15 +1,17 @@
+import org.gradle.api.internal.project.DefaultProject
+
 import java.lang.reflect.Method
 
 class GLOBAL {
 	protected static ClassLoader classLoader
 	protected static Class<?> CLASS_Library
-	protected static Method METHOD_Library_main
+	protected static Method METHOD_Library_entry
 }
 
 def clear = { ->
 	GLOBAL.classLoader = null
 	GLOBAL.CLASS_Library = null
-	GLOBAL.METHOD_Library_main = null
+	GLOBAL.METHOD_Library_entry = null
 }
 def load = { ->
 	if(GLOBAL.classLoader != null)
@@ -17,22 +19,22 @@ def load = { ->
 	List<File> outputDirectories = new ArrayList<>()
 	outputDirectories += sourceSets.main.output.files
 	outputDirectories += sourceSets.main.runtimeClasspath.files
-	outputDirectories += sourceSets.test.output.files
-	outputDirectories += sourceSets.test.runtimeClasspath.files
 	URL[] outputURLs = outputDirectories.stream().map { it.toURI().toURL() }.toArray(URL[]::new)
 	GLOBAL.classLoader = new URLClassLoader(outputURLs, this.project.getClass().getClassLoader())
-	GLOBAL.CLASS_Library = GLOBAL.classLoader.loadClass('io.github.NadhifRadityo.Objects.Library.Library')
-	GLOBAL.METHOD_Library_main = GLOBAL.CLASS_Library.getMethod('main', String[].class)
-
-	Class<?> CLASS_GradleUtils = GLOBAL.classLoader.loadClass('io.github.NadhifRadityo.Objects.Library.GradleUtils')
-	CLASS_GradleUtils.getField("__PROJECT__").set(null, this.project)
+	GLOBAL.CLASS_Library = GLOBAL.classLoader.loadClass('io.github.NadhifRadityo.Library.LibraryEntry')
+	GLOBAL.METHOD_Library_entry = GLOBAL.CLASS_Library.getDeclaredMethod('entry', DefaultProject.class, Map.class)
+	GLOBAL.METHOD_Library_entry.setAccessible(true)
 }
-def run = { String[] args ->
-	GLOBAL.METHOD_Library_main.invoke(null, new Object[] { args })
+def available = { ->
+	return GLOBAL.METHOD_Library_entry != null
+}
+def run = { Map<String, File> modules ->
+	GLOBAL.METHOD_Library_entry.invoke(null, this.project, modules)
 }
 
 ext {
 	ext_load_clear = clear
 	ext_load_load = load
+	ext_load_available = available
 	ext_load_run = run
 }
