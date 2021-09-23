@@ -3,8 +3,6 @@ package GameLibrary.LWJGL;
 import io.github.NadhifRadityo.Objects.Library.Constants.JSON_configurationsRoot;
 import io.github.NadhifRadityo.Objects.Library.Constants.Stage;
 import io.github.NadhifRadityo.Objects.Library.Library;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
 
 import java.io.File;
 import java.nio.file.Files;
@@ -13,16 +11,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.MAVEN_SONATYPE;
-import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.createLibrary;
-import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.mavenSonatypeDependencyParser;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.delete;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.download;
+import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.generateDefaultAndNativeLibrary;
+import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.mavenSonatypeDependencyParser;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.parseDependency;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.putDependencies;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.search;
-import static io.github.NadhifRadityo.Objects.Library.Utils.createXMLFile;
 import static io.github.NadhifRadityo.Objects.Library.Utils.getCommandOutput;
-import static io.github.NadhifRadityo.Objects.Library.Utils.newXMLDocument;
 
 public class Main extends Library implements STATIC {
 	public static void CLEAN(Stage stage, JSON_configurationsRoot.$module module) throws Exception {
@@ -60,10 +56,6 @@ public class Main extends Library implements STATIC {
 		if(result == null) throw new IllegalArgumentException("Error just occurred.");
 		Files.move(new File(staticDirectory, JAR_NAME).toPath(), new File(buildDirectory, JAR_NAME).toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-		Document out = newXMLDocument(null);
-		Element library = createLibrary(module, staticDirectory, out);
-		createXMLFile(library, new File(buildDirectory, LIBRARY_NAME + ".xml"));
-		Element nativeLibrary = createLibrary(NATIVE_NAME, out, new File[] { new File(buildDirectory, JAR_NAME) }, null, null);
-		createXMLFile(nativeLibrary, new File(buildDirectory, LIBRARY_NATIVE_NAME + ".xml"));
+		generateDefaultAndNativeLibrary(module, staticDirectory, buildDirectory, LIBRARY_NAME, LIBRARY_NATIVE_NAME, NATIVE_NAME, JAR_NAME);
 	}
 }
