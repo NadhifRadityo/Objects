@@ -16,11 +16,11 @@ import java.util.jar.Manifest;
 
 import static io.github.NadhifRadityo.Library.LibraryEntry.__ROOT_DIRECTORY__;
 import static io.github.NadhifRadityo.Library.LibraryEntry.__TARGET_DIRECTORY__;
-import static io.github.NadhifRadityo.Library.Utils.a_getString;
-import static io.github.NadhifRadityo.Library.Utils.a_setObject;
-import static io.github.NadhifRadityo.Library.Utils.file;
-import static io.github.NadhifRadityo.Library.Utils.getCurrentClassFile;
-import static io.github.NadhifRadityo.Library.Utils.mkdir;
+import static io.github.NadhifRadityo.Library.Utils.AttributesUtils.a_getString;
+import static io.github.NadhifRadityo.Library.Utils.AttributesUtils.a_setObject;
+import static io.github.NadhifRadityo.Library.Utils.ClassUtils.getCurrentClassFile;
+import static io.github.NadhifRadityo.Library.Utils.FileUtils.file;
+import static io.github.NadhifRadityo.Library.Utils.FileUtils.mkdir;
 import static java.util.Objects.requireNonNull;
 
 public abstract class LibraryModule extends LibraryImplement {

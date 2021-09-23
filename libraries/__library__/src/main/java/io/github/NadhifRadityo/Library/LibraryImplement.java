@@ -22,8 +22,8 @@ import java.util.Set;
 
 import static io.github.NadhifRadityo.Library.LibraryEntry.__MODULES__;
 import static io.github.NadhifRadityo.Library.LibraryEntry.__PROJECT__;
-import static io.github.NadhifRadityo.Library.Utils.classForName;
-import static io.github.NadhifRadityo.Library.Utils.file;
+import static io.github.NadhifRadityo.Library.Utils.ClassUtils.classForName;
+import static io.github.NadhifRadityo.Library.Utils.FileUtils.file;
 
 public class LibraryImplement {
 	protected static final Map<String, Class<?>> __class_cache = new HashMap<>();

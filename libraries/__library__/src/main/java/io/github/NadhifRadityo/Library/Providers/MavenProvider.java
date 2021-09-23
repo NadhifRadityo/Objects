@@ -20,15 +20,15 @@ import static io.github.NadhifRadityo.Library.Providers.__shared__.VALIDATE_REQU
 import static io.github.NadhifRadityo.Library.Providers.__shared__.VALIDATE_REQUEST_RUN;
 import static io.github.NadhifRadityo.Library.Providers.__shared__.hashesAvailable;
 import static io.github.NadhifRadityo.Library.Providers.__shared__.validate;
-import static io.github.NadhifRadityo.Library.Utils.debug;
-import static io.github.NadhifRadityo.Library.Utils.downloadFile;
-import static io.github.NadhifRadityo.Library.Utils.formattedUrl;
-import static io.github.NadhifRadityo.Library.Utils.info;
-import static io.github.NadhifRadityo.Library.Utils.mkfile;
-import static io.github.NadhifRadityo.Library.Utils.mostSafeString;
-import static io.github.NadhifRadityo.Library.Utils.runJavascriptAsCallback;
-import static io.github.NadhifRadityo.Library.Utils.toJson;
-import static io.github.NadhifRadityo.Library.Utils.urlToUri;
+import static io.github.NadhifRadityo.Library.Utils.CommonUtils.downloadFile;
+import static io.github.NadhifRadityo.Library.Utils.CommonUtils.formattedUrl;
+import static io.github.NadhifRadityo.Library.Utils.CommonUtils.urlToUri;
+import static io.github.NadhifRadityo.Library.Utils.FileUtils.mkfile;
+import static io.github.NadhifRadityo.Library.Utils.JSONUtils.toJson;
+import static io.github.NadhifRadityo.Library.Utils.JavascriptUtils.runJavascriptAsCallback;
+import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.debug;
+import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.info;
+import static io.github.NadhifRadityo.Library.Utils.StringUtils.mostSafeString;
 
 public class MavenProvider {
 	public static final String MAIN_PROPERTIES_MAVEN_HASHES = "mavenHashes";

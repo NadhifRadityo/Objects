@@ -11,16 +11,16 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.jar.Manifest;
 
-import static io.github.NadhifRadityo.Library.Utils.a_getString;
-import static io.github.NadhifRadityo.Library.Utils.classForName0;
-import static io.github.NadhifRadityo.Library.Utils.createJSONFile;
-import static io.github.NadhifRadityo.Library.Utils.exception;
-import static io.github.NadhifRadityo.Library.Utils.getFileString;
-import static io.github.NadhifRadityo.Library.Utils.mkdir;
-import static io.github.NadhifRadityo.Library.Utils.mkfile;
-import static io.github.NadhifRadityo.Library.Utils.searchPath;
-import static io.github.NadhifRadityo.Library.Utils.toJson;
-import static io.github.NadhifRadityo.Library.Utils.warn;
+import static io.github.NadhifRadityo.Library.Utils.AttributesUtils.a_getString;
+import static io.github.NadhifRadityo.Library.Utils.ClassUtils.classForName0;
+import static io.github.NadhifRadityo.Library.Utils.ExceptionUtils.exception;
+import static io.github.NadhifRadityo.Library.Utils.FileUtils.getFileString;
+import static io.github.NadhifRadityo.Library.Utils.FileUtils.mkdir;
+import static io.github.NadhifRadityo.Library.Utils.FileUtils.mkfile;
+import static io.github.NadhifRadityo.Library.Utils.JSONUtils.createJSONFile;
+import static io.github.NadhifRadityo.Library.Utils.JSONUtils.toJson;
+import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.warn;
+import static io.github.NadhifRadityo.Library.Utils.ProcessUtils.searchPath;
 
 public class LibraryEntry {
 	protected static DefaultProject __PROJECT__;

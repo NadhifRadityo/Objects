@@ -3,7 +3,10 @@ package GameLibrary.LWJGL
 import io.github.NadhifRadityo.Library.LibraryModule
 import io.github.NadhifRadityo.Library.Providers.MavenProvider
 import io.github.NadhifRadityo.Library.Providers.MavenProvider.getDefaultMavenProvider
-import io.github.NadhifRadityo.Library.Utils.*
+import io.github.NadhifRadityo.Library.Utils.FileUtils.*
+import io.github.NadhifRadityo.Library.Utils.JSONUtils.createJSONFile
+import io.github.NadhifRadityo.Library.Utils.JSONUtils.toJson
+import io.github.NadhifRadityo.Library.Utils.StringUtils.mostSafeString
 import java.io.File
 
 class Main : LibraryModule() {
@@ -40,7 +43,7 @@ class Main : LibraryModule() {
 			doLast { delfile(dependencyFetchedDir) }
 		}
 		task(unique("fetchDependency")).apply {
-			dependsOn(unique("clearDependency"))
+//			dependsOn(unique("clearDependency"))
 			onlyIf {
 				dependencyConfigsDir.exists() && dependencyConfigsDir.listFiles()?.isNotEmpty() == true
 			}

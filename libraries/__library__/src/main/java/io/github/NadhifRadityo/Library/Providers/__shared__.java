@@ -12,17 +12,17 @@ import java.util.Map;
 import java.util.Properties;
 
 import static io.github.NadhifRadityo.Library.LibraryModule.__static_dir;
-import static io.github.NadhifRadityo.Library.Utils.HASH_EXE_CERTUTIL;
-import static io.github.NadhifRadityo.Library.Utils.HASH_EXE_MDNSUM;
-import static io.github.NadhifRadityo.Library.Utils.HASH_EXE_OPENSSL;
-import static io.github.NadhifRadityo.Library.Utils.HASH_EXE_SHANSUM;
-import static io.github.NadhifRadityo.Library.Utils.HASH_JAVA_NATIVE;
-import static io.github.NadhifRadityo.Library.Utils.copyAllProperties;
-import static io.github.NadhifRadityo.Library.Utils.error;
-import static io.github.NadhifRadityo.Library.Utils.exception;
-import static io.github.NadhifRadityo.Library.Utils.file;
-import static io.github.NadhifRadityo.Library.Utils.info;
-import static io.github.NadhifRadityo.Library.Utils.warn;
+import static io.github.NadhifRadityo.Library.Utils.ExceptionUtils.exception;
+import static io.github.NadhifRadityo.Library.Utils.FileUtils.file;
+import static io.github.NadhifRadityo.Library.Utils.HashUtils.HASH_EXE_CERTUTIL;
+import static io.github.NadhifRadityo.Library.Utils.HashUtils.HASH_EXE_MDNSUM;
+import static io.github.NadhifRadityo.Library.Utils.HashUtils.HASH_EXE_OPENSSL;
+import static io.github.NadhifRadityo.Library.Utils.HashUtils.HASH_EXE_SHANSUM;
+import static io.github.NadhifRadityo.Library.Utils.HashUtils.HASH_JAVA_NATIVE;
+import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.error;
+import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.info;
+import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.warn;
+import static io.github.NadhifRadityo.Library.Utils.PropertiesUtils.copyAllProperties;
 
 public class __shared__ {
 	public static int VALIDATE_RESULT_ERROR = 1;
