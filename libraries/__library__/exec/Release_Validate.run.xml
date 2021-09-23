@@ -2,8 +2,8 @@
   <configuration default="false" name="Release_Validate" type="Application" factoryName="Application" folderName="Library">
     <option name="ALTERNATIVE_JRE_PATH" value="GraalVM 19.3.2 1.8" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
-    <option name="MAIN_CLASS_NAME" value="io.github.NadhifRadityo.Objects.Library.Library" />
-    <module name="Objects.Library.main" />
+    <option name="MAIN_CLASS_NAME" value="io.github.NadhifRadityo.Objects.Library.LibraryTest" />
+    <module name="Objects.Library.test" />
     <option name="PROGRAM_PARAMETERS" value="-p &quot;VALIDATE&quot; -s &quot;RELEASE&quot; -d &quot;.&quot;" />
     <option name="VM_PARAMETERS" value="-Dnashorn.args=--language=es6" />
     <option name="WORKING_DIRECTORY" value="$ProjectFileDir$/Objects/libraries" />

@@ -1,3 +1,25 @@
+@if "%DEBUG%" == "" @echo off
+@rem ##########################################################################
+@rem
+@rem  Gradle startup script for Windows
+@rem
+@rem ##########################################################################
+
+@rem Set local scope for the variables with windows NT shell
+if "%OS%"=="Windows_NT" setlocal
+
+@rem All these options are required by the Library Gradle Task. It needs to run javascript code which written in ES6,
+@rem and in order to execute it, the old javascript runtime (old Nashorn) doesn't seem to support it.
+@rem Either add the support flag to Nashorn, or use Graalvm.
+
+@rem If you have Graalvm installed, uncomment the following line, and set your runtime here.
+@rem set ALTERNATIVE_JAVA=
+
+@rem Or use Nashorn with ES6 support. You don't have to uncomment the following line if you use Graalvm.
+@rem The program will use Nashorn if something went wrong while running Graalvm. Note that Nashorn with
+@rem ES6 support are only available on Java 9+
+set JAVA_OPTS="-Dnashorn.args=--language=es6"
+
 @rem
 @rem Copyright 2015 the original author or authors.
 @rem
@@ -14,16 +36,6 @@
 @rem limitations under the License.
 @rem
 
-@if "%DEBUG%" == "" @echo off
-@rem ##########################################################################
-@rem
-@rem  Gradle startup script for Windows
-@rem
-@rem ##########################################################################
-
-@rem Set local scope for the variables with windows NT shell
-if "%OS%"=="Windows_NT" setlocal
-
 set DIRNAME=%~dp0
 if "%DIRNAME%" == "" set DIRNAME=.
 set APP_BASE_NAME=%~n0
@@ -37,6 +49,7 @@ set DEFAULT_JVM_OPTS="-Xmx64m" "-Xms64m"
 
 @rem Find java.exe
 if defined JAVA_HOME goto findJavaFromJavaHome
+if defined ALTERNATIVE_JAVA goto findJavaFromAlternativeJavaHome
 
 set JAVA_EXE=java.exe
 %JAVA_EXE% -version >NUL 2>&1
@@ -53,7 +66,13 @@ goto fail
 :findJavaFromJavaHome
 set JAVA_HOME=%JAVA_HOME:"=%
 set JAVA_EXE=%JAVA_HOME%/bin/java.exe
+goto checkJavaExe
 
+:findJavaFromAlternativeJavaHome
+set JAVA_HOME=%ALTERNATIVE_JAVA%
+set JAVA_EXE=%JAVA_HOME%/bin/java.exe
+
+:checkJavaExe
 if exist "%JAVA_EXE%" goto execute
 
 echo.

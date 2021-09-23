@@ -156,16 +156,7 @@ public class Main extends Library implements STATIC {
 	}
 
 	public static ReferencedCallback<String> fileHash;
-	public static ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> hashes = (args) -> {
-		JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[0];
-		if(item.properties.containsKey(GLOBAL_PROPERTIES_HTML_DIR_LISTING_HASHES))
-			return hashesAvailable(item.properties, p_getObject(item.properties, GLOBAL_PROPERTIES_HTML_DIR_LISTING_HASHES));
-		String name = item.name;
-		String path = pn_getObject(item.properties, "path");
-		String hash = fileHash.get(path + "/" + name);
-		if(hash == null) return new HashMap<>();
-		return hashesAvailable(item.properties, CHECKSUM_TYPE.get(item.properties));
-	};
+	public static ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> hashes;
 	public static void PRE_MODULES(Stage stage, JSON_configurationsRoot.$module module) throws Exception {
 		fileHash = new ReferencedCallback<String>() {
 			final File hashFile = new File(__static_dir(), CHECKSUM_FILE);
@@ -184,6 +175,16 @@ public class Main extends Library implements STATIC {
 				}
 				return fileHashes.get(path);
 			}
+		};
+		hashes = (args) -> {
+			JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[0];
+			if(item.properties.containsKey(GLOBAL_PROPERTIES_HTML_DIR_LISTING_HASHES))
+				return hashesAvailable(item.properties, p_getObject(item.properties, GLOBAL_PROPERTIES_HTML_DIR_LISTING_HASHES));
+			String name = item.name;
+			String path = pn_getObject(item.properties, "path");
+			String hash = fileHash.get(path + "/" + name);
+			if(hash == null) return new HashMap<>();
+			return hashesAvailable(item.properties, CHECKSUM_TYPE.get(item.properties));
 		};
 	}
 }

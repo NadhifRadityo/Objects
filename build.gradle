@@ -10,11 +10,6 @@ repositories {
 
 dependencies {
     implementation project('Packages$Functional')
-
-    testImplementation CONFIG['TESTLIBRARY_IMPLEMENTATION']
-    testRuntimeOnly CONFIG['TESTLIBRARY_RUNTIME']
 }
 
-test {
-    useJUnitPlatform()
-}
+ext_common_forward_task('Library', { it.group == 'library' })

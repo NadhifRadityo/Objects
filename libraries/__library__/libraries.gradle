@@ -1,0 +1,29 @@
+class GLOBAL_LIBRARIES {
+	protected static final List<String> loadedLibrary = new ArrayList<String>()
+}
+
+def library = { String libraryName ->
+	GLOBAL_LIBRARIES.loadedLibrary.add(libraryName)
+	File libDirectory = new File("../$libraryName")
+	File libMainSourcesDirectory = new File(libDirectory, 'mainSources')
+	File libMainResourcesDirectory = new File(libDirectory, 'mainResources')
+	File libTestSourcesDirectory = new File(libDirectory, 'testSources')
+	File libTestResourcesDirectory = new File(libDirectory, 'testResources')
+	sourceSets {
+		main.java { srcDir libMainSourcesDirectory }
+		main.resources { srcDir libMainResourcesDirectory }
+		test.java { srcDir libTestSourcesDirectory }
+		test.resources { srcDir libTestResourcesDirectory }
+	}
+}
+def loaded_libraries = { ->
+	return GLOBAL_LIBRARIES.loadedLibrary.toArray(new String[0])
+}
+
+ext {
+	ext_libraries_library = library
+	ext_libraries_loaded_libraries = loaded_libraries
+}
+
+library('GameLibrary - LWJGL')
+library('GameLibrary - Jogamp')

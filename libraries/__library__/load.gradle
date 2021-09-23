@@ -1,0 +1,38 @@
+import java.lang.reflect.Method
+
+class GLOBAL_LOAD {
+	protected static ClassLoader classLoader
+	protected static Class<?> CLASS_Library
+	protected static Method METHOD_Library_main
+}
+
+def clear = { ->
+	GLOBAL_LOAD.classLoader = null
+	GLOBAL_LOAD.CLASS_Library = null
+	GLOBAL_LOAD.METHOD_Library_main = null
+}
+def load = { ->
+	if(GLOBAL_LOAD.classLoader != null)
+		return GLOBAL_LOAD.classLoader
+	List<File> outputDirectories = new ArrayList<>()
+	outputDirectories += sourceSets.main.output.files
+	outputDirectories += sourceSets.main.runtimeClasspath.files
+	outputDirectories += sourceSets.test.output.files
+	outputDirectories += sourceSets.test.runtimeClasspath.files
+	URL[] outputURLs = outputDirectories.stream().map { it.toURI().toURL() }.toArray(URL[]::new)
+	GLOBAL_LOAD.classLoader = new URLClassLoader(outputURLs, this.project.getClass().getClassLoader())
+	GLOBAL_LOAD.CLASS_Library = GLOBAL_LOAD.classLoader.loadClass('io.github.NadhifRadityo.Objects.Library.Library')
+	GLOBAL_LOAD.METHOD_Library_main = GLOBAL_LOAD.CLASS_Library.getMethod('main', String[].class)
+
+	Class<?> CLASS_GradleUtils = GLOBAL_LOAD.classLoader.loadClass('io.github.NadhifRadityo.Objects.Library.GradleUtils')
+	CLASS_GradleUtils.getField("__PROJECT__").set(null, this.project)
+}
+def run = { String[] args ->
+	GLOBAL_LOAD.METHOD_Library_main.invoke(null, new Object[] { args })
+}
+
+ext {
+	ext_load_clear = clear
+	ext_load_load = load
+	ext_load_run = run
+}

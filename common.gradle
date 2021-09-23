@@ -1,6 +1,29 @@
 group 'io.github.NadhifRadityo.Objects'
 version 'LATEST'
 
+def __invalid_type = { ->
+	throw new Error('Invalid type')
+}
+def as_project = { Object project ->
+	if(project == null) return this.project
+	if(project instanceof Project) return project
+	if(project instanceof String) return this.project(project)
+	throw __invalid_type()
+}
+def as_task = { Object task, Object project = null ->
+	if(task instanceof Task) return task
+	if(task instanceof String) return (as_project(project) as Project).tasks.getByName(task)
+	throw __invalid_type()
+}
+def forward_task = { Object project, filter, exec = {} ->
+	(as_project(project) as Project).tasks.stream().filter(filter).map({ task(it.name) { group = it.group; dependsOn it } }).forEach(exec)
+}
+def run_after_another_task = { Object tasks, Object project = null ->
+	if(tasks instanceof Collection) tasks = tasks.toArray()
+	for(int i = 0; i < tasks.length; i++) tasks[i] = as_task(tasks[i], project)
+	for(int i = 1; i < tasks.length; i++) (tasks[i] as Task).mustRunAfter(tasks[i - 1])
+}
+
 ext {
 	CONFIG = [:]
 	CONFIG['LIBRARY_SPOTBUGS'] = ['com.github.spotbugs:spotbugs-annotations:4.4.0']
@@ -12,4 +35,9 @@ ext {
 
 	CONFIG['TESTLIBRARY_IMPLEMENTATION'] = 'org.junit.jupiter:junit-jupiter-api:5.7.2'
 	CONFIG['TESTLIBRARY_RUNTIME'] = 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
+
+	ext_common_as_project = as_project
+	ext_common_as_task = as_task
+	ext_common_forward_task = forward_task
+	ext_common_run_after_another_task = run_after_another_task
 }

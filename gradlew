@@ -1,5 +1,17 @@
 #!/usr/bin/env sh
 
+# All these options are required by the Library Gradle Task. It needs to run javascript code which written in ES6,
+# and in order to execute it, the old javascript runtime (old Nashorn) doesn't seem to support it.
+# Either add the support flag to Nashorn, or use Graalvm.
+
+# If you have Graalvm installed, uncomment the following line, and set your runtime here.
+#ALTERNATIVE_JAVA=
+
+# Or use Nashorn with ES6 support. You don't have to uncomment the following line if you use Graalvm.
+# The program will use Nashorn if something went wrong while running Graalvm. Note that Nashorn with
+# ES6 support are only available on Java 9+
+JAVA_OPTS='-Dnashorn.args=--language=es6'
+
 #
 # Copyright 2015 the original author or authors.
 #
@@ -181,5 +193,9 @@ APP_ARGS=`save "$@"`
 
 # Collect all arguments for the java command, following the shell quoting and substitution rules
 eval set -- $DEFAULT_JVM_OPTS $JAVA_OPTS $GRADLE_OPTS "\"-Dorg.gradle.appname=$APP_BASE_NAME\"" -classpath "\"$CLASSPATH\"" org.gradle.wrapper.GradleWrapperMain "$APP_ARGS"
+
+if [ -n "$ALTERNATIVE_JAVA" ] ; then
+  JAVACMD="$ALTERNATIVE_JAVA/bin/java"
+fi
 
 exec "$JAVACMD" "$@"
