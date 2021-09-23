@@ -12,4 +12,4 @@ dependencies {
     implementation project('Packages$Functional')
 }
 
-ext_common_forward_task('Library', { it.group == 'library' })
+$_.forwardTask('Library', { it.group == 'library' })

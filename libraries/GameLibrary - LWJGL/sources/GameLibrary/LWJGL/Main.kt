@@ -20,8 +20,9 @@ class Main : LibraryModule() {
 
 	override fun run() {
 		val mavenProvider = getDefaultMavenProvider()
-		val dependencyConfigsDir = file(staticDir(), "dependencies")
-		val dependencyFetchedDir = mkdir(staticDir(), "fetched")
+		val dependencyConfigsDir = file(staticDir, "dependencies")
+		val dependencyFetchedDir = file(staticDir, "fetched")
+		log(property("config.Test"))
 		task(unique("clearDependencyCache")).apply {
 			onlyIf { dependencyConfigsDir.exists() }
 			doLast { delfile(dependencyConfigsDir) }
@@ -31,7 +32,7 @@ class Main : LibraryModule() {
 			doLast {
 				for(artifact in ARTIFACTS) {
 					val dependency = mavenProvider.search(GROUP, artifact, null)[0]
-					createJSONFile(dependency, File(dependencyConfigsDir, mostSafeString(dependency.ga) + ".json"))
+					createJSONFile(dependency, file(dependencyConfigsDir, mostSafeString(dependency.ga) + ".json"))
 				}
 			}
 		}

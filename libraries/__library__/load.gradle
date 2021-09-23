@@ -2,39 +2,55 @@ import org.gradle.api.internal.project.DefaultProject
 
 import java.lang.reflect.Method
 
-class GLOBAL {
-	protected static ClassLoader classLoader
-	protected static Class<?> CLASS_Library
-	protected static Method METHOD_Library_entry
-}
+require(this, '/common.gradle')
 
-def clear = { ->
-	GLOBAL.classLoader = null
-	GLOBAL.CLASS_Library = null
-	GLOBAL.METHOD_Library_entry = null
+class $ {
+	static def $this
+	static ClassLoader classLoader
+	static Class<?> CLASS_Library
+	static Method METHOD_Library_entry
+
+	static void clear() {
+		classLoader = null
+		CLASS_Library = null
+		METHOD_Library_entry = null
+	}
+	static ClassLoader load() {
+		if(classLoader != null)
+			return classLoader
+		List<File> outputDirectories = new ArrayList<>()
+		outputDirectories += $this.sourceSets.main.output.files
+		outputDirectories += $this.sourceSets.main.runtimeClasspath.files
+		URL[] outputURLs = outputDirectories.stream().map { it.toURI().toURL() }.toArray(URL[]::new)
+		try {
+			classLoader = new URLClassLoader(outputURLs, $this.project.getClass().getClassLoader())
+			CLASS_Library = classLoader.loadClass('io.github.NadhifRadityo.Library.LibraryEntry')
+			METHOD_Library_entry = CLASS_Library.getDeclaredMethod('entry', DefaultProject.class, File.class, Map.class)
+			METHOD_Library_entry.setAccessible(true)
+		} catch(Exception e) {
+			$this.log 'fred', 'Error while loading library entry point\n', e
+		}
+		return classLoader
+	}
+	static boolean available() {
+		return METHOD_Library_entry != null
+	}
+	static void run(File rootDirectory, Map<String, File> modules) {
+		try {
+			METHOD_Library_entry.invoke(null, $this.project, rootDirectory, modules)
+		} catch(Exception e) {
+			$this.log 'fred', 'Error while running library entry point\n', e
+		}
+	}
 }
-def load = { ->
-	if(GLOBAL.classLoader != null)
-		return GLOBAL.classLoader
-	List<File> outputDirectories = new ArrayList<>()
-	outputDirectories += sourceSets.main.output.files
-	outputDirectories += sourceSets.main.runtimeClasspath.files
-	URL[] outputURLs = outputDirectories.stream().map { it.toURI().toURL() }.toArray(URL[]::new)
-	GLOBAL.classLoader = new URLClassLoader(outputURLs, this.project.getClass().getClassLoader())
-	GLOBAL.CLASS_Library = GLOBAL.classLoader.loadClass('io.github.NadhifRadityo.Library.LibraryEntry')
-	GLOBAL.METHOD_Library_entry = GLOBAL.CLASS_Library.getDeclaredMethod('entry', DefaultProject.class, File.class, Map.class)
-	GLOBAL.METHOD_Library_entry.setAccessible(true)
-}
-def available = { ->
-	return GLOBAL.METHOD_Library_entry != null
-}
-def run = { File rootDirectory, Map<String, File> modules ->
-	GLOBAL.METHOD_Library_entry.invoke(null, this.project, rootDirectory, modules)
+{
+	$.$this = this
 }
 
 ext {
-	ext_load_clear = clear
-	ext_load_load = load
-	ext_load_available = available
-	ext_load_run = run
+	ext_load_$imported = true
+	ext_load_clear = $.&clear
+	ext_load_load = $.&load
+	ext_load_available = $.&available
+	ext_load_run = $.&run
 }

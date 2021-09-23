@@ -1,27 +1,42 @@
-class GLOBAL {
-	protected static final Map<String, File> loadedModules = new HashMap<>()
-}
-GLOBAL.loadedModules.clear()
+require(this, '/common.gradle')
 
-def root_directory = project.buildscript.sourceFile.parentFile.parentFile
-def module = { String libraryPath, String libraryName = null ->
-	if(libraryName == null) libraryName = libraryPath.replaceAll('/', '$')
-	File libDirectory = new File(root_directory, libraryPath)
-	GLOBAL.loadedModules.put(libraryName, libDirectory)
-	sourceSets {
-		main.kotlin { srcDir "../$libraryPath/sources" }
-		main.resources { srcDir "../$libraryPath/resources" }
+class $ {
+	static def $this
+	static Map<String, File> loadedModules = new HashMap<>()
+
+	static File root_directory() {
+		return $this.project.buildscript.sourceFile.parentFile.parentFile
+	}
+	static void module(String path) {
+		String moduleIdentifier = path.toLowerCase().replaceAll('[^A-Za-z0-9]', '_')
+		File modulePath = new File(root_directory(), path)
+		if(loadedModules.containsKey(moduleIdentifier)) {
+			$this.log 'fred', "Library module $path has the same identifier"
+			return
+		}
+		$this.log "Imported library module $path"
+		loadedModules.put(moduleIdentifier, modulePath)
+		$this.sourceSets {
+			main.kotlin { srcDir "../$path/sources" }
+			main.resources { srcDir "../$path/resources" }
+		}
+	}
+	static Map<String, File> loaded_modules() {
+		return Collections.unmodifiableMap(loadedModules)
 	}
 }
-def loaded_modules = { ->
-	return Collections.unmodifiableMap(GLOBAL.loadedModules)
+{
+	$.$this = this
+	$.loadedModules.clear()
 }
 
 ext {
-	ext_libraries_root_directory = root_directory
-	ext_libraries_module = module
-	ext_libraries_loaded_modules = loaded_modules
+	ext_modules_$imported = true
+	ext_modules_root_directory = $.&root_directory
+	ext_modules_module = $.&module
+	ext_modules_loaded_modules = $.&loaded_modules
 }
 
+def module = $.&module
 module('GameLibrary - LWJGL')
 //module('GameLibrary - Jogamp')

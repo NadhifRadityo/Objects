@@ -1,42 +1,146 @@
 import org.gradle.api.internal.project.DefaultProject
+import org.gradle.internal.logging.text.StyledTextOutput
+import org.gradle.internal.logging.text.StyledTextOutputFactory
 import org.gradle.launcher.daemon.server.scaninfo.DaemonScanInfo
 
 import java.lang.management.ManagementFactory
+import java.util.function.Consumer
+import java.util.stream.Collectors
+import java.util.stream.Stream
 
-group 'io.github.NadhifRadityo.Objects'
-version 'LATEST'
+class $ {
+	static def $this
+	static Map<String, Consumer<Object>> importActions = new HashMap<>()
 
-def __invalid_type = { ->
-	throw new Error('Invalid type')
+	static void default_group_version(def $that) {
+		$that.group 'io.github.NadhifRadityo.Objects'
+		$that.version 'LATEST'
+	}
+	static void require(def $that, Object... scripts) {
+		for(def script : scripts) {
+			if(script instanceof String && script.startsWith('/'))
+				script = new File($that.rootDir, script as String)
+			else script = $that.file(script)
+			def scriptFile = script as File
+			def scriptFileName = scriptFile.getName()
+			if(!scriptFileName.endsWith('.gradle')) {
+				$that.log 'fyellow', "Cannot import file \"$scriptFileName\", extension not valid"
+				continue
+			}
+			def importAction = importActions.get(scriptFile.getCanonicalPath())
+			if(importAction != null) importAction.accept($that)
+			def scriptName = scriptFileName.substring(0, scriptFileName.length() - '.gradle'.length())
+			def importedTag = "ext_${scriptName}_${'$imported'}"
+			if($this.ext.has(importedTag) || $that.ext.has(importedTag)) continue
+			$that.apply from: $that.relativePath(scriptFile)
+		}
+	}
+	static void add_import_action(File file, Consumer<Object> action) {
+		importActions.put(file.getCanonicalPath(), action)
+	}
+	static void remove_import_action(File file) {
+		importActions.remove(file.getCanonicalPath())
+	}
+	static void __default_import_action(def $that) {
+		if($that.extensions.findByType(EXPORT_GLOBAL_FUNCTION) == null)
+			$that.extensions.create('$_', EXPORT_GLOBAL_FUNCTION)
+		if($that.ext.find('export_functions_only') == null) {
+			default_group_version($that)
+			if(!logger.available())
+				logger.create('default')
+		}
+	}
 }
-def as_project = { Object project ->
-	if(project == null) return this.project
-	if(project instanceof Project) return project
-	if(project instanceof String) return this.project(project)
-	throw __invalid_type()
+class logger {
+	static def $this
+	static StyledTextOutput out
+	static escapeCodes = Stream.of(('fblack|30 fred|31 fgreen|32 fyellow|33 fblue|34 fmagenta|35 fcyan|36 fwhite|37 fbblack|90 fbred|91 fbgreen|92 fbyellow|93 fbblue|94 fbmagenta|95 fbcyan|96 fbwhite|97 freset|39 ' +
+					'bblack|40 bred|41 bgreen|42 byellow|43 bblue|44 bmagenta|45 bcyan|46 bwhite|47 bbblack|100 bbred|101 bbgreen|102 bbyellow|103 bbblue|104 bbmagenta|105 bbcyan|106 bbwhite|107 breset|49').split(' '))
+					.map(v -> v.split('\\|')).collect(Collectors.<String[], String, String>toMap(v -> v[0], v -> "\033[${v[1]}m"))
+
+	static void create(String logCategory) {
+		out = ($this.project as DefaultProject).services.get(StyledTextOutputFactory).create(logCategory)
+	}
+	static boolean available() {
+		return out != null
+	}
+	static void __log_impl(String s) {
+		if(!available()) { println s; return }
+		out.println(s)
+	}
+	static String __to_string(Object obj) {
+		if(obj instanceof Throwable) {
+			StringWriter stringWriter = new StringWriter()
+			PrintWriter printWriter = new PrintWriter(stringWriter)
+			obj.printStackTrace(printWriter)
+			return stringWriter.toString()
+		}
+		return obj.toString()
+	}
+	static void log(Object... args) {
+		args = Arrays.copyOf(args, args.length + 2)
+		args[args.length - 2] = 'freset'
+		args[args.length - 1] = 'breset'
+		for(def i = 0; i < args.length; i++) {
+			def arg = args[i]
+			def argString = __to_string(arg)
+			def escapeCode = escapeCodes.get(argString)
+			args[i] = escapeCode != null ? escapeCode : argString
+		}
+		if(args[0] == "§format") {
+			__log_impl(String.format(args[1], Arrays.copyOfRange(args, 2, args.length)))
+			return
+		}
+		__log_impl(String.join('', (String[]) args))
+	}
+	static void destroy() {
+		out = null
+	}
 }
-def as_task = { Object task, Object project = null ->
-	if(task instanceof Task) return task
-	if(task instanceof String) return (as_project(project) as Project).tasks.getByName(task)
-	throw __invalid_type()
+class utils {
+	static def $this
+
+	static def __invalid_type() {
+		throw new Error('Invalid type')
+	}
+	static Project as_project(Object project) {
+		if(project == null) return $this.project
+		if(project instanceof Project) return project
+		if(project instanceof String) return $this.project(project)
+		throw __invalid_type()
+	}
+	static Task as_task(Object task, Object project = null) {
+		if(task instanceof Task) return task
+		if(task instanceof String) return as_project(project).tasks.getByName(task)
+		throw __invalid_type()
+	}
+	static void forward_task(Object project, filter, exec = {}) {
+		Project project0 = as_project(project)
+		project0.tasks.stream().filter(filter).collect(Collectors.<Task, Task, Task>toMap({
+			project0.task(it.name) { group = it.group; dependsOn it } }, { it })).forEach(exec)
+	}
+	static void run_after_another_task(Object tasks, Object project = null) {
+		if(tasks instanceof Collection) tasks = tasks.toArray()
+		for(int i = 0; i < tasks.length; i++) tasks[i] = as_task(tasks[i], project)
+		for(int i = 1; i < tasks.length; i++) tasks[i].mustRunAfter(tasks[i - 1])
+	}
+	static boolean is_single_use_daemon() {
+		return ($this.project as DefaultProject).services.get(DaemonScanInfo).isSingleUse()
+	}
+	static boolean is_running_on_debug() {
+		return ManagementFactory.getRuntimeMXBean().getInputArguments().stream().filter({ it.indexOf('-agentlib:jdwp') != -1 }).count() > 0
+	}
+	static boolean is_daemon_probably_unstable() {
+		return is_single_use_daemon() || is_running_on_debug()
+	}
 }
-def forward_task = { Object project, filter, exec = {} ->
-	(as_project(project) as Project).tasks.stream().filter(filter)
-			.map({ task(it.name) { group = it.group; dependsOn it } }).forEach(exec)
-}
-def run_after_another_task = { Object tasks, Object project = null ->
-	if(tasks instanceof Collection) tasks = tasks.toArray()
-	for(int i = 0; i < tasks.length; i++) tasks[i] = as_task(tasks[i], project)
-	for(int i = 1; i < tasks.length; i++) (tasks[i] as Task).mustRunAfter(tasks[i - 1])
-}
-def is_single_use_daemon = {
-	return (project as DefaultProject).services.get(DaemonScanInfo).isSingleUse()
-}
-def is_running_on_debug = {
-	return ManagementFactory.getRuntimeMXBean().getInputArguments().stream().filter({ it.indexOf('-agentlib:jdwp') != -1 }).count() > 0
-}
-def is_daemon_probably_unstable = {
-	return is_single_use_daemon() || is_running_on_debug()
+{
+	$.$this = this
+	logger.$this = this
+	utils.$this = this
+	$.importActions.clear()
+	$.add_import_action(buildscript.sourceFile, $.&__default_import_action)
+	$.__default_import_action(this)
 }
 
 ext {
@@ -51,11 +155,32 @@ ext {
 	CONFIG['TESTLIBRARY_IMPLEMENTATION'] = 'org.junit.jupiter:junit-jupiter-api:5.7.2'
 	CONFIG['TESTLIBRARY_RUNTIME'] = 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
 
-	ext_common_as_project = as_project
-	ext_common_as_task = as_task
-	ext_common_forward_task = forward_task
-	ext_common_run_after_another_task = run_after_another_task
-	ext_common_is_single_use_daemon = is_single_use_daemon
-	ext_common_is_running_on_debug = is_running_on_debug
-	ext_common_is_daemon_probably_unstable = is_daemon_probably_unstable
+	ext_common_$imported = true
+	ext_common_default_group_version = $.&default_group_version
+	ext_common_require = $.&require
+	ext_common_add_import_action = $.&add_import_action
+	ext_common_remove_import_action = $.&remove_import_action
+	ext_common$logger_create = logger.&create
+	ext_common$logger_available = logger.&available
+	ext_common$logger_log = logger.&log
+	ext_common$logger_destroy = logger.&destroy
+	ext_common$utils_as_project = utils.&as_project
+	ext_common$utils_as_task = utils.&as_task
+	ext_common$utils_forward_task = utils.&forward_task
+	ext_common$utils_run_after_another_task = utils.&run_after_another_task
+	ext_common$utils_is_single_use_daemon = utils.&is_single_use_daemon
+	ext_common$utils_is_running_on_debug = utils.&is_running_on_debug
+	ext_common$utils_is_daemon_probably_unstable = utils.&is_daemon_probably_unstable
+	require = $.&require
+	log = logger.&log
+}
+
+class EXPORT_GLOBAL_FUNCTION {
+	def require(def $that, Object... scripts) { return $.require($that, scripts) }
+	def log(Object... args) { return logger.log(args); }
+	def forwardTask(Object project, filter, exec = {}) { return utils.forward_task(project, filter, exec) }
+	def runAfterAnotherTask(Object tasks, Object project = null) { return utils.run_after_another_task(tasks, project) }
+	def isSingleUseDaemon() { return utils.is_single_use_daemon() }
+	def isRunningOnDebug() { return utils.is_running_on_debug() }
+	def isDaemonProbablyUnstable() { return utils.is_daemon_probably_unstable() }
 }

@@ -6,9 +6,7 @@ plugins {
 }
 
 buildDir = '../__target__/__sources__/'
-apply from: '../../common.gradle'
-apply from: 'modules.gradle'
-apply from: 'load.gradle'
+require(this, '/common.gradle', 'modules.gradle', 'load.gradle')
 
 repositories {
     mavenCentral()
@@ -33,10 +31,10 @@ test {
 // If the Daemon is single use, then this has no information
 // about the cached ClassLoader. And forcefully, have to load
 // latest compilation no matter what.
-if(ext_common_is_daemon_probably_unstable())
+if($_.isDaemonProbablyUnstable())
     ext_load_load()
 if(ext_load_available())
-    ext_load_run(ext_libraries_root_directory, ext_libraries_loaded_modules())
+    ext_load_run(ext_modules_root_directory(), ext_modules_loaded_modules())
 task libraryConfig {
     String[] depends = new String[] { 'compileKotlin', 'compileJava', 'processResources', 'classes' }
     def anyChanged = { -> Stream.of(depends).map({ tasks.getByName(it) }).filter({
@@ -46,11 +44,11 @@ task libraryConfig {
     description = 'Config library scripts.'
     for(def depend : depends) dependsOn depend
     doFirst {
-        if(ext_common_is_daemon_probably_unstable() || anyChanged())
+        if($_.isDaemonProbablyUnstable() || anyChanged())
             ext_load_clear()
     }
     doLast {
-        if(ext_common_is_daemon_probably_unstable()) return
+        if($_.isDaemonProbablyUnstable()) return
         if(!ext_load_available() || anyChanged())
             ext_load_load()
     }
@@ -59,7 +57,7 @@ task libraryClean {
     group = 'library'
     description = 'Clear library scripts.'
     onlyIf {
-        !ext_common_is_daemon_probably_unstable()
+        !$_.isDaemonProbablyUnstable()
     }
     doLast {
         ext_load_clear()

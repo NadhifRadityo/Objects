@@ -4,23 +4,22 @@ import org.gradle.api.internal.project.DefaultProject;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.jar.Attributes;
 import java.util.jar.Manifest;
 
+import static io.github.NadhifRadityo.Library.Utils.a_getString;
+import static io.github.NadhifRadityo.Library.Utils.classForName0;
 import static io.github.NadhifRadityo.Library.Utils.createJSONFile;
-import static io.github.NadhifRadityo.Library.Utils.file;
 import static io.github.NadhifRadityo.Library.Utils.getFileString;
-import static io.github.NadhifRadityo.Library.Utils.log;
 import static io.github.NadhifRadityo.Library.Utils.mkdir;
 import static io.github.NadhifRadityo.Library.Utils.mkfile;
 import static io.github.NadhifRadityo.Library.Utils.searchPath;
-import static io.github.NadhifRadityo.Library.Utils.setFinal;
 import static io.github.NadhifRadityo.Library.Utils.toJson;
+import static io.github.NadhifRadityo.Library.Utils.warn;
 
 public class LibraryEntry {
 	protected static DefaultProject __PROJECT__;
@@ -41,8 +40,7 @@ public class LibraryEntry {
 		__TARGET_DIRECTORY__ = mkdir(__ROOT_DIRECTORY__, "__target__");
 		__MODULES__ = new HashMap<>();
 
-		File mainConfigFile = file(__TARGET_DIRECTORY__, "configurations.json");
-		mkfile(mainConfigFile);
+		File mainConfigFile = mkfile(__TARGET_DIRECTORY__, "configurations.json");
 		JSON_mainRoot configurations = toJson(getFileString(mainConfigFile), JSON_mainRoot.class);
 		if(configurations == null) {
 			configurations = new JSON_mainRoot();
@@ -51,20 +49,23 @@ public class LibraryEntry {
 		__MAIN_CONFIG__ = configurations;
 
 		for(Map.Entry<String, File> rawModule : rawModules.entrySet()) {
-			String moduleName = rawModule.getKey();
+			String moduleIdentifier = rawModule.getKey();
 			File modulePath = rawModule.getValue();
 			File manifestFile = new File(modulePath, "lib.mf");
-			log("Checking \"%s\" library manager... %s", moduleName, manifestFile.exists() ? "yes" : "no");
 			if(!manifestFile.exists()) continue;
 
-			Manifest manifest;
+			Manifest moduleManifest;
+			Class<? extends LibraryModule> moduleEntry;
 			try(FileInputStream manifestFileStream = new FileInputStream(manifestFile)) {
-				manifest = new Manifest(manifestFileStream); }
-			Attributes mainAttributes = manifest.getMainAttributes();
-			Class<? extends LibraryModule> moduleClass = (Class<? extends LibraryModule>)
-					Class.forName(mainAttributes.getValue("Main-Class"));
-			LibraryModule module = initModule(moduleName, modulePath, moduleClass);
-			__MODULES__.put(moduleClass, module);
+				moduleManifest = new Manifest(manifestFileStream);
+				moduleEntry = classForName0(a_getString(moduleManifest.getMainAttributes(), "Module-Entry"));
+			} catch(Exception e) {
+				warn("Error reading manifest file \"%s\"\n%s", manifestFile.getAbsolutePath(), e);
+				continue;
+			}
+
+			LibraryModule module = initModule(moduleEntry, moduleIdentifier, modulePath, moduleManifest);
+			__MODULES__.put(moduleEntry, module);
 		}
 
 		defaultPropertiesConfig(configurations);
@@ -73,16 +74,14 @@ public class LibraryEntry {
 		createJSONFile(configurations, mainConfigFile);
 	}
 
-	protected static final Field FIELD_LibraryModule_name;
-	protected static final Field FIELD_LibraryModule_file;
+	protected static final Method METHOD_LibraryModule_init;
 	static { try {
-		FIELD_LibraryModule_name = LibraryModule.class.getDeclaredField("name");
-		FIELD_LibraryModule_file = LibraryModule.class.getDeclaredField("file");
+		METHOD_LibraryModule_init = LibraryModule.class.getDeclaredMethod("init", String.class, File.class, Manifest.class);
+		METHOD_LibraryModule_init.setAccessible(true);
 	} catch(Exception e) { throw new Error(e); } }
-	protected static LibraryModule initModule(String moduleName, File modulePath, Class<? extends LibraryModule> moduleClass) throws Exception {
-		LibraryModule module = moduleClass.newInstance();
-		setFinal(module, FIELD_LibraryModule_name, moduleName);
-		setFinal(module, FIELD_LibraryModule_file, modulePath);
+	protected static LibraryModule initModule(Class<? extends LibraryModule> entry, String identifier, File path, Manifest manifest) throws Exception {
+		LibraryModule module = entry.newInstance();
+		METHOD_LibraryModule_init.invoke(module, identifier, path, manifest);
 		return module;
 	}
 

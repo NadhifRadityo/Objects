@@ -22,9 +22,8 @@ import java.util.Set;
 
 import static io.github.NadhifRadityo.Library.LibraryEntry.__MODULES__;
 import static io.github.NadhifRadityo.Library.LibraryEntry.__PROJECT__;
-import static io.github.NadhifRadityo.Library.LibraryEntry.__TARGET_DIRECTORY__;
 import static io.github.NadhifRadityo.Library.Utils.classForName;
-import static io.github.NadhifRadityo.Library.Utils.mkdir;
+import static io.github.NadhifRadityo.Library.Utils.file;
 
 public class LibraryImplement {
 	protected static final Map<String, Class<?>> __class_cache = new HashMap<>();
@@ -47,35 +46,25 @@ public class LibraryImplement {
 		return null;
 	}
 
-	public static File __source_dir(Class<? extends LibraryModule> moduleClass) {
-		return __MODULES__.get(moduleClass).file;
-	}
-	public static File __target_dir(Class<? extends LibraryModule> moduleClass, String path) {
-		LibraryModule module = __MODULES__.get(moduleClass);
-		return mkdir(__TARGET_DIRECTORY__, module.name, path);
-	}
-	public static File __target_dir(Class<? extends LibraryModule> moduleClass) {
-		return __target_dir(moduleClass, "");
-	}
-	public static File __static_dir(Class<? extends LibraryModule> moduleClass) {
-		return __target_dir(moduleClass, "__static__");
-	}
-	public static File __source_dir() { return __source_dir(__last_caller_class()); }
-	public static File __target_dir(String path) { return __target_dir(__last_caller_class(), path); }
-	public static File __target_dir() { return __target_dir(__last_caller_class()); }
+	public static <T> T __module(Class<? extends T> moduleClass) { return (T) __MODULES__.get(moduleClass); }
+	public static File __module_path(Class<? extends LibraryModule> moduleClass) { return __module(moduleClass).getPath(); }
+	public static File __build_dir(Class<? extends LibraryModule> moduleClass, String... path) { return file(__module(moduleClass).getBuildDir(), path); }
+	public static File __static_dir(Class<? extends LibraryModule> moduleClass) { return __build_dir(moduleClass, "__static__"); }
+	public static File __module_path() { return __module_path(__last_caller_class()); }
+	public static File __build_dir(String... path) { return __build_dir(__last_caller_class(), path); }
 	public static File __static_dir() { return __static_dir(__last_caller_class()); }
 
 	public Project getRootProject() { return __PROJECT__.getRootProject(); }
-//	public File getRootDir() { return __PROJECT__.getRootDir(); }
-//	public File getBuildDir() { return __PROJECT__.getBuildDir(); }
-//	public void setBuildDir(File file) { __PROJECT__.setBuildDir(file); }
-//	public void setBuildDir(Object o) { __PROJECT__.setBuildDir(o); }
-//	public File getBuildFile() { return __PROJECT__.getBuildFile(); }
+	public File getRootDir() { return __PROJECT__.getRootDir(); }
+	public File getBuildDir() { return __PROJECT__.getBuildDir(); }
+	public void setBuildDir(File file) { __PROJECT__.setBuildDir(file); }
+	public void setBuildDir(Object o) { __PROJECT__.setBuildDir(o); }
+	public File getBuildFile() { return __PROJECT__.getBuildFile(); }
 	@Nullable public Project getParent() { return __PROJECT__.getParent(); }
-//	public String getName() { return __PROJECT__.getName(); }
+	public String getName() { return __PROJECT__.getName(); }
 //	public String getDisplayName() { return __PROJECT__.getDisplayName(); }
-//	@Nullable public String getDescription() { return __PROJECT__.getDescription(); }
-//	public void setDescription(@Nullable String s) { __PROJECT__.setDescription(s); }
+	@Nullable public String getDescription() { return __PROJECT__.getDescription(); }
+	public void setDescription(@Nullable String s) { __PROJECT__.setDescription(s); }
 //	public Object getGroup() { return __PROJECT__.getGroup(); }
 //	public void setGroup(Object o) { __PROJECT__.setGroup(o); }
 //	public Object getVersion() { return __PROJECT__.getVersion(); }
@@ -83,7 +72,7 @@ public class LibraryImplement {
 //	public Object getStatus() { return __PROJECT__.getStatus(); }
 //	public void setStatus(Object o) { __PROJECT__.setStatus(o); }
 	public Map<String, Project> getChildProjects() { return __PROJECT__.getChildProjects(); }
-//	public void setProperty(String s, @Nullable Object o) throws MissingPropertyException { __PROJECT__.setProperty(s, o); }
+	public void setProperty(String s, @Nullable Object o) throws MissingPropertyException { __PROJECT__.setProperty(s, o); }
 	public Project getProject() { return __PROJECT__.getProject(); }
 	public Set<Project> getAllprojects() { return __PROJECT__.getAllprojects(); }
 	public Set<Project> getSubprojects() { return __PROJECT__.getSubprojects(); }
@@ -104,7 +93,7 @@ public class LibraryImplement {
 	public Project project(String s, Action<? super Project> action) { return __PROJECT__.project(s, action); }
 	public Map<Project, Set<Task>> getAllTasks(boolean b) { return __PROJECT__.getAllTasks(b); }
 	public Set<Task> getTasksByName(String s, boolean b) { return __PROJECT__.getTasksByName(s, b); }
-//	public File getProjectDir() { return __PROJECT__.getProjectDir(); }
+	public File getProjectDir() { return __PROJECT__.getProjectDir(); }
 //	public File file(Object o) { return __PROJECT__.file(o); }
 //	public File file(Object o, PathValidation pathValidation) throws InvalidUserDataException { return __PROJECT__.file(o, pathValidation); }
 //	public URI uri(Object o) { return __PROJECT__.uri(o); }
