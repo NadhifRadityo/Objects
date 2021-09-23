@@ -9,7 +9,7 @@ repositories {
 }
 
 dependencies {
-    implementation project(':packages:Functional')
+    implementation project('Packages$Functional')
 
     testImplementation CONFIG['TESTLIBRARY_IMPLEMENTATION']
     testRuntimeOnly CONFIG['TESTLIBRARY_RUNTIME']

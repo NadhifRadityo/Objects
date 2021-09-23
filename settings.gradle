@@ -1,6 +1,15 @@
 rootProject.name = 'Objects'
-include 'packages:Functional'
-findProject(':packages:Functional')?.name = 'Functional'
-include 'libraries:__library__'
-findProject(':libraries:__library__')?.name = 'Library'
+include 'packages#Functional'
+include 'libraries#__library__$Library'
 
+rootProject.children.each { project ->
+	int splitIndex = project.name.indexOf('$')
+	List<String> path = Arrays.asList((splitIndex != -1 ? project.name.substring(0, splitIndex) : project.name).split("#"))
+	String name = (splitIndex != -1 ? project.name.substring(splitIndex + 1) : String.join('$', path.stream()
+			.map{it.substring(0, 1).toUpperCase() + it.substring(1)}.toArray(String[]::new)))
+	project.projectDir = new File(settingsDir, String.join('/', path))
+	project.name = name
+	println "Imported ${String.join('/', path)} -> $name settings"
+	assert project.projectDir.isDirectory()
+	assert project.buildFile.isFile()
+}
