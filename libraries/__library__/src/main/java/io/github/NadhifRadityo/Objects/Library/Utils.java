@@ -288,12 +288,12 @@ public class Utils {
 		String prefix = digest.toUpperCase() + "(" + file.getAbsolutePath() + ")= ";
 		return hexStringToBytes(getCommandOutput(exe.getAbsolutePath(), digest, file.getAbsolutePath()).substring(prefix.length()).trim());
 	}
-	public static byte[] checksumExeMd5sum(File exe, File file) throws Exception {
-		debug("Creating exe md5sum (%s) checksum: %s", exe.getAbsolutePath(), file.getAbsolutePath());
+	public static byte[] checksumExeMdNsum(File exe, File file, int N) throws Exception {
+		debug("Creating exe md%ssum (%s) checksum: %s", N, exe.getAbsolutePath(), file.getAbsolutePath());
 		return hexStringToBytes(getCommandOutput(exe.getAbsolutePath(), file.getAbsolutePath()).substring(1, 33).trim());
 	}
-	public static byte[] checksumExeSha1sum(File exe, File file) throws Exception {
-		debug("Creating exe sha1sum (%s) checksum: %s", exe.getAbsolutePath(), file.getAbsolutePath());
+	public static byte[] checksumExeShaNsum(File exe, File file, int N) throws Exception {
+		debug("Creating exe sha%ssum (%s) checksum: %s", N, exe.getAbsolutePath(), file.getAbsolutePath());
 		return hexStringToBytes(getCommandOutput(exe.getAbsolutePath(), file.getAbsolutePath()).substring(1, 41).trim());
 	}
 	public static ThrowsReferencedCallback<byte[]> HASH_JAVA_NATIVE(String digest) {
@@ -309,11 +309,11 @@ public class Utils {
 	public static ThrowsReferencedCallback<byte[]> HASH_EXE_OPENSSL(File exe, String digest) {
 		return (args) -> checksumExeOpenssl(exe, (File) args[0], digest);
 	}
-	public static ThrowsReferencedCallback<byte[]> HASH_EXE_MD5SUM(File exe) {
-		return (args) -> checksumExeMd5sum(exe, (File) args[0]);
+	public static ThrowsReferencedCallback<byte[]> HASH_EXE_MDNSUM(File exe, int N) {
+		return (args) -> checksumExeMdNsum(exe, (File) args[0], N);
 	}
-	public static ThrowsReferencedCallback<byte[]> HASH_EXE_SHA1SUM(File exe) {
-		return (args) -> checksumExeSha1sum(exe, (File) args[0]);
+	public static ThrowsReferencedCallback<byte[]> HASH_EXE_SHANSUM(File exe, int N) {
+		return (args) -> checksumExeShaNsum(exe, (File) args[0], N);
 	}
 
 	public static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("win");

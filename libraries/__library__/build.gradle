@@ -24,13 +24,15 @@ test {
 buildDir = '../__build__/__sources__/'
 void lib(String libName) {
     File libDirectory = new File("../$libName")
-    File libMainDirectory = new File(libDirectory, 'main')
-    File libTestDirectory = new File(libDirectory, 'test')
+    File libMainSourcesDirectory = new File(libDirectory, 'mainSources')
+    File libMainResourcesDirectory = new File(libDirectory, 'mainResources')
+    File libTestSourcesDirectory = new File(libDirectory, 'testSources')
+    File libTestResourcesDirectory = new File(libDirectory, 'testResources')
     sourceSets {
-        main.java { srcDir libMainDirectory }
-        main.resources { srcDir libMainDirectory }
-        test.java { srcDir libTestDirectory }
-        test.resources { srcDir libTestDirectory }
+        main.java { srcDir libMainSourcesDirectory }
+        main.resources { srcDir libMainResourcesDirectory }
+        test.java { srcDir libTestSourcesDirectory }
+        test.resources { srcDir libTestResourcesDirectory }
     }
 }
 

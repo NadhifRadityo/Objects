@@ -10,8 +10,6 @@ import io.github.NadhifRadityo.Objects.Library.ThrowsReferencedCallback;
 import org.jsoup.nodes.Document;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -19,9 +17,9 @@ import java.util.Properties;
 import java.util.stream.Stream;
 
 import static io.github.NadhifRadityo.Objects.Library.Library.debug;
+import static io.github.NadhifRadityo.Objects.Library.Library.info;
 import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.deleteDefault;
 import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.downloadDefault;
-import static io.github.NadhifRadityo.Objects.Library.Utils.downloadFile;
 import static io.github.NadhifRadityo.Objects.Library.Utils.p_getLong;
 import static io.github.NadhifRadityo.Objects.Library.Utils.p_setBoolean;
 import static io.github.NadhifRadityo.Objects.Library.Utils.p_setLong;
@@ -49,6 +47,8 @@ public class HTMLDirListingProvider {
 		phase_post(phase, stage, directory, configurations, libraryPacks);
 		return null;
 	};
+
+	public static final String GLOBAL_PROPERTIES_HTML_DIR_LISTING_HASHES = "HTMLDirListingHashes";
 
 	public static void phase_pre(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks) {
 		switch(phase) {
@@ -80,8 +80,9 @@ public class HTMLDirListingProvider {
 	public static ThrowsReferencedCallback<boolean[]> DOWNLOAD = (args) -> {
 		JSON_configurationsRoot.$module.$dependency dependency = (JSON_configurationsRoot.$module.$dependency) args[0];
 		File currentDir = (File) args[1];
-		ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> hashes = (ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>>) args[2];
-		return download(dependency, currentDir, hashes);
+		ThrowsReferencedCallback<Void> download = (ThrowsReferencedCallback<Void>) args[2];
+		ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> hashes = (ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>>) args[3];
+		return download(dependency, currentDir, download, hashes);
 	};
 	public static ThrowsReferencedCallback<boolean[]> DELETE = (args) -> {
 		JSON_configurationsRoot.$module.$dependency dependency = (JSON_configurationsRoot.$module.$dependency) args[0];
@@ -101,21 +102,24 @@ public class HTMLDirListingProvider {
 	public static final String ITEM_PROPERTIES_DESCRIPTION = "description";
 
 	public static JSON_configurationsRoot.$module.$dependency[] search(Properties properties, String url, ThrowsReferencedCallback<Document> getSource, ThrowsReferencedCallback<HTMLFileDetails[]> versionProvider, ThrowsReferencedCallback<HTMLFileDetails[]> fileProvider) throws Exception {
-		Document document = getSource.get(url, "/");
-		HTMLFileDetails[] versions = Stream.of(versionProvider.get(document, "/")).filter(v -> v.directory).toArray(HTMLFileDetails[]::new);
+		info("Searching HTML Dir listing... (%s)", url);
+		Document document = getSource.get(url, "");
+		HTMLFileDetails[] versions = Stream.of(versionProvider.get(document, "")).filter(v -> v.directory).toArray(HTMLFileDetails[]::new);
 		ThrowsReferencedCallback<Void> getChilds = new ThrowsReferencedCallback<Void>() {
 			@Override public Void get(Object... args) throws Exception {
 				String childUrl = (String) args[0];
 				String childPath = (String) args[1];
-				debug("Visiting %s -> %s", childPath, childUrl);
 				List<HTMLFileDetails> children = (List<HTMLFileDetails>) args[2];
+				debug("Visiting \"%s\"... (%s)", childPath, childUrl);
+
 				Document childDocument = getSource.get(childUrl, childPath);
+				List<HTMLFileDetails> directories = new ArrayList<>();
 				for(HTMLFileDetails child : fileProvider.get(childDocument, childPath)) {
-					debug("File n=%s dir=%s t=%s s=%s d=%s", child.name, child.directory, child.date, child.size, child.description);
-					children.add(child);
-					if(!child.directory) continue;
-					get(child.link, childPath + "/" + child.name, children);
+					debug("File n=\"%s\" dir=\"%s\" t=\"%s\" s=\"%s\" d=\"%s\"", child.name, child.directory, child.date, child.size, child.description);
+					children.add(child); if(child.directory) directories.add(child);
 				}
+				for(HTMLFileDetails directory : directories)
+					get(directory.link, childPath + "/" + directory.name, children);
 				return null;
 			}
 		};
@@ -125,7 +129,7 @@ public class HTMLDirListingProvider {
 		List<JSON_configurationsRoot.$module.$dependency> results = new ArrayList<>();
 		for(HTMLFileDetails version : versions) {
 			List<HTMLFileDetails> children = new ArrayList<>();
-			getChilds.get(version.link, "/" + version.name, children);
+			getChilds.get(version.link, version.name, children);
 
 			JSON_configurationsRoot.$module.$dependency result = new JSON_configurationsRoot.$module.$dependency();
 			result.id = version.name;
@@ -153,12 +157,12 @@ public class HTMLDirListingProvider {
 		results.sort((v1, v2) -> Long.compare(p_getLong(v2.properties, DEPENDENCY_PROPERTIES_DATE), p_getLong(v1.properties, DEPENDENCY_PROPERTIES_DATE)));
 		return results.toArray(new JSON_configurationsRoot.$module.$dependency[0]);
 	}
-	public static boolean[] download(JSON_configurationsRoot.$module.$dependency dependency, File currentDir, ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> hashes) throws Exception {
+	public static boolean[] download(JSON_configurationsRoot.$module.$dependency dependency, File currentDir, ThrowsReferencedCallback<Void> download, ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> hashes) throws Exception {
 		String link = pn_getObject(dependency.properties, DEPENDENCY_PROPERTIES_LINK);
 		long date = pn_getLong(dependency.properties, DEPENDENCY_PROPERTIES_DATE);
 		String description = pn_getObject(dependency.properties, DEPENDENCY_PROPERTIES_DESCRIPTION);
 
-		ThrowsReferencedCallback<Void> download = (args) -> {
+		ThrowsReferencedCallback<Void> _download = (args) -> {
 			ReferencedCallback<File> getFile = (ReferencedCallback<File>) args[0];
 			JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[1];
 			String extension = (String) args[2];
@@ -173,11 +177,13 @@ public class HTMLDirListingProvider {
 			}
 			if(!target.exists() && !target.createNewFile())
 				throw new IllegalArgumentException();
-			try(FileOutputStream fos = new FileOutputStream(target)) {
-				downloadFile(new URL(childLink), fos);
-			} return null;
+			Object[] newArgs = new Object[args.length + 2];
+			newArgs[0] = target;
+			newArgs[1] = childLink;
+			System.arraycopy(args, 0, newArgs, 2, args.length);
+			return download.get(newArgs);
 		};
-		return downloadDefault(dependency, currentDir, download, hashes);
+		return downloadDefault(dependency, currentDir, _download, hashes);
 	}
 	public static boolean[] delete(JSON_configurationsRoot.$module.$dependency dependency, File currentDir, ReferencedCallback<Map<String, List<ThrowsReferencedCallback<byte[]>>>> hashes) throws Exception {
 		return deleteDefault(dependency, currentDir, hashes);

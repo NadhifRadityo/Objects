@@ -18,7 +18,6 @@ import static io.github.NadhifRadityo.Objects.Library.Utils.createXMLFile;
 import static io.github.NadhifRadityo.Objects.Library.Utils.extendProperties;
 import static io.github.NadhifRadityo.Objects.Library.Utils.newXMLDocument;
 import static io.github.NadhifRadityo.Objects.Library.Utils.p_setObject;
-import static io.github.NadhifRadityo.Objects.Library.Utils.pn_getBoolean;
 import static io.github.NadhifRadityo.Objects.Library.Utils.pn_getObject;
 import static io.github.NadhifRadityo.Objects.Library.Utils.writeFileString;
 
@@ -50,9 +49,9 @@ public class LibraryUtils {
 		return args -> {
 			JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[0];
 			JSON_configurationsRoot.$module.$dependency dependency = (JSON_configurationsRoot.$module.$dependency) args[1];
-			String name = item.name;
 			if(!Provider.MAVEN.equals(dependency.source) && !Provider.SONATYPE.equals(dependency.source))
 				return true;
+			String name = item.name;
 			String group = pn_getObject(dependency.properties, "group");
 			String artifact = pn_getObject(dependency.properties, "artifact");
 			String version = pn_getObject(dependency.properties, "version");
@@ -75,23 +74,18 @@ public class LibraryUtils {
 			return true;
 		};
 	}
-	public static ReferencedCallback<Boolean> htmlDirDependencyParser(ReferencedCallback<String> typeProvider, String toDepend, String defaultDir, String nativeDir) {
+	public static ReferencedCallback<Boolean> htmlDirDependencyParser(ReferencedCallback<Boolean> filter, ReferencedCallback<String> typeProvider, String nativeDir) {
 		return args -> {
 			JSON_configurationsRoot.$module.$dependency.$item item = (JSON_configurationsRoot.$module.$dependency.$item) args[0];
 			JSON_configurationsRoot.$module.$dependency dependency = (JSON_configurationsRoot.$module.$dependency) args[1];
-			String name = item.name;
 			if(!Provider.HTML_DIR_LISTING.equals(dependency.source))
 				return true;
-			String path = pn_getObject(item.properties, "path");
-			boolean directory = pn_getBoolean(item.properties, "directory");
-			if(!path.startsWith(toDepend) || directory) return false;
+			if(!filter.get(item, dependency)) return false;
 
-			String type = typeProvider.get(name, path);
+			String type = typeProvider.get(item, dependency);
 			List<Action> actions = new ArrayList<>();
 			actions.add(Action.DOWNLOAD);
 			actions.add(Action.DELETE);
-			if(defaultDir != null)
-				item.directory = defaultDir;
 			if(nativeDir != null && type == null)
 				item.directory = nativeDir;
 			else actions.add(Action.PACK);

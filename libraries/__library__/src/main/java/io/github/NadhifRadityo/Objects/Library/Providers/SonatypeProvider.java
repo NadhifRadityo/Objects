@@ -25,7 +25,7 @@ import java.util.Properties;
 import static io.github.NadhifRadityo.Objects.Library.Library.debug;
 import static io.github.NadhifRadityo.Objects.Library.Library.info;
 import static io.github.NadhifRadityo.Objects.Library.Library.warn;
-import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.DEFAULT_HASH_OPTIONS_ALL;
+import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.DEFAULT_HASH_OPTIONS_MD5_SHA1;
 import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.deleteDefault;
 import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.downloadDefault;
 import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.hashesAvailable;
@@ -79,7 +79,7 @@ public class SonatypeProvider {
 				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_SONATYPE_VERSION_INFO, "(g, a, v, s, c, e) => `https://oss.sonatype.org/service/local/artifact/maven/resolve?_dc=${Date.now()}&r=${s?'snapshots':'releases'}&g=${g}&a=${a}&v=${v}&isLocal=true&e=${e}${c && `&c=${c}` || ''}`");
 				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_SONATYPE_FILE_INFO, "(g, a, v, s, f) => `https://oss.sonatype.org/service/local/repositories/${s?'snapshots':'releases'}/content/${g.replace(/\\./g, '/')}/${a}/${v}/${f}?_dc=${Date.now()}&describe=info&isLocal=true`");
 				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_SONATYPE_DOWNLOAD, "(g, a, v, s, c, e) => `https://oss.sonatype.org/service/local/artifact/maven/redirect?r=${s?'snapshots':'releases'}&g=${g}&a=${a}&v=${v}&e=${e}${c && `&c=${c}` || ''}`");
-				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_SONATYPE_HASHES, String.join(",", DEFAULT_HASH_OPTIONS_ALL(configurations.properties)));
+				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_SONATYPE_HASHES, String.join(",", DEFAULT_HASH_OPTIONS_MD5_SHA1(configurations.properties)));
 				break;
 			}
 			case FETCH: { break; }

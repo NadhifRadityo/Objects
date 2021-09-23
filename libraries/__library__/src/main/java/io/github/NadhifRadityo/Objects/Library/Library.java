@@ -15,6 +15,7 @@ import org.apache.commons.cli.ParseException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.StringReader;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -114,7 +115,9 @@ public class Library {
 			defaultPropertiesConfig(configurations);
 		preProvider(phase, stage, directory, configurations, libraryPacks);
 		Map<String, JSON_configurationsRoot.$module> modules = readModules(phase, stage, directory, configurations, libraryPacks);
+		preModules(phase, stage, directory, configurations, libraryPacks, modules);
 		runModules(phase, stage, directory, configurations, libraryPacks, modules);
+		postModules(phase, stage, directory, configurations, libraryPacks, modules);
 		writeModules(phase, stage, directory, configurations, libraryPacks, modules);
 		postProvider(phase, stage, directory, configurations, libraryPacks);
 		if(phase == Phase.CONFIG) {
@@ -155,15 +158,40 @@ public class Library {
 		});
 		return modules;
 	}
+	protected static void preModules(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks, Map<String, JSON_configurationsRoot.$module> modules) throws Exception {
+		for(LibraryPack libraryPack : libraryPacks) {
+			Class<?> CLASS_$ANY = phase != Phase.VALIDATE ? libraryPack.mainClass : libraryPack.testClass;
+			Method METHOD_$ANY_PRE__MODULES; try { METHOD_$ANY_PRE__MODULES = CLASS_$ANY.getMethod("PRE_MODULES", Stage.class,
+					JSON_configurationsRoot.$module.class); } catch(NoSuchMethodException ignored) { continue; }
+			__CURRENT__ = libraryPack;
+			__CURRENT_DIR__ = new File(directory, libraryPack.name);
+			log("Executing \"%s\" library manager... pre modules", libraryPack.name);
+			JSON_configurationsRoot.$module module = modules.get(libraryPack.name);
+			METHOD_$ANY_PRE__MODULES.invoke(null, stage, module);
+		}
+	}
 	protected static void runModules(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks, Map<String, JSON_configurationsRoot.$module> modules) throws Exception {
 		for(LibraryPack libraryPack : libraryPacks) {
+			Class<?> CLASS_$ANY = phase != Phase.VALIDATE ? libraryPack.mainClass : libraryPack.testClass;
+			Method METHOD_$ANY_$PHASE; try { METHOD_$ANY_$PHASE = CLASS_$ANY.getMethod(phase.name(), Stage.class,
+					JSON_configurationsRoot.$module.class); } catch(NoSuchMethodException ignored) { continue; }
 			__CURRENT__ = libraryPack;
 			__CURRENT_DIR__ = new File(directory, libraryPack.name);
 			log("Executing \"%s\" library manager... %s (%s)", libraryPack.name, phase.name().toLowerCase(), stage.name().toLowerCase());
 			JSON_configurationsRoot.$module module = modules.get(libraryPack.name);
-			if(phase != Phase.VALIDATE)
-				libraryPack.mainClass.getMethod(phase.name(), Stage.class, JSON_configurationsRoot.$module.class).invoke(null, stage, module);
-			else libraryPack.testClass.getMethod(phase.name(), Stage.class, JSON_configurationsRoot.$module.class).invoke(null, stage, module);
+			METHOD_$ANY_$PHASE.invoke(null, stage, module);
+		}
+	}
+	protected static void postModules(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks, Map<String, JSON_configurationsRoot.$module> modules) throws Exception {
+		for(LibraryPack libraryPack : libraryPacks) {
+			Class<?> CLASS_$ANY = phase != Phase.VALIDATE ? libraryPack.mainClass : libraryPack.testClass;
+			Method METHOD_$ANY_POST__MODULES; try { METHOD_$ANY_POST__MODULES = CLASS_$ANY.getMethod("POST_MODULES", Stage.class,
+					JSON_configurationsRoot.$module.class); } catch(NoSuchMethodException ignored) { continue; }
+			__CURRENT__ = libraryPack;
+			__CURRENT_DIR__ = new File(directory, libraryPack.name);
+			log("Executing \"%s\" library manager... post modules", libraryPack.name);
+			JSON_configurationsRoot.$module module = modules.get(libraryPack.name);
+			METHOD_$ANY_POST__MODULES.invoke(null, stage, module);
 		}
 	}
 	protected static void writeModules(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks, Map<String, JSON_configurationsRoot.$module> modules) throws Exception {
@@ -205,6 +233,10 @@ public class Library {
 		putExecutable.get("openssl");
 		putExecutable.get("md5sum");
 		putExecutable.get("sha1sum");
+		putExecutable.get("sha224sum");
+		putExecutable.get("sha256sum");
+		putExecutable.get("sha384sum");
+		putExecutable.get("sha512sum");
 	}
 
 	public static boolean disableDebugPrint = false;

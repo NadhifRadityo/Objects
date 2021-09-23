@@ -23,7 +23,7 @@ import java.util.Properties;
 import static io.github.NadhifRadityo.Objects.Library.Library.debug;
 import static io.github.NadhifRadityo.Objects.Library.Library.info;
 import static io.github.NadhifRadityo.Objects.Library.Library.warn;
-import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.DEFAULT_HASH_OPTIONS_ALL;
+import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.DEFAULT_HASH_OPTIONS_MD5_SHA1;
 import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.deleteDefault;
 import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.downloadDefault;
 import static io.github.NadhifRadityo.Objects.Library.Providers.__shared__.hashesAvailable;
@@ -69,7 +69,7 @@ public class MavenProvider {
 			case CONFIG: {
 				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_MAVEN_SEARCH, "(g, a) => `https://search.maven.org/solrsearch/select?q=g:\"${g}\"+AND+a:\"${a}\"&core=gav&wt=json`");
 				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_MAVEN_DOWNLOAD, "(g, a, v, f) => `https://search.maven.org/remotecontent?filepath=${g.replace(/\\./g, '/')}/${a}/${v}/${f}`");
-				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_MAVEN_HASHES, String.join(",", DEFAULT_HASH_OPTIONS_ALL(configurations.properties)));
+				configurations.properties.putIfAbsent(GLOBAL_PROPERTIES_MAVEN_HASHES, String.join(",", DEFAULT_HASH_OPTIONS_MD5_SHA1(configurations.properties)));
 				break;
 			}
 			case FETCH: { break; }
