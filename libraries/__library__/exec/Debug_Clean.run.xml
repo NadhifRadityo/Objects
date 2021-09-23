@@ -1,10 +1,10 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Build" type="Application" factoryName="Application" folderName="Library">
+  <configuration default="false" name="Debug_Clean" type="Application" factoryName="Application" folderName="Library">
     <option name="ALTERNATIVE_JRE_PATH" value="GraalVM 19.3.2 1.8" />
     <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
     <option name="MAIN_CLASS_NAME" value="io.github.NadhifRadityo.Objects.Library.Library" />
     <module name="Objects.Library.main" />
-    <option name="PROGRAM_PARAMETERS" value="-p &quot;BUILD&quot; -d &quot;.&quot;" />
+    <option name="PROGRAM_PARAMETERS" value="-p &quot;CLEAN&quot; -s &quot;DEBUG&quot; -d &quot;.&quot;" />
     <option name="VM_PARAMETERS" value="-Dnashorn.args=--language=es6" />
     <option name="WORKING_DIRECTORY" value="$ProjectFileDir$/Objects/libraries" />
     <method v="2">

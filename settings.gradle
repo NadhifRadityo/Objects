@@ -1,6 +1,6 @@
 rootProject.name = 'Objects'
-include 'packages#Functional'
 include 'libraries#__library__$Library'
+include 'packages#Functional'
 
 rootProject.children.each { project ->
 	int splitIndex = project.name.indexOf('$')

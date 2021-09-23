@@ -4,6 +4,8 @@ import io.github.NadhifRadityo.Objects.Library.CURL;
 import io.github.NadhifRadityo.Objects.Library.Constants.JSON_configurationsRoot;
 import io.github.NadhifRadityo.Objects.Library.Constants.Phase;
 import io.github.NadhifRadityo.Objects.Library.Constants.Provider;
+import io.github.NadhifRadityo.Objects.Library.Constants.Stage;
+import io.github.NadhifRadityo.Objects.Library.LibraryPack;
 import io.github.NadhifRadityo.Objects.Library.ReferencedCallback;
 import io.github.NadhifRadityo.Objects.Library.ThrowsReferencedCallback;
 
@@ -40,18 +42,20 @@ import static io.github.NadhifRadityo.Objects.Library.Utils.urlToUri;
 public class MavenProvider {
 	public static ThrowsReferencedCallback<Void> PHASE_PRE = (args) -> {
 		Phase phase = (Phase) args[0];
-		File directory = (File) args[1];
-		JSON_configurationsRoot configurations = (JSON_configurationsRoot) args[2];
-		Map<String, Class<?>> libraryClasses = (Map<String, Class<?>>) args[3];
-		phase_pre(phase, directory, configurations, libraryClasses);
+		Stage stage = (Stage) args[1];
+		File directory = (File) args[2];
+		JSON_configurationsRoot configurations = (JSON_configurationsRoot) args[3];
+		List<LibraryPack> libraryPacks = (List<LibraryPack>) args[4];
+		phase_pre(phase, stage, directory, configurations, libraryPacks);
 		return null;
 	};
 	public static ThrowsReferencedCallback<Void> PHASE_POST = (args) -> {
 		Phase phase = (Phase) args[0];
-		File directory = (File) args[1];
-		JSON_configurationsRoot configurations = (JSON_configurationsRoot) args[2];
-		Map<String, Class<?>> libraryClasses = (Map<String, Class<?>>) args[3];
-		phase_post(phase, directory, configurations, libraryClasses);
+		Stage stage = (Stage) args[1];
+		File directory = (File) args[2];
+		JSON_configurationsRoot configurations = (JSON_configurationsRoot) args[3];
+		List<LibraryPack> libraryPacks = (List<LibraryPack>) args[4];
+		phase_post(phase, stage, directory, configurations, libraryPacks);
 		return null;
 	};
 	
@@ -59,7 +63,7 @@ public class MavenProvider {
 	public static String GLOBAL_PROPERTIES_MAVEN_DOWNLOAD = "mavenDownload";
 	public static String GLOBAL_PROPERTIES_MAVEN_HASHES = "mavenHashes";
 
-	public static void phase_pre(Phase phase, File directory, JSON_configurationsRoot configurations, Map<String, Class<?>> libraryClasses) {
+	public static void phase_pre(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks) {
 		switch(phase) {
 			case CLEAN: { break; }
 			case CONFIG: {
@@ -70,14 +74,16 @@ public class MavenProvider {
 			}
 			case FETCH: { break; }
 			case BUILD: { break; }
+			case VALIDATE: { break; }
 		}
 	}
-	public static void phase_post(Phase phase, File directory, JSON_configurationsRoot configurations, Map<String, Class<?>> libraryClasses) {
+	public static void phase_post(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks) {
 		switch(phase) {
 			case CLEAN: { break; }
 			case CONFIG: { break; }
 			case FETCH: { break; }
 			case BUILD: { break; }
+			case VALIDATE: { break; }
 		}
 	}
 

@@ -155,7 +155,7 @@ public class __shared__ {
 				success = false;
 			}
 			for(String hash : hashes.keySet()) {
-				File hashFile = getFile.get(hash);
+				File hashFile = getFile.get("." + hash);
 				if(hashFile.exists() && !hashFile.delete()) {
 					warn("Couldn't delete hash file! (%s)", hashFile.getAbsolutePath());
 					success = false;

@@ -20,3 +20,18 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+buildDir = '../__build__/__sources__/'
+void lib(String libName) {
+    File libDirectory = new File("../$libName")
+    File libMainDirectory = new File(libDirectory, 'main')
+    File libTestDirectory = new File(libDirectory, 'test')
+    sourceSets {
+        main.java { srcDir libMainDirectory }
+        main.resources { srcDir libMainDirectory }
+        test.java { srcDir libTestDirectory }
+        test.resources { srcDir libTestDirectory }
+    }
+}
+
+lib('GameLibrary - LWJGL')
