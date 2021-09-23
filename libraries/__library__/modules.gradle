@@ -3,9 +3,10 @@ class GLOBAL {
 }
 GLOBAL.loadedModules.clear()
 
+def root_directory = project.buildscript.sourceFile.parentFile.parentFile
 def module = { String libraryPath, String libraryName = null ->
 	if(libraryName == null) libraryName = libraryPath.replaceAll('/', '$')
-	File libDirectory = new File(project.buildscript.sourceFile.parentFile.parentFile, libraryPath)
+	File libDirectory = new File(root_directory, libraryPath)
 	GLOBAL.loadedModules.put(libraryName, libDirectory)
 	sourceSets {
 		main.kotlin { srcDir "../$libraryPath/sources" }
@@ -17,6 +18,7 @@ def loaded_modules = { ->
 }
 
 ext {
+	ext_libraries_root_directory = root_directory
 	ext_libraries_module = module
 	ext_libraries_loaded_modules = loaded_modules
 }

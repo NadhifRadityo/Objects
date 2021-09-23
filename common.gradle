@@ -1,6 +1,8 @@
 import org.gradle.api.internal.project.DefaultProject
 import org.gradle.launcher.daemon.server.scaninfo.DaemonScanInfo
 
+import java.lang.management.ManagementFactory
+
 group 'io.github.NadhifRadityo.Objects'
 version 'LATEST'
 
@@ -30,6 +32,12 @@ def run_after_another_task = { Object tasks, Object project = null ->
 def is_single_use_daemon = {
 	return (project as DefaultProject).services.get(DaemonScanInfo).isSingleUse()
 }
+def is_running_on_debug = {
+	return ManagementFactory.getRuntimeMXBean().getInputArguments().stream().filter({ it.indexOf('-agentlib:jdwp') != -1 }).count() > 0
+}
+def is_daemon_probably_unstable = {
+	return is_single_use_daemon() || is_running_on_debug()
+}
 
 ext {
 	CONFIG = [:]
@@ -48,4 +56,6 @@ ext {
 	ext_common_forward_task = forward_task
 	ext_common_run_after_another_task = run_after_another_task
 	ext_common_is_single_use_daemon = is_single_use_daemon
+	ext_common_is_running_on_debug = is_running_on_debug
+	ext_common_is_daemon_probably_unstable = is_daemon_probably_unstable
 }

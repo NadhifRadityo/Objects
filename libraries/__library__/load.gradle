@@ -22,14 +22,14 @@ def load = { ->
 	URL[] outputURLs = outputDirectories.stream().map { it.toURI().toURL() }.toArray(URL[]::new)
 	GLOBAL.classLoader = new URLClassLoader(outputURLs, this.project.getClass().getClassLoader())
 	GLOBAL.CLASS_Library = GLOBAL.classLoader.loadClass('io.github.NadhifRadityo.Library.LibraryEntry')
-	GLOBAL.METHOD_Library_entry = GLOBAL.CLASS_Library.getDeclaredMethod('entry', DefaultProject.class, Map.class)
+	GLOBAL.METHOD_Library_entry = GLOBAL.CLASS_Library.getDeclaredMethod('entry', DefaultProject.class, File.class, Map.class)
 	GLOBAL.METHOD_Library_entry.setAccessible(true)
 }
 def available = { ->
 	return GLOBAL.METHOD_Library_entry != null
 }
-def run = { Map<String, File> modules ->
-	GLOBAL.METHOD_Library_entry.invoke(null, this.project, modules)
+def run = { File rootDirectory, Map<String, File> modules ->
+	GLOBAL.METHOD_Library_entry.invoke(null, this.project, rootDirectory, modules)
 }
 
 ext {

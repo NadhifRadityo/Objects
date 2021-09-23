@@ -32,11 +32,11 @@ test {
 // This part requires Gradle Daemon to cache the ClassLoader.
 // If the Daemon is single use, then this has no information
 // about the cached ClassLoader. And forcefully, have to load
-// last compilation no matter what.
-if(ext_common_is_single_use_daemon())
+// latest compilation no matter what.
+if(ext_common_is_daemon_probably_unstable())
     ext_load_load()
 if(ext_load_available())
-    ext_load_run(ext_libraries_loaded_modules())
+    ext_load_run(ext_libraries_root_directory, ext_libraries_loaded_modules())
 task libraryConfig {
     String[] depends = new String[] { 'compileKotlin', 'compileJava', 'processResources', 'classes' }
     def anyChanged = { -> Stream.of(depends).map({ tasks.getByName(it) }).filter({
@@ -46,11 +46,11 @@ task libraryConfig {
     description = 'Config library scripts.'
     for(def depend : depends) dependsOn depend
     doFirst {
-        if(ext_common_is_single_use_daemon() || anyChanged())
+        if(ext_common_is_daemon_probably_unstable() || anyChanged())
             ext_load_clear()
     }
     doLast {
-        if(ext_common_is_single_use_daemon()) return
+        if(ext_common_is_daemon_probably_unstable()) return
         if(!ext_load_available() || anyChanged())
             ext_load_load()
     }
@@ -59,7 +59,7 @@ task libraryClean {
     group = 'library'
     description = 'Clear library scripts.'
     onlyIf {
-        !ext_common_is_single_use_daemon()
+        !ext_common_is_daemon_probably_unstable()
     }
     doLast {
         ext_load_clear()

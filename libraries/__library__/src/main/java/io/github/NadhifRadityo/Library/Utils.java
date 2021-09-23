@@ -182,6 +182,62 @@ public class Utils {
 	public static String getFileExtension(String fileName) { String extension = ""; try { if(fileName != null && fileName.contains(".")) extension = fileName.substring(fileName.lastIndexOf(".") + 1); } catch (Exception ignored) { } return extension; }
 	public static String getFileExtension(File file) { return getFileExtension(file != null ? file.getName() : null); }
 
+	public static File file(File parent, String... children) {
+		return new File(parent, String.join("/", children));
+	}
+	public static File file(String... children) {
+		return new File(String.join("/", children));
+	}
+	public static File mkfile(File parent, String... children) {
+		File result = file(parent, children);
+		if(result.exists()) return result;
+		debug("Making file: %s", result.getAbsolutePath());
+		mkdir(result.getParentFile());
+		try { if(result.createNewFile()) return result;
+		} catch(IOException e) { throw new Error(e); }
+		throw new IllegalStateException("Cannot make file");
+	}
+	public static File mkfile(String... children) {
+		File result = file(children);
+		if(result.exists()) return result;
+		debug("Making file: %s", result.getAbsolutePath());
+		mkdir(result.getParentFile());
+		try { if(result.createNewFile()) return result;
+		} catch(IOException e) { throw new Error(e); }
+		throw new IllegalStateException("Cannot make file");
+	}
+	public static File mkdir(File parent, String... children) {
+		File result = file(parent, children);
+		if(result.exists()) return result;
+		debug("Making directory: %s", result.getAbsolutePath());
+		if(result.mkdirs()) return result;
+		throw new IllegalStateException("Cannot make directory");
+	}
+	public static File mkdir(String... children) {
+		File result = file(children);
+		if(result.exists()) return result;
+		debug("Making directory: %s", result.getAbsolutePath());
+		if(result.mkdirs()) return result;
+		throw new IllegalStateException("Cannot make directory");
+	}
+	public static void delfile0(File file) {
+		if(!file.exists()) return;
+		debug("Deleting file: %s", file.getAbsolutePath());
+		if(file.delete()) return;
+		throw new IllegalStateException("Cannot delete file");
+	}
+	public static void delfile(File file) {
+		if(file.isFile()) { delfile0(file); return; }
+		File[] children = file.listFiles();
+		if(children == null) { delfile0(file); return; }
+		for(File child : children) {
+			if(child.isDirectory())
+				delfile(child);
+			delfile0(child);
+		}
+		delfile0(file);
+	}
+
 	public static File getCurrentClassFile(Class<?> clazz) throws Exception {
 		File result = new File(URLDecoder.decode(clazz.getProtectionDomain().getCodeSource().getLocation().getPath(), StandardCharsets.UTF_8.name()));
 		if(result.isDirectory()) result = new File(result, clazz.getSimpleName() + ".class"); return result;
@@ -378,24 +434,51 @@ public class Utils {
 		debug("Creating exe sha%ssum (%s) checksum: %s", N, exe.getAbsolutePath(), file.getAbsolutePath());
 		return hexStringToBytes(getCommandOutput(exe.getAbsolutePath(), file.getAbsolutePath()).substring(1, 41).trim());
 	}
-	public static ThrowsReferencedCallback<byte[]> HASH_JAVA_NATIVE(String digest) {
+	protected static String getHashExpected(Object object) throws Exception {
+		String expected;
+		if(object instanceof String) expected = (String) object;
+		else if(object instanceof byte[]) expected = bytesToHexString((byte[]) object);
+		else if(object instanceof File) expected = getFileString((File) object);
+		else throw new IllegalStateException();
+		return expected;
+	}
+	public static ThrowsReferencedCallback<Boolean> HASH_JAVA_NATIVE(String digest) {
 		return (args) -> {
-			if(args[0] instanceof File) return checksumJavaNative((File) args[0], digest);
-			else if(args[0] instanceof byte[]) return checksumJavaNative((byte[]) args[0], digest);
-			throw new IllegalStateException();
+			String generated;
+			if(args[0] instanceof File) generated = bytesToHexString(checksumJavaNative((File) args[0], digest));
+			else if(args[0] instanceof byte[]) generated = bytesToHexString(checksumJavaNative((byte[]) args[0], digest));
+			else throw new IllegalStateException();
+			String expected = getHashExpected(args[1]);
+			return generated.equals(expected);
 		};
 	}
-	public static ThrowsReferencedCallback<byte[]> HASH_EXE_CERTUTIL(File exe, String digest) {
-		return (args) -> checksumExeCertutil(exe, (File) args[0], digest);
+	public static ThrowsReferencedCallback<Boolean> HASH_EXE_CERTUTIL(File exe, String digest) {
+		return (args) -> {
+			String generated = bytesToHexString(checksumExeCertutil(exe, (File) args[0], digest));
+			String expected = getHashExpected(args[1]);
+			return generated.equals(expected);
+		};
 	}
-	public static ThrowsReferencedCallback<byte[]> HASH_EXE_OPENSSL(File exe, String digest) {
-		return (args) -> checksumExeOpenssl(exe, (File) args[0], digest);
+	public static ThrowsReferencedCallback<Boolean> HASH_EXE_OPENSSL(File exe, String digest) {
+		return (args) -> {
+			String generated = bytesToHexString(checksumExeOpenssl(exe, (File) args[0], digest));
+			String expected = getHashExpected(args[1]);
+			return generated.equals(expected);
+		};
 	}
-	public static ThrowsReferencedCallback<byte[]> HASH_EXE_MDNSUM(File exe, int N) {
-		return (args) -> checksumExeMdNsum(exe, (File) args[0], N);
+	public static ThrowsReferencedCallback<Boolean> HASH_EXE_MDNSUM(File exe, int N) {
+		return (args) -> {
+			String generated = bytesToHexString(checksumExeMdNsum(exe, (File) args[0], N));
+			String expected = getHashExpected(args[1]);
+			return generated.equals(expected);
+		};
 	}
-	public static ThrowsReferencedCallback<byte[]> HASH_EXE_SHANSUM(File exe, int N) {
-		return (args) -> checksumExeShaNsum(exe, (File) args[0], N);
+	public static ThrowsReferencedCallback<Boolean> HASH_EXE_SHANSUM(File exe, int N) {
+		return (args) -> {
+			String generated = bytesToHexString(checksumExeShaNsum(exe, (File) args[0], N));
+			String expected = getHashExpected(args[1]);
+			return generated.equals(expected);
+		};
 	}
 
 	public static String getCommandOutput(File basedir, String... arguments) throws Exception {
@@ -457,8 +540,7 @@ public class Utils {
 	}
 	public static String createXMLFile(Object object, File target) throws Exception {
 		String stringOut = XMLToString(object);
-		if(!target.exists() && !target.createNewFile())
-			throw new IllegalStateException("Cannot create file!");
+		mkfile(target);
 		writeFileString(target, stringOut, StandardCharsets.UTF_8);
 		info("Configurations written to: %s", target.getAbsolutePath());
 		return stringOut;
@@ -467,6 +549,7 @@ public class Utils {
 	public static <T> T toJson(Reader reader, Class<T> clazz) { return new Gson().fromJson(reader, clazz); }
 	public static <T> T toJson(InputStream stream, Class<T> clazz) { return new Gson().fromJson(new InputStreamReader(stream), clazz); }
 	public static <T> T toJson(String string, Class<T> clazz) { return new Gson().fromJson(string, clazz); }
+	public static <T> T toJson(File file, Class<T> clazz) throws IOException { return new Gson().fromJson(getFileString(file), clazz); }
 	public static <T> String JSONToString(T object) throws IOException {
 		try(StringWriter stringWriter = new StringWriter(); JsonWriter jsonWriter = new JsonWriter(stringWriter)) {
 			jsonWriter.setIndent("\t");
@@ -477,8 +560,7 @@ public class Utils {
 	}
 	public static <T> String createJSONFile(T object, File target) throws Exception {
 		String stringOut = JSONToString(object);
-		if(!target.exists() && !target.createNewFile())
-			throw new IllegalStateException("Cannot create file!");
+		mkfile(target);
 		writeFileString(target, stringOut, StandardCharsets.UTF_8);
 		info("Configurations written to: %s", target.getAbsolutePath());
 		return stringOut;
@@ -683,6 +765,9 @@ public class Utils {
 		}
 		throw new UnsupportedOperationException("Supported javascript runtime is not available!");
 	}
+	public static <T> ThrowsReferencedCallback<T> runJavascriptAsCallback(String source) {
+		return (args) -> (T) runJavascript(source, args);
+	}
 
 	public static String throwableToString(Throwable throwable) {
 		try(StringWriter stringWriter = new StringWriter(); PrintWriter printWriter = new PrintWriter(stringWriter)) {
@@ -735,6 +820,9 @@ public class Utils {
 				.replace("\f", "\\f")
 				.replace("\'", "\\'")
 				.replace("\"", "\\\"");
+	}
+	public static String mostSafeString(String string) {
+		return string.toLowerCase().replaceAll("[^A-Za-z0-9]", "_");
 	}
 
 	public static boolean disableDebugPrint = false;
