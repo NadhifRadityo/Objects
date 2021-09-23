@@ -59,9 +59,9 @@ public class MavenProvider {
 		return null;
 	};
 	
-	public static String GLOBAL_PROPERTIES_MAVEN_SEARCH = "mavenSearch";
-	public static String GLOBAL_PROPERTIES_MAVEN_DOWNLOAD = "mavenDownload";
-	public static String GLOBAL_PROPERTIES_MAVEN_HASHES = "mavenHashes";
+	public static final String GLOBAL_PROPERTIES_MAVEN_SEARCH = "mavenSearch";
+	public static final String GLOBAL_PROPERTIES_MAVEN_DOWNLOAD = "mavenDownload";
+	public static final String GLOBAL_PROPERTIES_MAVEN_HASHES = "mavenHashes";
 
 	public static void phase_pre(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks) {
 		switch(phase) {
@@ -106,10 +106,10 @@ public class MavenProvider {
 		return delete(dependency, currentDir);
 	};
 
-	public static String DEPENDENCY_PROPERTIES_GROUP = "group";
-	public static String DEPENDENCY_PROPERTIES_ARTIFACT = "artifact";
-	public static String DEPENDENCY_PROPERTIES_VERSION = "version";
-	public static String DEPENDENCY_PROPERTIES_TIMESTAMP = "timestamp";
+	public static final String DEPENDENCY_PROPERTIES_GROUP = "group";
+	public static final String DEPENDENCY_PROPERTIES_ARTIFACT = "artifact";
+	public static final String DEPENDENCY_PROPERTIES_VERSION = "version";
+	public static final String DEPENDENCY_PROPERTIES_TIMESTAMP = "timestamp";
 	
 	public static JSON_configurationsRoot.$module.$dependency[] search(Properties properties, String group, String artifact) throws Exception {
 		CURL curl = new CURL();

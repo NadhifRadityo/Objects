@@ -1,12 +1,14 @@
 package io.github.NadhifRadityo.Objects.Library.Constants;
 
+import io.github.NadhifRadityo.Objects.Library.Providers.HTMLDirListingProvider;
 import io.github.NadhifRadityo.Objects.Library.Providers.MavenProvider;
 import io.github.NadhifRadityo.Objects.Library.Providers.SonatypeProvider;
 import io.github.NadhifRadityo.Objects.Library.ThrowsReferencedCallback;
 
 public enum Provider {
 	MAVEN(1, MavenProvider.PHASE_PRE, MavenProvider.PHASE_POST, MavenProvider.SEARCH, MavenProvider.DOWNLOAD, MavenProvider.DELETE),
-	SONATYPE(2, SonatypeProvider.PHASE_PRE, SonatypeProvider.PHASE_POST, SonatypeProvider.SEARCH, SonatypeProvider.DOWNLOAD, SonatypeProvider.DELETE);
+	SONATYPE(2, SonatypeProvider.PHASE_PRE, SonatypeProvider.PHASE_POST, SonatypeProvider.SEARCH, SonatypeProvider.DOWNLOAD, SonatypeProvider.DELETE),
+	HTML_DIR_LISTING(3, HTMLDirListingProvider.PHASE_PRE, HTMLDirListingProvider.PHASE_POST, HTMLDirListingProvider.SEARCH, HTMLDirListingProvider.DOWNLOAD, HTMLDirListingProvider.DELETE);
 
 	public final short id;
 	public final ThrowsReferencedCallback<Void> PHASE_PRE;

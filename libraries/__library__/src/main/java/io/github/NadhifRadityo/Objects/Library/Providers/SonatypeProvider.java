@@ -65,11 +65,11 @@ public class SonatypeProvider {
 		return null;
 	};
 
-	public static String GLOBAL_PROPERTIES_SONATYPE_SEARCH = "sonatypeSearch";
-	public static String GLOBAL_PROPERTIES_SONATYPE_VERSION_INFO = "sonatypeVersionInfo";
-	public static String GLOBAL_PROPERTIES_SONATYPE_FILE_INFO = "sonatypeFileInfo";
-	public static String GLOBAL_PROPERTIES_SONATYPE_DOWNLOAD = "sonatypeDownload";
-	public static String GLOBAL_PROPERTIES_SONATYPE_HASHES = "sonatypeHashes";
+	public static final String GLOBAL_PROPERTIES_SONATYPE_SEARCH = "sonatypeSearch";
+	public static final String GLOBAL_PROPERTIES_SONATYPE_VERSION_INFO = "sonatypeVersionInfo";
+	public static final String GLOBAL_PROPERTIES_SONATYPE_FILE_INFO = "sonatypeFileInfo";
+	public static final String GLOBAL_PROPERTIES_SONATYPE_DOWNLOAD = "sonatypeDownload";
+	public static final String GLOBAL_PROPERTIES_SONATYPE_HASHES = "sonatypeHashes";
 
 	public static void phase_pre(Phase phase, Stage stage, File directory, JSON_configurationsRoot configurations, List<LibraryPack> libraryPacks) {
 		switch(phase) {
@@ -115,12 +115,12 @@ public class SonatypeProvider {
 		return delete(dependency, currentDir);
 	};
 
-	public static String DEPENDENCY_PROPERTIES_GROUP = "group";
-	public static String DEPENDENCY_PROPERTIES_ARTIFACT = "artifact";
-	public static String DEPENDENCY_PROPERTIES_VERSION = "version";
-	public static String DEPENDENCY_PROPERTIES_TIMESTAMP = "timestamp";
-	public static String DEPENDENCY_PROPERTIES_SNAPSHOT = "snapshot";
-	public static String ITEM_PROPERTIES_CLASSIFIER = "classifier";
+	public static final String DEPENDENCY_PROPERTIES_GROUP = "group";
+	public static final String DEPENDENCY_PROPERTIES_ARTIFACT = "artifact";
+	public static final String DEPENDENCY_PROPERTIES_VERSION = "version";
+	public static final String DEPENDENCY_PROPERTIES_TIMESTAMP = "timestamp";
+	public static final String DEPENDENCY_PROPERTIES_SNAPSHOT = "snapshot";
+	public static final String ITEM_PROPERTIES_CLASSIFIER = "classifier";
 
 	public static JSON_configurationsRoot.$module.$dependency[] search(Properties properties, String group, String artifact, boolean snapshots) throws Exception {
 		CURL curl = new CURL();

@@ -35,3 +35,4 @@ void lib(String libName) {
 }
 
 lib('GameLibrary - LWJGL')
+lib('GameLibrary - Jogamp')

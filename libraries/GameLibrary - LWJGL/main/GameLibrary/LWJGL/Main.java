@@ -14,7 +14,7 @@ import java.util.List;
 
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.MAVEN_SONATYPE;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.createLibrary;
-import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.defaultDependencyParser;
+import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.mavenSonatypeDependencyParser;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.delete;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.download;
 import static io.github.NadhifRadityo.Objects.Library.LibraryUtils.parseDependency;
@@ -37,7 +37,7 @@ public class Main extends Library implements STATIC {
 		List<JSON_configurationsRoot.$module.$dependency> dependencies = new ArrayList<>();
 		for(String ARTIFACT : ARTIFACTS) {
 			JSON_configurationsRoot.$module.$dependency dependency = search(module.properties, MAVEN_SONATYPE, GROUP, ARTIFACT, false)[0];
-			parseDependency(dependency, defaultDependencyParser(NATIVE_DIR));
+			parseDependency(dependency, mavenSonatypeDependencyParser(NATIVE_DIR));
 			dependencies.add(dependency);
 		}
 		putDependencies(module, dependencies.toArray(new JSON_configurationsRoot.$module.$dependency[0]));
