@@ -1,5 +1,0 @@
-<project name="TestBuild" basedir=".">
-	<target name="deleteLastBuild">
-		<delete file="Objects-MainTest.jar"/>
-	</target>
-</project>
