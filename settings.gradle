@@ -43,7 +43,7 @@ class $ {
 }
 
 ext {
-	ext_settings_$imported = true
+	ext_settings_$imported = buildscript.sourceFile.getCanonicalPath()
 	ext_settings_extend = $.&extend
 	ext_settings_apply = $.&apply
 	ext_settings_extended_projects = $.&extended_projects

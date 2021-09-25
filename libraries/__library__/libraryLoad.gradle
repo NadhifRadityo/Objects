@@ -1,6 +1,7 @@
 import org.gradle.api.internal.project.DefaultProject
 
 import java.lang.reflect.Method
+import java.util.stream.Stream
 
 require(this, '/common.gradle')
 
@@ -15,15 +16,18 @@ class $ {
 		CLASS_Library = null
 		METHOD_Library_entry = null
 	}
+	static File[] source_files() {
+		if(!$this.buildDir.exists()) return new File[0]
+		List<File> sourceFiles = new ArrayList<>()
+		sourceFiles += $this.sourceSets.main.output.files
+		sourceFiles += $this.sourceSets.main.runtimeClasspath.files
+		return sourceFiles.toArray(new File[0])
+	}
 	static ClassLoader load() {
-		if(classLoader != null)
-			return classLoader
-		List<File> outputDirectories = new ArrayList<>()
-		outputDirectories += $this.sourceSets.main.output.files
-		outputDirectories += $this.sourceSets.main.runtimeClasspath.files
-		URL[] outputURLs = outputDirectories.stream().map { it.toURI().toURL() }.toArray(URL[]::new)
+		if(classLoader != null) return classLoader
+		URL[] sourceURLs = Stream.of(source_files()).map { it.toURI().toURL() }.toArray(URL[]::new)
 		try {
-			classLoader = new URLClassLoader(outputURLs, $this.project.getClass().getClassLoader())
+			classLoader = new URLClassLoader(sourceURLs, $this.project.getClass().getClassLoader())
 			CLASS_Library = classLoader.loadClass('io.github.NadhifRadityo.Library.LibraryEntry')
 			METHOD_Library_entry = CLASS_Library.getDeclaredMethod('entry', DefaultProject.class, File.class, Map.class)
 			METHOD_Library_entry.setAccessible(true)
@@ -48,9 +52,9 @@ class $ {
 }
 
 ext {
-	ext_load_$imported = true
-	ext_load_clear = $.&clear
-	ext_load_load = $.&load
-	ext_load_available = $.&available
-	ext_load_run = $.&run
+	ext_libraryLoad_clear = $.&clear
+	ext_libraryLoad_source_files = $.&source_files
+	ext_libraryLoad_load = $.&load
+	ext_libraryLoad_available = $.&available
+	ext_libraryLoad_run = $.&run
 }

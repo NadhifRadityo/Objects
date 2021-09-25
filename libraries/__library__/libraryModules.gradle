@@ -36,10 +36,9 @@ class $ {
 }
 
 ext {
-	ext_modules_$imported = true
-	ext_modules_root_directory = $.&root_directory
-	ext_modules_module = $.&module
-	ext_modules_loaded_modules = $.&loaded_modules
+	ext_libraryModules_root_directory = $.&root_directory
+	ext_libraryModules_module = $.&module
+	ext_libraryModules_loaded_modules = $.&loaded_modules
 }
 
 def module = $.&module

@@ -25,17 +25,36 @@ class $ {
 				script = new File($that.rootDir, script)
 			else script = $that.file(script)
 			File scriptFile = script as File
+			String scriptFilePath = scriptFile.getCanonicalPath()
 			String scriptFileName = scriptFile.getName()
 			if(!scriptFileName.endsWith('.gradle')) {
 				logger.pwarn "Cannot import file \"$scriptFileName\", extension not valid"
 				continue
 			}
-			Consumer<Object> importAction = importActions.get(scriptFile.getCanonicalPath())
-			if(importAction != null) importAction.accept($that)
 			String scriptName = scriptFileName.substring(0, scriptFileName.length() - '.gradle'.length())
 			String importedTag = "ext_${scriptName}_${'$imported'}"
-			if($this.ext.has(importedTag) || $that.ext.has(importedTag)) continue
+			Consumer<Object> importAction = importActions.get(scriptFilePath)
+			def preCheck = { def $what ->
+				Object value = $what.ext.has(importedTag) ? $what.ext.get(importedTag) : null
+				if(!(value instanceof String)) return false
+				if(value == scriptFilePath) return true
+				throw new Error("Duplicate gradle file name \"$scriptFileName\", another import is from \"$value\"")
+			}
+			def postCheck = { def $what ->
+				Object value = $what.ext.has(importedTag) ? $what.ext.get(importedTag) : null
+				if(!(value instanceof String) && value == scriptFilePath) return false
+				$what.ext.set(importedTag, scriptFilePath)
+				return true
+			}
+			boolean preCheckThis = preCheck($this)
+			boolean preCheckThat = preCheck($that)
+			if(importAction != null)
+				importAction.accept($that)
+			if(preCheckThis) continue
+			if(preCheckThat) continue
 			$that.apply from: $that.relativePath(scriptFile)
+			postCheck($this)
+			postCheck($that)
 		}
 	}
 	static void add_import_action(File file, Consumer<Object> action) {
@@ -285,8 +304,15 @@ class utils {
 	progress.$this = this
 	utils.$this = this
 	$.importActions.clear()
+	logger.logger_deinit()
+	progress.progress_deinit()
 	$.add_import_action(buildscript.sourceFile, $.&__default_import_action)
 	$.__default_import_action(this)
+	for(Map.Entry<String, Object> entry : ext.getProperties()) {
+		String key = entry.getKey();
+		if(!key.startsWith('ext_') || !key.endsWith('_$imported')) continue;
+		ext.set(key, null)
+	}
 }
 
 ext {
@@ -301,7 +327,7 @@ ext {
 	CONFIG['TESTLIBRARY_IMPLEMENTATION'] = 'org.junit.jupiter:junit-jupiter-api:5.7.2'
 	CONFIG['TESTLIBRARY_RUNTIME'] = 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
 
-	ext_common_$imported = true
+	ext_common_$imported = buildscript.sourceFile.getCanonicalPath()
 	ext_common_default_group_version = $.&default_group_version
 	ext_common_require = $.&require
 	ext_common_add_import_action = $.&add_import_action
