@@ -97,7 +97,10 @@ class logger {
 //	static void logger_create(Object identifier = null, Class<?> loggerCategory) {
 //	static void logger_create(Object identifier = null, Class<?> loggerCategory, LogLevel logLevel) {
 	static void logger_create(Object identifier = null, Object... args) {
-		StyledTextOutput instance = factory.&create.call(args)
+		StyledTextOutput instance
+		if(args[0] == null && args.length == 1) instance = factory.create(null as String)
+		else if(args[0] == null) instance = factory.create(null as String, args[1] as LogLevel)
+		else instance = factory.&create.call(args)
 		instances.put(System.identityHashCode(identifier), instance)
 	}
 	static void logger_destroy(Object identifier = null) {
@@ -216,7 +219,10 @@ class progress {
 //	static void progress_create(Object identifier = null, Class<?> loggerCategory, BuildOperationDescriptor buildOperationDescriptor) {
 //	static void progress_create(Object identifier = null, Class<?> loggerCategory, ProgressLogger parent) {
 	static void progress_create(Object identifier = null, Object... args) {
-		ProgressLogger instance = factory.&newOperation.call(args)
+		ProgressLogger instance
+		if(args[0] == null && args.length == 1) instance = factory.newOperation(null as String)
+		else if(args.length == 2 && args[1] == null) instance = factory.newOperation(args[0] as Class, args[1] as ProgressLogger)
+		else instance = factory.&newOperation.call(args)
 		instances.put(System.identityHashCode(identifier), instance)
 	}
 	static void progress_destroy(Object identifier = null) {

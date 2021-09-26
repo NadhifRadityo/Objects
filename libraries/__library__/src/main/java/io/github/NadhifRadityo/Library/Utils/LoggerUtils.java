@@ -8,9 +8,9 @@ import static io.github.NadhifRadityo.Library.LibraryEntry.getProject;
 import static io.github.NadhifRadityo.Library.Utils.ExceptionUtils.throwableToString;
 
 public class LoggerUtils {
-	public static void logger_create(Object... args) {
-		Closure<Void> logger_create = (Closure<Void>) getProject().findProperty("ext_common$logger_init");
-		logger_create.call(args);
+	public static void logger_create(Object identifier, Object... args) {
+		Closure<Void> logger_create = (Closure<Void>) getProject().findProperty("ext_common$logger_create");
+		logger_create.call(identifier, args);
 	}
 	public static void loggerCreate(Object identifier, String loggerCategory) {
 		logger_create(identifier, loggerCategory);
@@ -37,25 +37,28 @@ public class LoggerUtils {
 		logger_create(null, loggerCategory, logLevel);
 	}
 
-	public static void logger_destroy(Object... args) {
+	public static void logger_destroy(Object identifier) {
 		Closure<Void> logger_destroy = (Closure<Void>) getProject().findProperty("ext_common$logger_destroy");
-		logger_destroy.call(args);
+		logger_destroy.call(identifier);
+	}
+	public static void loggerDestroy(Object identifier) {
+		logger_destroy(identifier);
 	}
 	public static void loggerDestroy() {
-		logger_destroy();
+		logger_destroy(null);
 	}
 
-	public static StyledTextOutput logger_instance(Object... args) {
+	public static StyledTextOutput logger_instance(Object identifier) {
 		Closure<StyledTextOutput> logger_instance = (Closure<StyledTextOutput>) getProject().findProperty("ext_common$logger_instance");
-		return logger_instance.call(args);
+		return logger_instance.call(identifier);
 	}
 	public static StyledTextOutput loggerInstance(Object identifier) {
 		return logger_instance(identifier);
 	}
 	public static StyledTextOutput loggerInstance() {
-		return logger_instance((Object) null);
+		return logger_instance(null);
 	}
-	
+
 	public static boolean disableDebugPrint = false;
 
 	protected static void parseFormat(Object... format) {

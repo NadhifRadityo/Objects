@@ -1,5 +1,7 @@
 package io.github.NadhifRadityo.Library.Utils;
 
+import io.github.NadhifRadityo.Library.Utils.ProgressUtils.ProgressWrapper;
+
 import java.io.BufferedInputStream;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
@@ -17,9 +19,11 @@ import java.util.function.Consumer;
 
 import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.debug;
 import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.info;
+import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progress;
 import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progressDo;
 import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progressEnd;
 import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progressStart;
+import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progress_id;
 import static io.github.NadhifRadityo.Library.Utils.StreamUtils.copy;
 
 public class CommonUtils {
@@ -45,13 +49,22 @@ public class CommonUtils {
 	}
 
 	public static void downloadFile(URL url, OutputStream outputStream) throws Exception {
-		String source = Paths.get(new URI(url.toString()).getPath()).getFileName().toString();
-		debug("Starting to download: %s", source);
-		URLConnection connection = url.openConnection();
-		long completeFileSize = connection.getContentLength();
-		try(BufferedInputStream inputStream = new BufferedInputStream(connection.getInputStream())) {
-			info("Downloading %s... (%s)", source, url.toString());
-			copy(inputStream, outputStream, newStreamProgress(completeFileSize));
+		try(ProgressWrapper prog0 = progress(progress_id(url, outputStream))) {
+			prog0.inherit();
+			prog0.setCategory(CommonUtils.class);
+			prog0.setDescription("Downloading file");
+			prog0.pstart();
+
+			String source = Paths.get(new URI(url.toString()).getPath()).getFileName().toString();
+			prog0.pdo(String.format("Opening connection %s", source));
+			debug("Starting to download: %s", source);
+			URLConnection connection = url.openConnection();
+			long completeFileSize = connection.getContentLength();
+			try(BufferedInputStream inputStream = new BufferedInputStream(connection.getInputStream())) {
+				prog0.pdo(String.format("Downloading %s", source));
+				info("Downloading %s... (%s)", source, url.toString());
+				copy(inputStream, outputStream, newStreamProgress(completeFileSize));
+			}
 		}
 	}
 	public static Consumer<Long> newStreamProgress(long totalSize) {
@@ -63,20 +76,25 @@ public class CommonUtils {
 			long speed = 0;
 			long[] speeds = null;
 			int speedsIndex = 0;
+			ProgressWrapper prog0;
 			public void accept(Long length) {
 				if(length == -1) {
 					startTime = System.currentTimeMillis();
 					lastTime = System.currentTimeMillis();
 					speeds = new long[30];
 					Arrays.fill(speeds, -1L);
-					progressStart(speeds, "Downloading file", "0%");
+					prog0 = progress(speeds);
+					prog0.inherit();
+					prog0.setCategory(CommonUtils.class);
+					prog0.setDescription("Stream progress");
+					prog0.pstart();
 					return;
 				}
 				if(length == -2) {
-					progressEnd(speeds);
+					prog0.close();
 					return;
 				}
-				progressDo(speeds, String.format("%.2f%%", length * 100.0f / (float) totalSize));
+				prog0.pdo(String.format("%.2f%%", length * 100.0f / (float) totalSize));
 				float alpha = 0.9f;
 
 				long now = System.currentTimeMillis();

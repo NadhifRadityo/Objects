@@ -3,6 +3,7 @@ package io.github.NadhifRadityo.Library.Providers;
 import io.github.NadhifRadityo.Library.CURL;
 import io.github.NadhifRadityo.Library.JSON_mainRoot;
 import io.github.NadhifRadityo.Library.ThrowsReferencedCallback;
+import io.github.NadhifRadityo.Library.Utils.ProgressUtils.ProgressWrapper;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -28,6 +29,8 @@ import static io.github.NadhifRadityo.Library.Utils.JSONUtils.toJson;
 import static io.github.NadhifRadityo.Library.Utils.JavascriptUtils.runJavascriptAsCallback;
 import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.debug;
 import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.info;
+import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progress;
+import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progress_id;
 import static io.github.NadhifRadityo.Library.Utils.StringUtils.mostSafeString;
 
 public class MavenProvider {
@@ -92,35 +95,68 @@ public class MavenProvider {
 	public ThrowsReferencedCallback<Object> getFileValidationCallback() { return fileValidationCallback; }
 
 	public MavenDependency[] search(String group, String artifact, String version) throws Exception {
-		CURL curl = new CURL();
-		curl.setUrl(formattedUrl(searchUrlCallback.get(group, artifact, version)));
-		curl.setRequestMethod(CURL.RequestMethod.GET);
-		curl.setCustomHandler((args) -> { info("Searching repository \"%s\"... (%s)", group + "." + artifact, urlToUri((URL) args[1]).toASCIIString()); return null; });
-		curl.setOnConnect((args) -> toJson(((URLConnection) args[0]).getInputStream(), JSON_mavenSearch.class));
-		JSON_mavenSearch mavenSearch = (JSON_mavenSearch) curl.build(StandardCharsets.UTF_8);
+		try(ProgressWrapper prog0 = progress(progress_id(this, group, artifact, version, 0))) {
+			prog0.inherit();
+			prog0.setCategory(getClass());
+			prog0.setDescription("Maven dependency");
+			prog0.setTotalProgress(2);
+			prog0.pstart();
 
-		List<MavenDependency> results = new ArrayList<>();
-		JSON_mavenSearch.$response.$doc[] docs = mavenSearch.response.docs;
-		for(JSON_mavenSearch.$response.$doc doc : docs) {
-			String id = doc.id;
-			String g = doc.g;
-			String a = doc.a;
-			String v = doc.v;
-			String p = doc.p;
-			long timestamp = doc.timestamp;
-			String[] ec = doc.ec;
-			String[] tags = doc.tags;
-			debug("g=\"%s\" a=\"%s\" v=\"%s\" p=\"%s\" id=\"%s\" timestamp=\"%s\" ec=\"%s\" tags=\"%s\"", g, a, v, p, id, timestamp, String.join(";", ec), String.join(";", tags));
-			if(group != null && !group.equals(g)) continue;
-			if(artifact != null && !artifact.equals(a)) continue;
-			if(version != null && !version.equals(v)) continue;
+			JSON_mavenSearch mavenSearch;
+			prog0.pdo(String.format("Listing %s.%s.%s", group != null ? group : "??",
+					artifact != null ? artifact : "??", version != null ? version : "??"));
+			try(ProgressWrapper prog1 = progress(progress_id(this, group, artifact, version, 1))) {
+				prog1.inherit();
+				prog1.setCategory(getClass());
+				prog1.setDescription("Getting dependency list");
+				prog1.pstart();
 
-			String[] items = Stream.of(ec).map(i ->  a + "-" + v + i).toArray(String[]::new);
-			MavenDependency result = new MavenDependency(id, g, a, v, p, timestamp, items, tags);
-			results.add(result);
+				CURL curl = new CURL();
+				curl.setUrl(formattedUrl(searchUrlCallback.get(group, artifact, version)));
+				curl.setRequestMethod(CURL.RequestMethod.GET);
+				curl.setCustomHandler((args) -> {
+					prog1.pdo(urlToUri((URL) args[1]).toASCIIString());
+					info("Searching repository \"%s\"... (%s)", group + "." + artifact, urlToUri((URL) args[1]).toASCIIString());
+					return null;
+				});
+				curl.setOnConnect((args) -> toJson(((URLConnection) args[0]).getInputStream(), JSON_mavenSearch.class));
+				mavenSearch = (JSON_mavenSearch) curl.build(StandardCharsets.UTF_8);
+			}
+
+			List<MavenDependency> results = new ArrayList<>();
+			JSON_mavenSearch.$response.$doc[] docs = mavenSearch.response.docs;
+			prog0.pdo(String.format("Getting infos %s.%s.%s", group != null ? group : "??",
+					artifact != null ? artifact : "??", version != null ? version : "??"));
+			try(ProgressWrapper prog2 = progress(progress_id(this, group, artifact, version, 2))) {
+				prog2.inherit();
+				prog2.setCategory(getClass());
+				prog2.setDescription("Getting dependency infos");
+				prog2.setTotalProgress(docs.length);
+				prog2.pstart();
+
+				for(JSON_mavenSearch.$response.$doc doc : docs) {
+					String id = doc.id;
+					String g = doc.g;
+					String a = doc.a;
+					String v = doc.v;
+					String p = doc.p;
+					long timestamp = doc.timestamp;
+					String[] ec = doc.ec;
+					String[] tags = doc.tags;
+					prog2.pdo(String.format("Getting infos %s.%s:%s @%d", group == null ? g : "*", artifact == null ? a : "*", version == null ? v : "*", timestamp));
+					debug("g=\"%s\" a=\"%s\" v=\"%s\" p=\"%s\" id=\"%s\" timestamp=\"%s\" ec=\"%s\" tags=\"%s\"", g, a, v, p, id, timestamp, String.join(";", ec), String.join(";", tags));
+					if(group != null && !group.equals(g)) continue;
+					if(artifact != null && !artifact.equals(a)) continue;
+					if(version != null && !version.equals(v)) continue;
+
+					String[] items = Stream.of(ec).map(i ->  a + "-" + v + i).toArray(String[]::new);
+					MavenDependency result = new MavenDependency(id, g, a, v, p, timestamp, items, tags);
+					results.add(result);
+				}
+			}
+			results.sort((d1, d2) -> Long.compare(d2.getTimestamp(), d1.getTimestamp()));
+			return results.toArray(new MavenDependency[0]);
 		}
-		results.sort((d1, d2) -> Long.compare(d2.getTimestamp(), d1.getTimestamp()));
-		return results.toArray(new MavenDependency[0]);
 	}
 
 	public Map<String, File> download(MavenDependency dependency, ThrowsReferencedCallback<File> itemFileCallback) throws Exception {
