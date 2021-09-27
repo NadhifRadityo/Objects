@@ -6,6 +6,7 @@ import org.gradle.internal.logging.text.StyledTextOutputFactory
 import org.gradle.launcher.daemon.server.scaninfo.DaemonScanInfo
 
 import java.lang.management.ManagementFactory
+import java.util.function.BiConsumer
 import java.util.function.Consumer
 import java.util.stream.Collectors
 import java.util.stream.Stream
@@ -15,12 +16,13 @@ class $ {
 	static def $this
 	static Map<String, Consumer<Object>> importActions = new HashMap<>()
 
-	static void default_group_version(def $that) {
-		$that.group 'io.github.NadhifRadityo.Objects'
-		$that.version 'LATEST'
-	}
 	static void require(def $that, Object... scripts) {
 		for(Object script : scripts) {
+			BiConsumer<String, Object>[] actions = null
+			if(script instanceof List) {
+				actions = script.get(0) as BiConsumer<String, Object>[]
+				script = script.get(1)
+			}
 			if(script instanceof String && script.startsWith('/'))
 				script = new File($that.rootDir, script)
 			else script = $that.file(script)
@@ -35,24 +37,49 @@ class $ {
 			String importedTag = "ext_${scriptName}_${'$imported'}"
 			Consumer<Object> importAction = importActions.get(scriptFilePath)
 			def preCheck = { def $what ->
-				Object value = $what.ext.has(importedTag) ? $what.ext.get(importedTag) : null
+				Object value = $what.ext.find(importedTag)
 				if(!(value instanceof String)) return false
 				if(value == scriptFilePath) return true
 				throw new Error("Duplicate gradle file name \"$scriptFileName\", another import is from \"$value\"")
 			}
 			def postCheck = { def $what ->
-				Object value = $what.ext.has(importedTag) ? $what.ext.get(importedTag) : null
-				if(!(value instanceof String) && value == scriptFilePath) return false
+				Object value = $what.ext.find(importedTag)
+				if(value instanceof String && value == scriptFilePath) return false
 				$what.ext.set(importedTag, scriptFilePath)
 				return true
 			}
+			def preAction = { def $what ->
+				LinkedList<Object> contains_flag_temp = $what.ext.find('contains_flag_temp')
+				if(contains_flag_temp == null) {
+					contains_flag_temp = new LinkedList()
+					$what.ext.set('contains_flag_temp', contains_flag_temp)
+				}
+				contains_flag_temp.addLast($what.ext.find('contains_flag'))
+				$what.ext.set('contains_flag', { String flag ->
+					$what.ext.find("${scriptName}_${flag}") != null
+				})
+				if(actions != null && actions[0] != null)
+					actions[0].accept(scriptName, $what)
+			}
+			def postAction = { def $what ->
+				LinkedList<Object> contains_flag_temp = $what.ext.find('contains_flag_temp')
+				Object temp_value = contains_flag_temp.removeLast()
+				$what.ext.set('contains_flag', temp_value)
+				if(contains_flag_temp.size() == 0)
+					$what.ext.set('contains_flag_temp', null)
+				if(actions != null && actions[1] != null)
+					actions[1].accept(scriptName, $what)
+			}
 			boolean preCheckThis = preCheck($this)
 			boolean preCheckThat = preCheck($that)
+			preAction($this)
+			preAction($that)
+			if(!preCheckThis && !preCheckThat)
+				$that.apply from: $that.relativePath(scriptFile)
 			if(importAction != null)
 				importAction.accept($that)
-			if(preCheckThis) continue
-			if(preCheckThat) continue
-			$that.apply from: $that.relativePath(scriptFile)
+			postAction($this)
+			postAction($that)
 			postCheck($this)
 			postCheck($that)
 		}
@@ -63,10 +90,32 @@ class $ {
 	static void remove_import_action(File file) {
 		importActions.remove(file.getCanonicalPath())
 	}
+
+	static BiConsumer<String, Object>[] import_flags(String... flags) {
+		return new BiConsumer<String, Object>[] {
+			{ String scriptName, def $what -> for(String flag : flags) $what.ext.set("${scriptName}_${flag}", true) },
+			{ String scriptName, def $what -> for(String flag : flags) $what.ext.set("${scriptName}_${flag}", null) }
+		}
+	}
+	static BiConsumer<String, Object>[] flags_export_functions_only() {
+		return import_flags('export_functions_only')
+	}
+	static boolean contains_flag(def $that, String flag = null) {
+		if(!$that.metaClass.hasProperty($that, 'buildscript') || ($that.buildscript.sourceFile as File).getName() != 'settings.gradle')
+			throw new IllegalArgumentException('This function is only available when imported using "require"')
+		if(flag == null)
+			throw new NullPointerException()
+		return $that.ext.find("settings_${flag}") != null
+	}
+
+	static void default_group_version(def $that) {
+		$that.group $that.rootProject.group
+		$that.version $that.rootProject.version
+	}
 	static void __default_import_action(def $that) {
 		if($that.extensions.findByType(EXPORT_GLOBAL_FUNCTION) == null)
 			$that.extensions.create('$_', EXPORT_GLOBAL_FUNCTION)
-		if($that.ext.find('export_functions_only') == null) {
+		if(!$that.contains_flag('export_functions_only')) {
 			default_group_version($that)
 			if(!logger.logger_available())
 				logger.logger_init()
@@ -313,9 +362,8 @@ class utils {
 	logger.logger_deinit()
 	progress.progress_deinit()
 	$.add_import_action(buildscript.sourceFile, $.&__default_import_action)
-	$.__default_import_action(this)
 	for(Map.Entry<String, Object> entry : ext.getProperties()) {
-		String key = entry.getKey();
+		String key = entry.getKey()
 		if(!key.startsWith('ext_') || !key.endsWith('_$imported')) continue;
 		ext.set(key, null)
 	}
@@ -334,10 +382,13 @@ ext {
 	CONFIG['TESTLIBRARY_RUNTIME'] = 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
 
 	ext_common_$imported = buildscript.sourceFile.getCanonicalPath()
-	ext_common_default_group_version = $.&default_group_version
 	ext_common_require = $.&require
 	ext_common_add_import_action = $.&add_import_action
 	ext_common_remove_import_action = $.&remove_import_action
+	ext_common_import_flags = $.&import_flags
+	ext_common_flags_export_functions_only = $.&flags_export_functions_only
+	ext_common_contains_flag = $.&contains_flag
+	ext_common_default_group_version = $.&default_group_version
 
 	ext_common$logger_init = logger.&logger_init
 	ext_common$logger_deinit = logger.&logger_deinit
@@ -380,6 +431,9 @@ ext {
 
 	// Default
 	require = $.&require
+	import_flags = $.&import_flags
+	export_functions_only = $.&flags_export_functions_only
+	contains_flag = $.&contains_flag
 
 	logger_init = logger.&logger_init
 	logger_deinit = logger.&logger_deinit
@@ -414,6 +468,9 @@ ext {
 
 class EXPORT_GLOBAL_FUNCTION {
 	def require(Object... args) { return $.&require.call(args) }
+	def importFlags(Object... args) { return $.&import_flags.call(args) }
+	def flagsExportFunctionsOnly(Object... args) { return $.&flags_export_functions_only.call(args) }
+	def containsFlag(Object... args) { return $.&contains_flag.call(args); }
 
 	def loggerInit(Object... args) { return logger.&logger_init.call(args) }
 	def loggerDeinit(Object... args) { return logger.&logger_deinit.call(args) }

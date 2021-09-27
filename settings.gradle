@@ -1,6 +1,5 @@
-ext.set('export_functions_only', true)
 apply from: 'common.gradle'
-ext.set('export_functions_only', null)
+require(this, [export_functions_only(), 'common.gradle'])
 
 class $ {
 	static def $this
@@ -51,6 +50,8 @@ ext {
 
 def extend = $.&extend
 def apply = $.&apply
-extend('libraries/__library__', 'Library')
-extend('packages/Functional')
-apply()
+if(!contains_flag(this, 'export_functions_only')) {
+	extend('libraries/__library__', 'Library')
+	extend('packages/Functional')
+	apply()
+}

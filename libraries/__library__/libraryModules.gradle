@@ -8,7 +8,7 @@ class $ {
 	static Map<String, File> loadedModules = new HashMap<>()
 
 	static File root_directory() {
-		Path currentPath = Paths.get(System.getProperty("user.dir"))
+		Path currentPath = Paths.get(System.getProperty('user.dir'))
 		Path librariesPath = $this.project.buildscript.sourceFile.parentFile.parentFile.toPath()
 		return currentPath.relativize(librariesPath).toFile()
 	}
@@ -42,5 +42,7 @@ ext {
 }
 
 def module = $.&module
-module('GameLibrary - LWJGL')
-//module('GameLibrary - Jogamp')
+if(!contains_flag('export_functions_only')) {
+	module('GameLibrary - LWJGL')
+//	module('GameLibrary - Jogamp')
+}
