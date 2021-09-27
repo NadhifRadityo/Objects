@@ -11,6 +11,8 @@ import static io.github.NadhifRadityo.Library.Utils.ClassUtils.classForName;
 import static io.github.NadhifRadityo.Library.Utils.ExceptionUtils.exception;
 import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.debug;
 import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.warn;
+import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progress;
+import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progress_id;
 import static io.github.NadhifRadityo.Library.Utils.RuntimeUtils.JAVA_DETECTION_VERSION;
 import static io.github.NadhifRadityo.Library.Utils.RuntimeUtils.vmArguments;
 
@@ -85,20 +87,29 @@ public class JavascriptUtils {
 			if(!isEs6)
 				warn("Error may occur, Please add \"-Dnashorn.args=--language=es6\" to your JVM arguments");
 			else if(JAVA_DETECTION_VERSION <= 8)
-				warn("Error may occur, javascript functionality may be limited. It is recommended to use java >= 9.");
+				warn("Error may occur, javascript functionality may be limited. It is recommended to use java >= 9");
 		}
 	} catch(Exception e) { throw new Error(e); } }
 
 	public static Object runJavascript(String source, Object... args) throws Exception {
-		if(javascriptGraalVM != null) {
-			debug("Running javascript (GraalVM)");
-			return javascriptGraalVM.get(source, args);
+		try(ProgressUtils.ProgressWrapper prog0 = progress(progress_id(source, args))) {
+			prog0.inherit();
+			prog0.setCategory(JavascriptUtils.class);
+			prog0.setDescription("Running javascript");
+			prog0.pstart();
+
+			if(javascriptGraalVM != null) {
+				prog0.pdo(String.format("Running javascript (%s)", "GraalVM"));
+				debug("Running javascript (GraalVM)");
+				return javascriptGraalVM.get(source, args);
+			}
+			if(javascriptNashorn != null) {
+				prog0.pdo(String.format("Running javascript (%s)", "Nashorn"));
+				debug("Running javascript (Nashorn)");
+				return javascriptNashorn.get(source, args);
+			}
+			throw new UnsupportedOperationException("Supported javascript runtime is not available!");
 		}
-		if(javascriptNashorn != null) {
-			debug("Running javascript (Nashorn)");
-			return javascriptNashorn.get(source, args);
-		}
-		throw new UnsupportedOperationException("Supported javascript runtime is not available!");
 	}
 	public static <T> ThrowsReferencedCallback<T> runJavascriptAsCallback(String source) {
 		return (args) -> (T) runJavascript(source, args);

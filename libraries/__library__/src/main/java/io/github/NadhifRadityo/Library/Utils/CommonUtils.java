@@ -83,7 +83,7 @@ public class CommonUtils {
 					lastTime = System.currentTimeMillis();
 					speeds = new long[30];
 					Arrays.fill(speeds, -1L);
-					prog0 = progress(speeds);
+					prog0 = progress(progress_id((Object) speeds));
 					prog0.inherit();
 					prog0.setCategory(CommonUtils.class);
 					prog0.setDescription("Stream progress");

@@ -91,100 +91,50 @@ public class FileUtils {
 	public static File mkfile(File parent, String... children) {
 		File result = file(parent, children);
 		if(result.exists()) return result;
-		try(ProgressWrapper prog0 = progress(progress_id(parent, children))) {
-			prog0.inherit();
-			prog0.setCategory(FileUtils.class);
-			prog0.setDescription("Making file");
-			prog0.pstart();
-
-			prog0.pdo(String.format("mkfile %s", result.getPath()));
-			debug("Making file: %s", result.getPath());
-			mkdir(result.getParentFile());
-			try { if(result.createNewFile()) return result;
-			} catch(IOException e) { throw new Error(e); }
-			throw new IllegalStateException("Cannot make file");
-		}
+		debug("Making file: %s", result.getPath());
+		mkdir(result.getParentFile());
+		try { if(result.createNewFile()) return result;
+		} catch(IOException e) { throw new Error(e); }
+		throw new IllegalStateException("Cannot make file");
 	}
 	public static File mkfile(String... children) {
 		File result = file(children);
 		if(result.exists()) return result;
-		try(ProgressWrapper prog0 = progress(progress_id((Object) children))) {
-			prog0.inherit();
-			prog0.setCategory(FileUtils.class);
-			prog0.setDescription("Making file");
-			prog0.pstart();
-
-			prog0.pdo(String.format("mkfile %s", result.getPath()));
-			debug("Making file: %s", result.getPath());
-			mkdir(result.getParentFile());
-			try { if(result.createNewFile()) return result;
-			} catch(IOException e) { throw new Error(e); }
-			throw new IllegalStateException("Cannot make file");
-		}
+		debug("Making file: %s", result.getPath());
+		mkdir(result.getParentFile());
+		try { if(result.createNewFile()) return result;
+		} catch(IOException e) { throw new Error(e); }
+		throw new IllegalStateException("Cannot make file");
 	}
 	public static File mkdir(File parent, String... children) {
 		File result = file(parent, children);
 		if(result.exists()) return result;
-		try(ProgressWrapper prog0 = progress(progress_id(parent, children))) {
-			prog0.inherit();
-			prog0.setCategory(FileUtils.class);
-			prog0.setDescription("Making directory");
-			prog0.pstart();
-
-			prog0.pdo(String.format("mkdir %s", result.getPath()));
-			debug("Making directory: %s", result.getPath());
-			if(result.mkdirs()) return result;
-			throw new IllegalStateException("Cannot make directory");
-		}
+		debug("Making directory: %s", result.getPath());
+		if(result.mkdirs()) return result;
+		throw new IllegalStateException("Cannot make directory");
 	}
 	public static File mkdir(String... children) {
 		File result = file(children);
 		if(result.exists()) return result;
-		try(ProgressWrapper prog0 = progress(progress_id((Object) children))) {
-			prog0.inherit();
-			prog0.setCategory(FileUtils.class);
-			prog0.setDescription("Making directory");
-			prog0.pstart();
-
-			prog0.pdo(String.format("mkdir %s", result.getPath()));
-			debug("Making directory: %s", result.getPath());
-			if(result.mkdirs()) return result;
-			throw new IllegalStateException("Cannot make directory");
-		}
+		debug("Making directory: %s", result.getPath());
+		if(result.mkdirs()) return result;
+		throw new IllegalStateException("Cannot make directory");
 	}
 	public static void delfile0(File file) {
 		if(!file.exists()) return;
-		try(ProgressWrapper prog0 = progress(progress_id(file))) {
-			prog0.inherit();
-			prog0.setCategory(FileUtils.class);
-			prog0.setDescription("Deleting file");
-			prog0.pstart();
-
-			prog0.pdo(String.format("del %s", file.getPath()));
-			debug("Deleting file: %s", file.getPath());
-			if(file.delete()) return;
-			throw new IllegalStateException("Cannot delete file");
-		}
+		debug("Deleting file: %s", file.getPath());
+		if(file.delete()) return;
+		throw new IllegalStateException("Cannot delete file");
 	}
 	public static void delfile(File file) {
 		if(file.isFile()) { delfile0(file); return; }
 		File[] children = file.listFiles();
 		if(children == null) { delfile0(file); return; }
-		try(ProgressWrapper prog0 = progress(progress_id(file))) {
-			prog0.inherit();
-			prog0.setCategory(FileUtils.class);
-			prog0.setDescription("Deleting directory");
-			prog0.setTotalProgress(children.length + 1);
-			prog0.pstart();
-
-			for(File child : children) {
-				prog0.pdo(child.getName());
-				if(child.isDirectory())
-					delfile(child);
-				else delfile0(child);
-			}
-			prog0.pdo(file.getName());
-			delfile0(file);
+		for(File child : children) {
+			if(child.isDirectory())
+				delfile(child);
+			delfile0(child);
 		}
+		delfile0(file);
 	}
 }

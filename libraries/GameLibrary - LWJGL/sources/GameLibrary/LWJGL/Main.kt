@@ -6,8 +6,6 @@ import io.github.NadhifRadityo.Library.Providers.MavenProvider.getDefaultMavenPr
 import io.github.NadhifRadityo.Library.Utils.FileUtils.*
 import io.github.NadhifRadityo.Library.Utils.JSONUtils.createJSONFile
 import io.github.NadhifRadityo.Library.Utils.JSONUtils.toJson
-import io.github.NadhifRadityo.Library.Utils.ProgressUtils.progressEnd
-import io.github.NadhifRadityo.Library.Utils.ProgressUtils.progressStart
 import io.github.NadhifRadityo.Library.Utils.StringUtils.mostSafeString
 import java.io.File
 
