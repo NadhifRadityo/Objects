@@ -1,29 +1,41 @@
-import java.nio.file.Path
-import java.nio.file.Paths
-
-require(this, '/common.gradle')
+context(this) { require('/common.gradle') }
 
 class $ {
 	static def $this
 	static Map<String, File> loadedModules = new HashMap<>()
+	static File relativeToDir
+	static File librariesDir
 
+	static void set_relative_to_dir(File relativeToDir) {
+		$.relativeToDir = relativeToDir
+		String sourcePath = $this.$_.getRelativeFile(relativeToDir,
+				new File($this.buildscript.sourceFile.parentFile, 'src/main')).getPath()
+		$this.sourceSets {
+			main.java { srcDirs = [ "$sourcePath/java" ] }
+			main.kotlin { srcDirs = [ "$sourcePath/kotlin" ] }
+			main.resources { srcDirs = [ "$sourcePath/resources" ] }
+		}
+	}
+	static void set_libraries_dir(File librariesDir) {
+		$.librariesDir = librariesDir
+	}
 	static File root_directory() {
-		Path currentPath = Paths.get(System.getProperty('user.dir'))
-		Path librariesPath = $this.project.buildscript.sourceFile.parentFile.parentFile.toPath()
-		return currentPath.relativize(librariesPath).toFile()
+		return $this.$_.getRelativeFile(new File(System.getProperty('user.dir')), librariesDir)
 	}
 	static void module(String path) {
 		String moduleIdentifier = path.toLowerCase().replaceAll('[^A-Za-z0-9]', '_')
 		File modulePath = new File(root_directory(), path)
 		if(loadedModules.containsKey(moduleIdentifier)) {
-			$this.pwarn "Library module $path has the same identifier"
+			$this.pwarn "Library module '$path' has the same identifier"
 			return
 		}
-		$this.pinfo "Imported library module $path"
+		$this.pinfo "Imported library module '$path'"
 		loadedModules.put(moduleIdentifier, modulePath)
+		String sourcePath = $this.$_.getRelativeFile(relativeToDir, modulePath).getPath()
 		$this.sourceSets {
-			main.kotlin { srcDir "../$path/sources" }
-			main.resources { srcDir "../$path/resources" }
+			main.java { srcDir "$sourcePath/java" }
+			main.kotlin { srcDir "$sourcePath/kotlin" }
+			main.resources { srcDir "$sourcePath/resources" }
 		}
 	}
 	static Map<String, File> loaded_modules() {
@@ -32,17 +44,20 @@ class $ {
 }
 {
 	$.$this = this
+	$.set_relative_to_dir(buildscript.sourceFile.parentFile)
+	$.set_libraries_dir(buildscript.sourceFile.parentFile.parentFile)
+}
+gradle.buildFinished {
+	$.$this = null
 	$.loadedModules.clear()
+	$.relativeToDir = null
+	$.librariesDir = null
 }
 
 ext {
+	ext_libraryModules_set_relative_to_dir = $.&set_relative_to_dir
+	ext_libraryModules_set_libraries_dir = $.&set_libraries_dir
 	ext_libraryModules_root_directory = $.&root_directory
 	ext_libraryModules_module = $.&module
 	ext_libraryModules_loaded_modules = $.&loaded_modules
-}
-
-def module = $.&module
-if(!contains_flag('export_functions_only')) {
-	module('GameLibrary - LWJGL')
-//	module('GameLibrary - Jogamp')
 }

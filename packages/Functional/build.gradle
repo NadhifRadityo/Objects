@@ -2,7 +2,7 @@ plugins {
     id 'java'
 }
 
-require(this, '/common.gradle')
+context(this) { require('/common.gradle') }
 
 repositories {
     mavenCentral()

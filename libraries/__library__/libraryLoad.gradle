@@ -3,7 +3,7 @@ import org.gradle.api.internal.project.DefaultProject
 import java.lang.reflect.Method
 import java.util.stream.Stream
 
-require(this, '/common.gradle')
+context(this) { require('/common.gradle') }
 
 class $ {
 	static def $this
@@ -49,6 +49,9 @@ class $ {
 }
 {
 	$.$this = this
+}
+gradle.buildFinished {
+	$.$this = null
 }
 
 ext {

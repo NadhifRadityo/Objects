@@ -3,7 +3,7 @@ plugins {
 }
 
 apply from: 'common.gradle'
-require(this, 'common.gradle')
+context(this) { require('common.gradle') }
 
 repositories {
     mavenCentral()

@@ -6,7 +6,7 @@ import org.gradle.internal.logging.text.StyledTextOutputFactory
 import org.gradle.launcher.daemon.server.scaninfo.DaemonScanInfo
 
 import java.lang.management.ManagementFactory
-import java.util.function.BiConsumer
+import java.nio.file.Paths
 import java.util.function.Consumer
 import java.util.stream.Collectors
 import java.util.stream.Stream
@@ -14,16 +14,58 @@ import java.util.Optional
 
 class $ {
 	static def $this
-	static Map<String, Consumer<Object>> importActions = new HashMap<>()
+	static ThreadLocal<LinkedList<Object>> contextStack = ThreadLocal.withInitial(LinkedList::new)
+	static ThreadLocal<LinkedList<ImportInfo>> importStack = ThreadLocal.withInitial(LinkedList::new)
+	static Map<String, Consumer<ImportInfo>> importActions = new HashMap<>()
 
-	static void require(def $that, Object... scripts) {
+	static void context(def $that, Runnable callback) {
+		LinkedList<Object> stack = contextStack.get()
+		stack.addLast($that)
+		try {
+			callback.run()
+		} finally {
+			def last = stack.removeLast()
+			if($that != last)
+				throw new IllegalStateException("Must not happen")
+		}
+	}
+	static Object last_context() {
+		return contextStack.get().getLast()
+	}
+
+	static class ImportInfo {
+		Consumer<ImportInfo>[] actions
+		IncludedBuild build
+		File scriptFile
+		String scriptName
+		String importedTag
+		Object context
+	}
+	static void require(Object... scripts) {
+		def $that = last_context()
+		LinkedList<ImportInfo> stack = importStack.get()
+		ImportInfo lastImport = stack.size() > 0 ? stack.getLast() : null
 		for(Object script : scripts) {
-			BiConsumer<String, Object>[] actions = null
+			Consumer<ImportInfo>[] actions = null
+			IncludedBuild build = lastImport?.build
 			if(script instanceof List) {
-				actions = script.get(0) as BiConsumer<String, Object>[]
+				actions = script.get(0) as Consumer<ImportInfo>[]
 				script = script.get(1)
 			}
-			if(script instanceof String && script.startsWith('/'))
+			if(script instanceof String && script.contains(':')) {
+				int split = script.indexOf(':')
+				String buildName = script.substring(0, split)
+				String path = script.substring(split + 1)
+				build = $that.gradle.includedBuild(buildName)
+				script = new File(build.projectDir, path)
+			} else if(build != null) {
+				if(script instanceof String && script.startsWith('/'))
+					script = new File(build.projectDir, script)
+				else if(script instanceof String)
+					script = new File($that.buildscript.sourceFile.getParentFile(), script)
+				else if(!(script instanceof File))
+					throw new IllegalArgumentException('Unsupported argument type')
+			} else if(script instanceof String && script.startsWith('/'))
 				script = new File($that.rootDir, script)
 			else script = $that.file(script)
 			File scriptFile = script as File
@@ -35,18 +77,37 @@ class $ {
 			}
 			String scriptName = scriptFileName.substring(0, scriptFileName.length() - '.gradle'.length())
 			String importedTag = "ext_${scriptName}_${'$imported'}"
-			Consumer<Object> importAction = importActions.get(scriptFilePath)
+			Consumer<ImportInfo> importAction = importActions.get(scriptFilePath)
+			ImportInfo importInfo = new ImportInfo()
+			importInfo.actions = actions
+			importInfo.build = build
+			importInfo.scriptFile = scriptFile
+			importInfo.scriptName = scriptName
+			importInfo.importedTag = importedTag
+			importInfo.context = $that
 			def preCheck = { def $what ->
 				Object value = $what.ext.find(importedTag)
 				if(!(value instanceof String)) return false
 				if(value == scriptFilePath) return true
-				throw new Error("Duplicate gradle file name \"$scriptFileName\", another import is from \"$value\"")
+				throw new Error("Duplicate gradle file name \"$scriptFilePath\", another import is from \"$value\"")
 			}
 			def postCheck = { def $what ->
 				Object value = $what.ext.find(importedTag)
 				if(value instanceof String && value == scriptFilePath) return false
 				$what.ext.set(importedTag, scriptFilePath)
 				return true
+			}
+			def preActionSingle = { ->
+				stack.addLast(importInfo)
+				if(actions != null && actions[0] != null)
+					actions[0].accept(importInfo)
+			}
+			def postActionSingle = { ->
+				if(actions != null && actions[1] != null)
+					actions[1].accept(importInfo)
+				ImportInfo lastImportInfo = stack.removeLast()
+				if(importInfo != lastImportInfo)
+					throw new IllegalStateException("Must not happen")
 			}
 			def preAction = { def $what ->
 				LinkedList<Object> contains_flag_temp = $what.ext.find('contains_flag_temp')
@@ -58,8 +119,6 @@ class $ {
 				$what.ext.set('contains_flag', { String flag ->
 					$what.ext.find("${scriptName}_${flag}") != null
 				})
-				if(actions != null && actions[0] != null)
-					actions[0].accept(scriptName, $what)
 			}
 			def postAction = { def $what ->
 				LinkedList<Object> contains_flag_temp = $what.ext.find('contains_flag_temp')
@@ -67,56 +126,56 @@ class $ {
 				$what.ext.set('contains_flag', temp_value)
 				if(contains_flag_temp.size() == 0)
 					$what.ext.set('contains_flag_temp', null)
-				if(actions != null && actions[1] != null)
-					actions[1].accept(scriptName, $what)
 			}
 			boolean preCheckThis = preCheck($this)
 			boolean preCheckThat = preCheck($that)
+			preActionSingle()
 			preAction($this)
 			preAction($that)
 			if(!preCheckThis && !preCheckThat)
 				$that.apply from: $that.relativePath(scriptFile)
 			if(importAction != null)
-				importAction.accept($that)
+				importAction.accept(importInfo)
 			postAction($this)
 			postAction($that)
+			postActionSingle()
 			postCheck($this)
 			postCheck($that)
 		}
 	}
-	static void add_import_action(File file, Consumer<Object> action) {
+	static void add_import_action(File file, Consumer<ImportInfo> action) {
 		importActions.put(file.getCanonicalPath(), action)
 	}
 	static void remove_import_action(File file) {
 		importActions.remove(file.getCanonicalPath())
 	}
 
-	static BiConsumer<String, Object>[] import_flags(String... flags) {
-		return new BiConsumer<String, Object>[] {
-			{ String scriptName, def $what -> for(String flag : flags) $what.ext.set("${scriptName}_${flag}", true) },
-			{ String scriptName, def $what -> for(String flag : flags) $what.ext.set("${scriptName}_${flag}", null) }
+	static Consumer<ImportInfo>[] import_flags(String... flags) {
+		return new Consumer<ImportInfo>[] {
+			{ ImportInfo info -> for(String flag : flags) info.context.ext.set("${info.scriptName}_${flag}", true) },
+			{ ImportInfo info -> for(String flag : flags) info.context.ext.set("${info.scriptName}_${flag}", null) }
 		}
 	}
-	static BiConsumer<String, Object>[] flags_export_functions_only() {
+	static Consumer<ImportInfo>[] flags_export_functions_only() {
 		return import_flags('export_functions_only')
 	}
-	static boolean contains_flag(def $that, String flag = null) {
-		if(!$that.metaClass.hasProperty($that, 'buildscript') || ($that.buildscript.sourceFile as File).getName() != 'settings.gradle')
+	static boolean contains_flag(String flag) {
+		if(!utils.is_settings())
 			throw new IllegalArgumentException('This function is only available when imported using "require"')
-		if(flag == null)
-			throw new NullPointerException()
-		return $that.ext.find("settings_${flag}") != null
+		return $this.ext.find("settings_${flag}") != null
 	}
 
-	static void default_group_version(def $that) {
+	static void default_group_version() {
+		def $that = last_context()
 		$that.group $that.rootProject.group
 		$that.version $that.rootProject.version
 	}
-	static void __default_import_action(def $that) {
+	static void __default_import_action(ImportInfo info) {
+		def $that = info.context
 		if($that.extensions.findByType(EXPORT_GLOBAL_FUNCTION) == null)
 			$that.extensions.create('$_', EXPORT_GLOBAL_FUNCTION)
 		if(!$that.contains_flag('export_functions_only')) {
-			default_group_version($that)
+			default_group_version()
 			if(!logger.logger_available())
 				logger.logger_init()
 			if(!progress.progress_available())
@@ -333,6 +392,15 @@ class utils {
 	static <T> T as_service(Class<T> clazz, Object project = null) {
 		return (as_project(project) as ProjectInternal).services.get(clazz)
 	}
+	static boolean is_settings() {
+		return $this.hasProperty('settings') && $this.getProperty('settings') instanceof Settings
+	}
+	static <T> T global_ext_get(String key) {
+		return $this.gradle.ext.get(key)
+	}
+	static <T> void global_ext_set(String key, T object) {
+		$this.gradle.ext.set(key, object)
+	}
 	static void forward_task(Object project, filter, exec = {}) {
 		Project project0 = as_project(project)
 		project0.tasks.stream().filter(filter).collect(Collectors.<Task, Task, Task>toMap({
@@ -352,16 +420,36 @@ class utils {
 	static boolean is_daemon_probably_unstable(Object project = null) {
 		return is_single_use_daemon(project) || is_running_on_debug()
 	}
+	static File get_relative_file(File from, File what) {
+		return Paths.get(from.getCanonicalPath()).relativize(Paths.get(what.getCanonicalPath())).toFile()
+	}
+	static void purge_thread_local(ThreadLocal threadLocal) {
+		Thread.getAllStackTraces().keySet().forEach({ try {
+			if(!it.hasProperty('threadLocals')) return
+			def threadLocals = it.threadLocals
+			if(threadLocals == null) return
+			threadLocals.remove(threadLocal)
+		} catch(Throwable ignored) { } })
+	}
 }
 {
 	$.$this = this
 	logger.$this = this
 	progress.$this = this
 	utils.$this = this
+	$.add_import_action(buildscript.sourceFile, $.&__default_import_action)
+}
+gradle.buildFinished {
+	$.$this = null
+	logger.$this = null
+	progress.$this = null
+	utils.$this = null
+	$.remove_import_action(buildscript.sourceFile)
+	utils.purge_thread_local($.contextStack)
+	utils.purge_thread_local($.importStack)
 	$.importActions.clear()
 	logger.logger_deinit()
 	progress.progress_deinit()
-	$.add_import_action(buildscript.sourceFile, $.&__default_import_action)
 	for(Map.Entry<String, Object> entry : ext.getProperties()) {
 		String key = entry.getKey()
 		if(!key.startsWith('ext_') || !key.endsWith('_$imported')) continue;
@@ -382,6 +470,8 @@ ext {
 	CONFIG['TESTLIBRARY_RUNTIME'] = 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
 
 	ext_common_$imported = buildscript.sourceFile.getCanonicalPath()
+	ext_common_context = $.&context
+	ext_common_last_context = $.&last_context
 	ext_common_require = $.&require
 	ext_common_add_import_action = $.&add_import_action
 	ext_common_remove_import_action = $.&remove_import_action
@@ -423,13 +513,20 @@ ext {
 	ext_common$utils_as_project = utils.&as_project
 	ext_common$utils_as_task = utils.&as_task
 	ext_common$utils_as_service = utils.&as_service
+	ext_common$utils_is_settings = utils.&is_settings
+	ext_common$utils_global_ext_get = utils.&global_ext_get
+	ext_common$utils_global_ext_set = utils.&global_ext_set
 	ext_common$utils_forward_task = utils.&forward_task
 	ext_common$utils_run_after_another_task = utils.&run_after_another_task
 	ext_common$utils_is_single_use_daemon = utils.&is_single_use_daemon
 	ext_common$utils_is_running_on_debug = utils.&is_running_on_debug
 	ext_common$utils_is_daemon_probably_unstable = utils.&is_daemon_probably_unstable
+	ext_common$utils_get_relative_file = utils.&get_relative_file
+	ext_common$utils_purge_thread_local = utils.&purge_thread_local
 
 	// Default
+	context = $.&context
+	last_context = $.&last_context
 	require = $.&require
 	import_flags = $.&import_flags
 	export_functions_only = $.&flags_export_functions_only
@@ -464,9 +561,18 @@ ext {
 	progress_start = progress.&progress_start
 	progress_do = progress.&progress_do
 	progress_end = progress.&progress_end
+
+	as_project = utils.&as_project
+	as_task = utils.&as_task
+	as_service = utils.&as_service
+	is_settings = utils.&is_settings
+	global_ext_get = utils.&global_ext_get
+	global_ext_set = utils.&global_ext_set
 }
 
 class EXPORT_GLOBAL_FUNCTION {
+	def context(Object... args) { return $.&context.call(args) }
+	def lastContext(Object... args) { return $.&last_context.call(args) }
 	def require(Object... args) { return $.&require.call(args) }
 	def importFlags(Object... args) { return $.&import_flags.call(args) }
 	def flagsExportFunctionsOnly(Object... args) { return $.&flags_export_functions_only.call(args) }
@@ -507,4 +613,6 @@ class EXPORT_GLOBAL_FUNCTION {
 	def isSingleUseDaemon(Object... args) { return utils.&is_single_use_daemon.call(args) }
 	def isRunningOnDebug(Object... args) { return utils.&is_running_on_debug.call(args) }
 	def isDaemonProbablyUnstable(Object... args) { return utils.&is_daemon_probably_unstable.call(args) }
+	def getRelativeFile(Object... args) { return utils.&get_relative_file.call(args) }
+	def purgeThreadLocal(Object... args) { return utils.&purge_thread_local.call(args) }
 }

@@ -1,5 +1,5 @@
 apply from: 'common.gradle'
-require(this, [export_functions_only(), 'common.gradle'])
+context(this) { require([export_functions_only(), 'common.gradle']) }
 
 class $ {
 	static def $this
@@ -12,10 +12,10 @@ class $ {
 				.map{it.substring(0, 1).toUpperCase() + it.substring(1)}.toArray(String[]::new))
 		String id = "${String.join('#', path)}?$name"
 		extendedProjects.put(id, false)
-		$this.pdebug "Configure ${String.join('/', path)} <$name> -> $id"
 		$this.include id
 	}
 	static def apply() {
+		$this.plog "Configure for project '${$this.rootProject.name}'"
 		$this.rootProject.children.each { project ->
 			String projectName = project.name
 			Boolean applied = extendedProjects.get(projectName)
@@ -37,8 +37,10 @@ class $ {
 }
 {
 	$.$this = this
+}
+gradle.buildFinished {
+	$.$this = null
 	$.extendedProjects.clear()
-	rootProject.name = 'Objects'
 }
 
 ext {
@@ -50,7 +52,8 @@ ext {
 
 def extend = $.&extend
 def apply = $.&apply
-if(!contains_flag(this, 'export_functions_only')) {
+if(!contains_flag('export_functions_only')) {
+	rootProject.name = 'Objects'
 	extend('libraries/__library__', 'Library')
 	extend('packages/Functional')
 	apply()
