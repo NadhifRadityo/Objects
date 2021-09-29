@@ -1,3 +1,6 @@
+import java.nio.file.Path
+import java.nio.file.Files
+
 context(this) { require('/common.gradle') }
 
 class $ {
@@ -8,8 +11,17 @@ class $ {
 
 	static void set_relative_to_dir(File relativeToDir) {
 		$.relativeToDir = relativeToDir
-		String sourcePath = $this.$_.getRelativeFile(relativeToDir,
-				new File($this.buildscript.sourceFile.parentFile, 'src/main')).getPath()
+		if(relativeToDir == $this.buildscript.sourceFile.parentFile) return
+		Path target = new File($this.buildscript.sourceFile.parentFile, 'src').toPath()
+		Path link = new File(relativeToDir, 'src').toPath()
+		if(Files.isSymbolicLink(link) && Files.readSymbolicLink(link).toAbsolutePath() == target.toAbsolutePath())
+			return
+		Files.deleteIfExists(link)
+		try { Files.createSymbolicLink(link, target) } catch(Throwable ignored) { }
+		if(Files.exists(link)) return
+		$this.pwarn 'Cannot create library junction, reverting to use srcDirs alternative. Your IDE might not like this because modules cannot share the same content root.'
+		$this.pwarn 'If you have problem with this alternative, try to elevate either gradle or your IDE as administrator.'
+		String sourcePath = $this.$_.getRelativeFile(relativeToDir, target.resolve('main').toFile()).getPath()
 		$this.sourceSets {
 			main.java { srcDirs = [ "$sourcePath/java" ] }
 			main.kotlin { srcDirs = [ "$sourcePath/kotlin" ] }
@@ -41,23 +53,35 @@ class $ {
 	static Map<String, File> loaded_modules() {
 		return Collections.unmodifiableMap(loadedModules)
 	}
+	static void __default_import_action(def info) {
+		def $that = info.importContext
+		if(!$that.contains_flag('dont_clear_last_state')) {
+			loadedModules.clear()
+			relativeToDir = null
+			librariesDir = null
+		}
+		if(!$that.contains_flag('export_functions_only') && !$that.contains_flag('dont_clear_last_state')) {
+			set_relative_to_dir($that.buildscript.sourceFile.parentFile as File)
+			set_libraries_dir($that.buildscript.sourceFile.parentFile.parentFile as File)
+		}
+	}
 }
-{
-	$.$this = this
-	$.set_relative_to_dir(buildscript.sourceFile.parentFile)
-	$.set_libraries_dir(buildscript.sourceFile.parentFile.parentFile)
-}
-gradle.buildFinished {
-	$.$this = null
-	$.loadedModules.clear()
-	$.relativeToDir = null
-	$.librariesDir = null
+context(this) {
+	scriptApply()
+	scriptInit {
+		$.$this = this
+		ext_common_add_import_action(buildscript.sourceFile, $.&__default_import_action)
+	}
+	scriptDeinit {
+		$.$this = null
+		ext_common_remove_import_action(buildscript.sourceFile)
+		$.relativeToDir = null
+		$.librariesDir = null
+	}
 }
 
-ext {
-	ext_libraryModules_set_relative_to_dir = $.&set_relative_to_dir
-	ext_libraryModules_set_libraries_dir = $.&set_libraries_dir
-	ext_libraryModules_root_directory = $.&root_directory
-	ext_libraryModules_module = $.&module
-	ext_libraryModules_loaded_modules = $.&loaded_modules
-}
+export('ext_libraryModules_set_relative_to_dir', $.&set_relative_to_dir)
+export('ext_libraryModules_set_libraries_dir', $.&set_libraries_dir)
+export('ext_libraryModules_root_directory', $.&root_directory)
+export('ext_libraryModules_module', $.&module)
+export('ext_libraryModules_loaded_modules', $.&loaded_modules)

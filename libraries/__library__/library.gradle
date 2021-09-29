@@ -1,6 +1,9 @@
 import java.util.stream.Stream
 
-context(this) { require('/common.gradle', 'libraryModules.gradle', 'libraryLoad.gradle') }
+context(this) { require('/common.gradle', [import_flags('dont_clear_last_state'), 'libraryModules.gradle'], 'libraryLoad.gradle') }
+context(this) {
+	scriptApply()
+}
 
 repositories {
 	mavenCentral()

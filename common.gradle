@@ -14,8 +14,12 @@ import java.util.Optional
 
 class $ {
 	static def $this
+	static File mainModuleDir
+	static List<Settings> $settings = new LinkedList<Object>()
+	static List<Runnable> onBuildFinished = new ArrayList<>()
 	static ThreadLocal<LinkedList<Object>> contextStack = ThreadLocal.withInitial(LinkedList::new)
 	static ThreadLocal<LinkedList<ImportInfo>> importStack = ThreadLocal.withInitial(LinkedList::new)
+	static Map<String, List<ImportInfo>> importedScripts = new HashMap<>()
 	static Map<String, Consumer<ImportInfo>> importActions = new HashMap<>()
 
 	static void context(def $that, Runnable callback) {
@@ -23,23 +27,42 @@ class $ {
 		stack.addLast($that)
 		try {
 			callback.run()
+		} catch(Throwable e) {
+			throw new Error(e)
 		} finally {
 			def last = stack.removeLast()
 			if($that != last)
-				throw new IllegalStateException("Must not happen")
+				throw new IllegalStateException('Must not happen')
 		}
 	}
 	static Object last_context() {
-		return contextStack.get().getLast()
+		LinkedList<Object> stack = contextStack.get()
+		if(stack.size() == 0)
+			throw new IllegalStateException('context is not available')
+		return stack.getLast()
+	}
+	static apply_settings() {
+		def $that = last_context()
+		if(!utils.is_settings())
+			throw new IllegalStateException('This function is only available on settings phase.')
+		Object[] includedFrom = utils.build_included_from($that)
+		if(includedFrom.length > 0)
+			return
+		if($.mainModuleDir != null)
+			throw new IllegalStateException('main module dir only can be set once.')
+		$.mainModuleDir = $this.rootDir
 	}
 
 	static class ImportInfo {
 		Consumer<ImportInfo>[] actions
 		IncludedBuild build
 		File scriptFile
-		String scriptName
-		String importedTag
+		String scriptId
+		Object importContext
 		Object context
+		List<Runnable> scriptInits
+		List<Runnable> scriptDeinits
+		Map<String, Object> exports
 	}
 	static void require(Object... scripts) {
 		def $that = last_context()
@@ -71,77 +94,133 @@ class $ {
 			File scriptFile = script as File
 			String scriptFilePath = scriptFile.getCanonicalPath()
 			String scriptFileName = scriptFile.getName()
-			if(!scriptFileName.endsWith('.gradle')) {
-				logger.pwarn "Cannot import file \"$scriptFileName\", extension not valid"
-				continue
+			int scriptFileNameSplit = scriptFileName.lastIndexOf('.')
+			String scriptId = scriptFileNameSplit == -1 ? scriptFileName :
+					scriptFileName.substring(0, scriptFileNameSplit)
+			for(Map.Entry<String, List<ImportInfo>> entry : importedScripts.entrySet()) {
+				String filePath = entry.getKey()
+				List<ImportInfo> anotherImports = entry.getValue()
+				if(scriptFilePath == filePath) continue
+				for(ImportInfo anotherImport : anotherImports) {
+					if(scriptId != anotherImport.scriptId) continue
+					throw new Error("Duplicate gradle script id \"$scriptId\", another " +
+							"import is from \"${anotherImport.scriptFile.getCanonicalPath()}\"")
+				}
 			}
-			String scriptName = scriptFileName.substring(0, scriptFileName.length() - '.gradle'.length())
-			String importedTag = "ext_${scriptName}_${'$imported'}"
-			Consumer<ImportInfo> importAction = importActions.get(scriptFilePath)
+			List<ImportInfo> importsHistory = get_imports_history(scriptFilePath)
 			ImportInfo importInfo = new ImportInfo()
 			importInfo.actions = actions
 			importInfo.build = build
 			importInfo.scriptFile = scriptFile
-			importInfo.scriptName = scriptName
-			importInfo.importedTag = importedTag
-			importInfo.context = $that
-			def preCheck = { def $what ->
-				Object value = $what.ext.find(importedTag)
-				if(!(value instanceof String)) return false
-				if(value == scriptFilePath) return true
-				throw new Error("Duplicate gradle file name \"$scriptFilePath\", another import is from \"$value\"")
+			importInfo.scriptId = scriptId
+			importInfo.importContext = $that
+			importInfo.context = importsHistory.size() > 0 ? importsHistory.get(0).context : null
+			importInfo.scriptInits = new LinkedList<Runnable>()
+			importInfo.scriptDeinits = new LinkedList<Runnable>()
+			importInfo.exports = importsHistory.size() > 0 ? importsHistory.get(0).exports : new HashMap<>()
+			def preCheck = {
+				println "Already imported? ${scriptFilePath} -> ${importsHistory.size()} (${importInfo.exports.size()})"
+				return importsHistory.size() == 0
 			}
-			def postCheck = { def $what ->
-				Object value = $what.ext.find(importedTag)
-				if(value instanceof String && value == scriptFilePath) return false
-				$what.ext.set(importedTag, scriptFilePath)
-				return true
+			def postCheck = {
+				if(importInfo.context == null)
+					throw new IllegalStateException('Imported script does not call scriptApply')
+				println "Already imported? ${scriptFilePath} -> ${importsHistory.size()} (${importInfo.exports.size()})"
+				for(Map.Entry<String, Object> entry : importInfo.exports)
+					$that.ext.set(entry.getKey(), entry.getValue())
+				return importsHistory.add(importInfo)
 			}
-			def preActionSingle = { ->
+			def preAction = {
 				stack.addLast(importInfo)
 				if(actions != null && actions[0] != null)
 					actions[0].accept(importInfo)
+
+				LinkedList<Map<String, Object>> temp = $that.ext.find('__INTERNAL__EXT__TEMP__STACK__')
+				if(temp == null) {
+					temp = new LinkedList()
+					$that.ext.set('__INTERNAL__EXT__TEMP__STACK__', temp)
+				}
+				Map<String, Object> extTemp = new LinkedHashMap<String, Object>()
+				temp.addLast(extTemp)
+				def __PUSH__EXT__TEMP__STACK__ = { String key, Object value ->
+					extTemp.put(key, $that.ext.find(key))
+					$that.ext.set(key, value)
+					if(importInfo.context != null)
+						importInfo.context.ext.set(key, value)
+				}
+				def __POP__EXT__TEMP__STACK__ = { String key ->
+					Object value = extTemp.remove(key)
+					$that.ext.set(key, value)
+					if(importInfo.context != null)
+						importInfo.context.ext.set(key, value)
+				}
+				__PUSH__EXT__TEMP__STACK__('__PUSH__EXT__TEMP__STACK__', __PUSH__EXT__TEMP__STACK__)
+				__PUSH__EXT__TEMP__STACK__('__POP__EXT__TEMP__STACK__', __POP__EXT__TEMP__STACK__)
+				__PUSH__EXT__TEMP__STACK__('contains_flag', { String flag ->
+					return $that.ext.find("${scriptId}_${flag}") != null
+				})
+				__PUSH__EXT__TEMP__STACK__('scriptInit', { Runnable callback ->
+					importInfo.scriptInits.add(callback)
+					callback.run()
+				})
+				__PUSH__EXT__TEMP__STACK__('scriptDeinit', { Runnable callback ->
+					importInfo.scriptDeinits.add(callback)
+					onBuildFinished.add(callback)
+				})
 			}
-			def postActionSingle = { ->
+			def postAction = {
+				LinkedList<Map<String, Object>> temp = $that.ext.get('__INTERNAL__EXT__TEMP__STACK__')
+				Map<String, Object> extTemp = temp.removeLast()
+				def __POP__EXT__TEMP__STACK__ = $that.ext.get('__POP__EXT__TEMP__STACK__')
+				List<String> reversedKey = extTemp.keySet().stream().collect(Collectors.toList())
+				Collections.reverse(reversedKey)
+				for(String key : reversedKey)
+					__POP__EXT__TEMP__STACK__(key)
+				if(temp.size() == 0)
+					$that.ext.set('__INTERNAL__EXT__TEMP__STACK__', null)
+
 				if(actions != null && actions[1] != null)
 					actions[1].accept(importInfo)
 				ImportInfo lastImportInfo = stack.removeLast()
 				if(importInfo != lastImportInfo)
-					throw new IllegalStateException("Must not happen")
+					throw new IllegalStateException('Must not happen')
 			}
-			def preAction = { def $what ->
-				LinkedList<Object> contains_flag_temp = $what.ext.find('contains_flag_temp')
-				if(contains_flag_temp == null) {
-					contains_flag_temp = new LinkedList()
-					$what.ext.set('contains_flag_temp', contains_flag_temp)
-				}
-				contains_flag_temp.addLast($what.ext.find('contains_flag'))
-				$what.ext.set('contains_flag', { String flag ->
-					$what.ext.find("${scriptName}_${flag}") != null
-				})
-			}
-			def postAction = { def $what ->
-				LinkedList<Object> contains_flag_temp = $what.ext.find('contains_flag_temp')
-				Object temp_value = contains_flag_temp.removeLast()
-				$what.ext.set('contains_flag', temp_value)
-				if(contains_flag_temp.size() == 0)
-					$what.ext.set('contains_flag_temp', null)
-			}
-			boolean preCheckThis = preCheck($this)
-			boolean preCheckThat = preCheck($that)
-			preActionSingle()
-			preAction($this)
-			preAction($that)
-			if(!preCheckThis && !preCheckThat)
+			boolean preCheckResult = preCheck()
+			preAction()
+			if(preCheckResult)
 				$that.apply from: $that.relativePath(scriptFile)
+			Consumer<ImportInfo> importAction = importActions.get(scriptFilePath)
 			if(importAction != null)
 				importAction.accept(importInfo)
-			postAction($this)
-			postAction($that)
-			postActionSingle()
-			postCheck($this)
-			postCheck($that)
+			postAction()
+			postCheck()
 		}
+	}
+	static void export(String key, Object value) {
+		LinkedList<ImportInfo> stack = importStack.get()
+		ImportInfo lastImport = stack.size() > 0 ? stack.getLast() : null
+		if(lastImport == null) return
+		lastImport.exports.put(key, value)
+		$this.ext.set(key, value)
+	}
+	static List<ImportInfo> get_imports_history(String scriptFilePath) {
+		List<ImportInfo> importsHistory = importedScripts.get(scriptFilePath)
+		if(importsHistory == null) {
+			importsHistory = new ArrayList<>()
+			importedScripts.put(scriptFilePath, importsHistory)
+		}
+		return importsHistory
+	}
+	static void mark_imported(String scriptFilePath, def context, Runnable callback) {
+		LinkedList<ImportInfo> stack = importStack.get()
+		List<ImportInfo> importsHistory = get_imports_history(scriptFilePath)
+		ImportInfo importInfo = new ImportInfo()
+		importInfo.context = context
+		importInfo.exports = new HashMap<>()
+		stack.addLast(importInfo)
+		callback.run()
+		stack.removeLast()
+		importsHistory.add(importInfo)
 	}
 	static void add_import_action(File file, Consumer<ImportInfo> action) {
 		importActions.put(file.getCanonicalPath(), action)
@@ -149,11 +228,20 @@ class $ {
 	static void remove_import_action(File file) {
 		importActions.remove(file.getCanonicalPath())
 	}
+	static void __only_require() {
+		throw new IllegalArgumentException('This function is only available when imported using "require"')
+	}
+	static void __PUSH__EXT__TEMP__STACK__(String key, Object value) {
+		__only_require()
+	}
+	static void __POP__EXT__TEMP__STACK__(String key, Object value) {
+		__only_require()
+	}
 
 	static Consumer<ImportInfo>[] import_flags(String... flags) {
 		return new Consumer<ImportInfo>[] {
-			{ ImportInfo info -> for(String flag : flags) info.context.ext.set("${info.scriptName}_${flag}", true) },
-			{ ImportInfo info -> for(String flag : flags) info.context.ext.set("${info.scriptName}_${flag}", null) }
+			{ ImportInfo info -> for(String flag : flags) info.importContext.ext.set("${info.scriptId}_${flag}", true) },
+			{ ImportInfo info -> for(String flag : flags) info.importContext.ext.set("${info.scriptId}_${flag}", null) }
 		}
 	}
 	static Consumer<ImportInfo>[] flags_export_functions_only() {
@@ -161,8 +249,26 @@ class $ {
 	}
 	static boolean contains_flag(String flag) {
 		if(!utils.is_settings())
-			throw new IllegalArgumentException('This function is only available when imported using "require"')
+			__only_require()
 		return $this.ext.find("settings_${flag}") != null
+	}
+
+	static void scriptApply() {
+		def $that = last_context()
+		LinkedList<ImportInfo> stack = importStack.get()
+		ImportInfo lastImport = stack.size() > 0 ? stack.getLast() : null
+		if(lastImport != null)
+			lastImport.context = $that
+	}
+	static void scriptInit(Runnable callback) {
+		if(!utils.is_settings())
+			__only_require()
+		callback.run()
+	}
+	static void scriptDeinit(Runnable callback) {
+		if(!utils.is_settings())
+			__only_require()
+		$.onBuildFinished.add(callback)
 	}
 
 	static void default_group_version() {
@@ -171,7 +277,7 @@ class $ {
 		$that.version $that.rootProject.version
 	}
 	static void __default_import_action(ImportInfo info) {
-		def $that = info.context
+		def $that = info.importContext
 		if($that.extensions.findByType(EXPORT_GLOBAL_FUNCTION) == null)
 			$that.extensions.create('$_', EXPORT_GLOBAL_FUNCTION)
 		if(!$that.contains_flag('export_functions_only')) {
@@ -395,8 +501,16 @@ class utils {
 	static boolean is_settings() {
 		return $this.hasProperty('settings') && $this.getProperty('settings') instanceof Settings
 	}
+	static Object current_build_settings() {
+		return $.$settings.stream().filter({ it.rootDir == $this.rootDir }).findFirst().get()
+	}
+	static Object[] build_included_from(def $what) {
+		return $.$settings.stream().filter({
+			it.startParameter.includedBuilds.stream().filter({ it == $what.rootDir }).count() > 0
+		}).toArray()
+	}
 	static <T> T global_ext_get(String key) {
-		return $this.gradle.ext.get(key)
+		return $this.gradle.ext.find(key)
 	}
 	static <T> void global_ext_set(String key, T object) {
 		$this.gradle.ext.set(key, object)
@@ -437,25 +551,45 @@ class utils {
 	logger.$this = this
 	progress.$this = this
 	utils.$this = this
-	$.add_import_action(buildscript.sourceFile, $.&__default_import_action)
 }
-gradle.buildFinished {
-	$.$this = null
-	logger.$this = null
-	progress.$this = null
-	utils.$this = null
-	$.remove_import_action(buildscript.sourceFile)
-	utils.purge_thread_local($.contextStack)
-	utils.purge_thread_local($.importStack)
-	$.importActions.clear()
-	logger.logger_deinit()
-	progress.progress_deinit()
-	for(Map.Entry<String, Object> entry : ext.getProperties()) {
-		String key = entry.getKey()
-		if(!key.startsWith('ext_') || !key.endsWith('_$imported')) continue;
-		ext.set(key, null)
+if(utils.is_settings()) {
+	{
+		$.$settings.addLast(this)
+		$.add_import_action(buildscript.sourceFile, $.&__default_import_action)
 	}
-}
+	gradle.buildFinished { BuildResult buildResult ->
+		$.$settings.removeLast()
+		if(rootDir != $.mainModuleDir) return
+		$.remove_import_action(buildscript.sourceFile)
+
+		GradleException exception = new GradleException('Error while running callback')
+		Collections.reverse($.onBuildFinished)
+		for(Runnable callback : $.onBuildFinished)
+			try { callback.run() }
+			catch(Throwable e) { exception.addSuppressed(e) }
+		$.onBuildFinished.clear()
+		utils.purge_thread_local($.contextStack)
+		utils.purge_thread_local($.importStack)
+		$.importedScripts.clear()
+		$.importActions.clear()
+		logger.logger_deinit()
+		progress.progress_deinit()
+		for(Map.Entry<String, Object> entry : ext.getProperties()) {
+			String key = entry.getKey()
+			if(!key.startsWith('ext_') || !key.endsWith('_$imported')) continue;
+			ext.set(key, null)
+		}
+		$.mainModuleDir = null
+
+		$.$this = null
+		logger.$this = null
+		progress.$this = null
+		utils.$this = null
+		if(exception.getSuppressed().length > 0)
+			throw exception
+	}
+} else if($.mainModuleDir == null)
+	throw new Error('"mainModuleDir" is not set, define this properties on settings.gradle')
 
 ext {
 	CONFIG = [:]
@@ -464,119 +598,147 @@ ext {
 	CONFIG['LIBRARY_JNA'] = ['net.java.dev.jna:jna:5.9.0', 'net.java.dev.jna:jna-platform:5.9.0']
 	CONFIG['LIBRARY_ECLIPSE_COLLECTION'] = ['org.eclipse.collections:eclipse-collections:10.4.0', 'org.eclipse.collections:eclipse-collections-api:10.4.0']
 	CONFIG['LIBRARY_DEPRECATED'] = ['org.apache.httpcomponents:httpclient:4.5.12', 'net.oneandone.reflections8:reflections8:0.11.7', 'org.jogamp.gluegen:gluegen-rt-main:2.3.1', 'org.json:json:20180813', 'org.apache.commons:commons-pool2:2.8.0']
-	CONFIG['LIBRARY_DEFAULT'] = CONFIG['LIBRARY_SPOTBUGS'] + CONFIG['LIBRARY_COMMONS_LANG'] + CONFIG['LIBRARY_DEPRECATED'];
+	CONFIG['LIBRARY_DEFAULT'] = CONFIG['LIBRARY_SPOTBUGS'] + CONFIG['LIBRARY_COMMONS_LANG'] + CONFIG['LIBRARY_DEPRECATED']
 
 	CONFIG['TESTLIBRARY_IMPLEMENTATION'] = 'org.junit.jupiter:junit-jupiter-api:5.7.2'
 	CONFIG['TESTLIBRARY_RUNTIME'] = 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
+}
+$.mark_imported(buildscript.sourceFile.getCanonicalPath(), this) {
+	$.export('ext_common_context', $.&context)
+	$.export('ext_common_last_context', $.&last_context)
+	$.export('ext_common_apply_settings', $.&apply_settings)
+	$.export('ext_common_require', $.&require)
+	$.export('ext_common_export', $.&export)
+	$.export('ext_common_get_imports_history', $.&get_imports_history)
+	$.export('ext_common_mark_imported', $.&mark_imported)
+	$.export('ext_common_add_import_action', $.&add_import_action)
+	$.export('ext_common_remove_import_action', $.&remove_import_action)
+	$.export('ext_common___PUSH__EXT__TEMP__STACK__', $.&__PUSH__EXT__TEMP__STACK__)
+	$.export('ext_common___POP__EXT__TEMP__STACK__', $.&__POP__EXT__TEMP__STACK__)
+	$.export('ext_common_import_flags', $.&import_flags)
+	$.export('ext_common_flags_export_functions_only', $.&flags_export_functions_only)
+	$.export('ext_common_contains_flag', $.&contains_flag)
+	$.export('ext_common_scriptApply', $.&scriptApply)
+	$.export('ext_common_scriptInit', $.&scriptInit)
+	$.export('ext_common_scriptDeinit', $.&scriptDeinit)
+	$.export('ext_common_default_group_version', $.&default_group_version)
 
-	ext_common_$imported = buildscript.sourceFile.getCanonicalPath()
-	ext_common_context = $.&context
-	ext_common_last_context = $.&last_context
-	ext_common_require = $.&require
-	ext_common_add_import_action = $.&add_import_action
-	ext_common_remove_import_action = $.&remove_import_action
-	ext_common_import_flags = $.&import_flags
-	ext_common_flags_export_functions_only = $.&flags_export_functions_only
-	ext_common_contains_flag = $.&contains_flag
-	ext_common_default_group_version = $.&default_group_version
+	$.export('ext_common$logger_init', logger.&logger_init)
+	$.export('ext_common$logger_deinit', logger.&logger_deinit)
+	$.export('ext_common$logger_available', logger.&logger_available)
+	$.export('ext_common$logger_create', logger.&logger_create)
+	$.export('ext_common$logger_destroy', logger.&logger_destroy)
+	$.export('ext_common$logger_instance', logger.&logger_instance)
+	$.export('ext_common$logger_append', logger.&logger_append)
+	$.export('ext_common$logger_style', logger.&logger_style)
+	$.export('ext_common$logger_text', logger.&logger_text)
+	$.export('ext_common$logger_println', logger.&logger_println)
+	$.export('ext_common$logger_format', logger.&logger_format)
+	$.export('ext_common$logger_formatln', logger.&logger_formatln)
+	$.export('ext_common$logger_exception', logger.&logger_exception)
+	$.export('ext_common$println_impl', logger.&println_impl)
+	$.export('ext_common$plog', logger.&plog)
+	$.export('ext_common$pinfo', logger.&pinfo)
+	$.export('ext_common$pdebug', logger.&pdebug)
+	$.export('ext_common$pwarn', logger.&pwarn)
+	$.export('ext_common$perror', logger.&perror)
 
-	ext_common$logger_init = logger.&logger_init
-	ext_common$logger_deinit = logger.&logger_deinit
-	ext_common$logger_available = logger.&logger_available
-	ext_common$logger_create = logger.&logger_create
-	ext_common$logger_destroy = logger.&logger_destroy
-	ext_common$logger_instance = logger.&logger_instance
-	ext_common$logger_append = logger.&logger_append
-	ext_common$logger_style = logger.&logger_style
-	ext_common$logger_text = logger.&logger_text
-	ext_common$logger_println = logger.&logger_println
-	ext_common$logger_format = logger.&logger_format
-	ext_common$logger_formatln = logger.&logger_formatln
-	ext_common$logger_exception = logger.&logger_exception
-	ext_common$println_impl = logger.&println_impl
-	ext_common$plog = logger.&plog
-	ext_common$pinfo = logger.&pinfo
-	ext_common$pdebug = logger.&pdebug
-	ext_common$pwarn = logger.&pwarn
-	ext_common$perror = logger.&perror
+	$.export('ext_common$progress_init', progress.&progress_init)
+	$.export('ext_common$progress_deinit', progress.&progress_deinit)
+	$.export('ext_common$progress_available', progress.&progress_available)
+	$.export('ext_common$progress_create', progress.&progress_create)
+	$.export('ext_common$progress_destroy', progress.&progress_destroy)
+	$.export('ext_common$progress_instance', progress.&progress_instance)
+	$.export('ext_common$progress_start', progress.&progress_start)
+	$.export('ext_common$progress_do', progress.&progress_do)
+	$.export('ext_common$progress_end', progress.&progress_end)
 
-	ext_common$progress_init = progress.&progress_init
-	ext_common$progress_deinit = progress.&progress_deinit
-	ext_common$progress_available = progress.&progress_available
-	ext_common$progress_create = progress.&progress_create
-	ext_common$progress_destroy = progress.&progress_destroy
-	ext_common$progress_instance = progress.&progress_instance
-	ext_common$progress_start = progress.&progress_start
-	ext_common$progress_do = progress.&progress_do
-	ext_common$progress_end = progress.&progress_end
-
-	ext_common$utils_as_project = utils.&as_project
-	ext_common$utils_as_task = utils.&as_task
-	ext_common$utils_as_service = utils.&as_service
-	ext_common$utils_is_settings = utils.&is_settings
-	ext_common$utils_global_ext_get = utils.&global_ext_get
-	ext_common$utils_global_ext_set = utils.&global_ext_set
-	ext_common$utils_forward_task = utils.&forward_task
-	ext_common$utils_run_after_another_task = utils.&run_after_another_task
-	ext_common$utils_is_single_use_daemon = utils.&is_single_use_daemon
-	ext_common$utils_is_running_on_debug = utils.&is_running_on_debug
-	ext_common$utils_is_daemon_probably_unstable = utils.&is_daemon_probably_unstable
-	ext_common$utils_get_relative_file = utils.&get_relative_file
-	ext_common$utils_purge_thread_local = utils.&purge_thread_local
+	$.export('ext_common$utils_as_project', utils.&as_project)
+	$.export('ext_common$utils_as_task', utils.&as_task)
+	$.export('ext_common$utils_as_service', utils.&as_service)
+	$.export('ext_common$utils_is_settings', utils.&is_settings)
+	$.export('ext_common$utils_current_build_settings', utils.&current_build_settings)
+	$.export('ext_common$utils_build_included_from', utils.&build_included_from)
+	$.export('ext_common$utils_global_ext_get', utils.&global_ext_get)
+	$.export('ext_common$utils_global_ext_set', utils.&global_ext_set)
+	$.export('ext_common$utils_forward_task', utils.&forward_task)
+	$.export('ext_common$utils_run_after_another_task', utils.&run_after_another_task)
+	$.export('ext_common$utils_is_single_use_daemon', utils.&is_single_use_daemon)
+	$.export('ext_common$utils_is_running_on_debug', utils.&is_running_on_debug)
+	$.export('ext_common$utils_is_daemon_probably_unstable', utils.&is_daemon_probably_unstable)
+	$.export('ext_common$utils_get_relative_file', utils.&get_relative_file)
+	$.export('ext_common$utils_purge_thread_local', utils.&purge_thread_local)
 
 	// Default
-	context = $.&context
-	last_context = $.&last_context
-	require = $.&require
-	import_flags = $.&import_flags
-	export_functions_only = $.&flags_export_functions_only
-	contains_flag = $.&contains_flag
+	$.export('context', $.&context)
+	$.export('last_context', $.&last_context)
+	$.export('apply_settings', $.&apply_settings)
+	$.export('require', $.&require)
+	$.export('export', $.&export)
+	$.export('get_imports_history', $.&get_imports_history)
+	$.export('mark_imported', $.&mark_imported)
+	$.export('add_import_action', $.&add_import_action)
+	$.export('remove_import_action', $.&remove_import_action)
+	$.export('__PUSH__EXT__TEMP__STACK__', $.&__PUSH__EXT__TEMP__STACK__)
+	$.export('__POP__EXT__TEMP__STACK__', $.&__POP__EXT__TEMP__STACK__)
+	$.export('import_flags', $.&import_flags)
+	$.export('export_functions_only', $.&flags_export_functions_only)
+	$.export('contains_flag', $.&contains_flag)
+	$.export('scriptApply', $.&scriptApply)
+	$.export('scriptInit', $.&scriptInit)
+	$.export('scriptDeinit', $.&scriptDeinit)
 
-	logger_init = logger.&logger_init
-	logger_deinit = logger.&logger_deinit
-	logger_available = logger.&logger_available
-	logger_create = logger.&logger_create
-	logger_destroy = logger.&logger_destroy
-	logger_instance = logger.&logger_instance
-	logger_append = logger.&logger_append
-	logger_style = logger.&logger_style
-	logger_text = logger.&logger_text
-	logger_println = logger.&logger_println
-	logger_format = logger.&logger_format
-	logger_formatln = logger.&logger_formatln
-	logger_exception = logger.&logger_exception
-	println_impl = logger.&println_impl
-	plog = logger.&plog
-	pinfo = logger.&pinfo
-	pdebug = logger.&pdebug
-	pwarn = logger.&pwarn
-	perror = logger.&perror
+	$.export('logger_init', logger.&logger_init)
+	$.export('logger_deinit', logger.&logger_deinit)
+	$.export('logger_available', logger.&logger_available)
+	$.export('logger_create', logger.&logger_create)
+	$.export('logger_destroy', logger.&logger_destroy)
+	$.export('logger_instance', logger.&logger_instance)
+	$.export('logger_append', logger.&logger_append)
+	$.export('logger_style', logger.&logger_style)
+	$.export('logger_text', logger.&logger_text)
+	$.export('logger_println', logger.&logger_println)
+	$.export('logger_format', logger.&logger_format)
+	$.export('logger_formatln', logger.&logger_formatln)
+	$.export('logger_exception', logger.&logger_exception)
+	$.export('println_impl', logger.&println_impl)
+	$.export('plog', logger.&plog)
+	$.export('pinfo', logger.&pinfo)
+	$.export('pdebug', logger.&pdebug)
+	$.export('pwarn', logger.&pwarn)
+	$.export('perror', logger.&perror)
 
-	progress_init = progress.&progress_init
-	progress_deinit = progress.&progress_deinit
-	progress_available = progress.&progress_available
-	progress_create = progress.&progress_create
-	progress_destroy = progress.&progress_destroy
-	progress_instance = progress.&progress_instance
-	progress_start = progress.&progress_start
-	progress_do = progress.&progress_do
-	progress_end = progress.&progress_end
+	$.export('progress_init', progress.&progress_init)
+	$.export('progress_deinit', progress.&progress_deinit)
+	$.export('progress_available', progress.&progress_available)
+	$.export('progress_create', progress.&progress_create)
+	$.export('progress_destroy', progress.&progress_destroy)
+	$.export('progress_instance', progress.&progress_instance)
+	$.export('progress_start', progress.&progress_start)
+	$.export('progress_do', progress.&progress_do)
+	$.export('progress_end', progress.&progress_end)
 
-	as_project = utils.&as_project
-	as_task = utils.&as_task
-	as_service = utils.&as_service
-	is_settings = utils.&is_settings
-	global_ext_get = utils.&global_ext_get
-	global_ext_set = utils.&global_ext_set
+	$.export('as_project', utils.&as_project)
+	$.export('as_task', utils.&as_task)
+	$.export('as_service', utils.&as_service)
+	$.export('is_settings', utils.&is_settings)
+	$.export('current_build_settings', utils.&current_build_settings)
+	$.export('build_included_from', utils.&build_included_from)
+	$.export('global_ext_get', utils.&global_ext_get)
+	$.export('global_ext_set', utils.&global_ext_set)
 }
 
 class EXPORT_GLOBAL_FUNCTION {
 	def context(Object... args) { return $.&context.call(args) }
 	def lastContext(Object... args) { return $.&last_context.call(args) }
+	def applySettings(Object... args) { return $.&apply_settings.call(args) }
 	def require(Object... args) { return $.&require.call(args) }
 	def importFlags(Object... args) { return $.&import_flags.call(args) }
 	def flagsExportFunctionsOnly(Object... args) { return $.&flags_export_functions_only.call(args) }
-	def containsFlag(Object... args) { return $.&contains_flag.call(args); }
+	def containsFlag(Object... args) { return $.&contains_flag.call(args) }
+	def scriptApply(Object... args) { return $.&scriptApply.call(args) }
+	def scriptInit(Object... args) { return $.&scriptInit.call(args) }
+	def scriptDeinit(Object... args) { return $.&scriptDeinit.call(args) }
 
 	def loggerInit(Object... args) { return logger.&logger_init.call(args) }
 	def loggerDeinit(Object... args) { return logger.&logger_deinit.call(args) }

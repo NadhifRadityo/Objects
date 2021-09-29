@@ -5,18 +5,21 @@ class $ {
 	static def $this
 	static Map<String, Boolean> extendedProjects = new HashMap<>()
 
-	static def extend(String projectPath, String projectName = null) {
+	static void extend(String projectPath, String projectName = null) {
+		def $that = $this.last_context()
 		int splitIndex = projectPath.indexOf(':')
 		List<String> path = Arrays.asList((splitIndex != -1 ? projectPath.substring(0, splitIndex) : projectPath).split('/'))
 		String name = projectName != null ? projectName : splitIndex != -1 ? projectPath.substring(splitIndex + 1) : String.join('$', path.stream()
 				.map{it.substring(0, 1).toUpperCase() + it.substring(1)}.toArray(String[]::new))
 		String id = "${String.join('#', path)}?$name"
 		extendedProjects.put(id, false)
-		$this.include id
+		$that.include id
 	}
-	static def apply() {
-		$this.plog "Configure for project '${$this.rootProject.name}'"
-		$this.rootProject.children.each { project ->
+	static void apply() {
+		def $that = $this.last_context()
+		$that.plog "Configure for project '${$that.rootProject.name}'"
+		$that.apply_settings()
+		$that.rootProject.children.each { project ->
 			String projectName = project.name
 			Boolean applied = extendedProjects.get(projectName)
 			if(applied == null || applied) return
@@ -26,35 +29,40 @@ class $ {
 			String name = project.name.substring(splitIndex + 1)
 			project.projectDir = new File(String.join('/', path))
 			project.name = name
-			$this.pinfo "Imported ${String.join('/', path)} -> $name settings"
+			$that.pinfo "Imported ${String.join('/', path)} -> $name settings"
 			assert project.projectDir.isDirectory()
 			assert project.buildFile.isFile()
 		}
 	}
-	static def extended_projects() {
+	static Map<String, Boolean> extended_projects() {
 		return Collections.unmodifiableMap(extendedProjects)
 	}
 }
-{
-	$.$this = this
-}
-gradle.buildFinished {
-	$.$this = null
-	$.extendedProjects.clear()
-}
-
-ext {
-	ext_settings_$imported = buildscript.sourceFile.getCanonicalPath()
-	ext_settings_extend = $.&extend
-	ext_settings_apply = $.&apply
-	ext_settings_extended_projects = $.&extended_projects
+context(this) {
+	scriptInit {
+		$.$this = this
+	}
+	scriptDeinit {
+		$.$this = null
+		$.extendedProjects.clear()
+	}
 }
 
-def extend = $.&extend
-def apply = $.&apply
-if(!contains_flag('export_functions_only')) {
-	rootProject.name = 'Objects'
-	extend('libraries/__library__', 'Library')
-	extend('packages/Functional')
-	apply()
+mark_imported(buildscript.sourceFile.getCanonicalPath(), this) {
+	export('ext_settings_extend', $.&extend)
+	export('ext_settings_apply', $.&apply)
+	export('ext_settings_extended_projects', $.&extended_projects)
+}
+
+context(this) {
+	scriptInit {
+		def extend = $.&extend
+		def apply = $.&apply
+		if(!contains_flag('export_functions_only')) {
+			rootProject.name = 'Objects'
+			extend('libraries/__library__', 'Library')
+			extend('packages/Functional')
+			apply()
+		}
+	}
 }

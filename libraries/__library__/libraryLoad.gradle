@@ -7,14 +7,25 @@ context(this) { require('/common.gradle') }
 
 class $ {
 	static def $this
-	static ClassLoader classLoader
-	static Class<?> CLASS_Library
-	static Method METHOD_Library_entry
+	static Map<Integer, LoaderInfo> buildLoader = new HashMap<>()
+	static Integer currentBuildHash
 
+	static class LoaderInfo {
+		boolean accessed
+		ClassLoader classLoader
+		Class<?> CLASS_Library
+		Method METHOD_Library_entry
+	}
+	static LoaderInfo get_current_loader_info() {
+		LoaderInfo loaderInfo = buildLoader.get(currentBuildHash)
+		if(loaderInfo != null) return loaderInfo
+		throw new IllegalStateException('Build info not available')
+	}
 	static void clear() {
-		classLoader = null
-		CLASS_Library = null
-		METHOD_Library_entry = null
+		LoaderInfo loaderInfo = get_current_loader_info()
+		loaderInfo.classLoader = null
+		loaderInfo.CLASS_Library = null
+		loaderInfo.METHOD_Library_entry = null
 	}
 	static File[] source_files() {
 		if(!$this.buildDir.exists()) return new File[0]
@@ -24,40 +35,73 @@ class $ {
 		return sourceFiles.toArray(new File[0])
 	}
 	static ClassLoader load() {
-		if(classLoader != null) return classLoader
+		LoaderInfo loaderInfo = get_current_loader_info()
+		if(loaderInfo.classLoader != null) return loaderInfo.classLoader
 		URL[] sourceURLs = Stream.of(source_files()).map { it.toURI().toURL() }.toArray(URL[]::new)
 		try {
-			classLoader = new URLClassLoader(sourceURLs, $this.project.getClass().getClassLoader())
-			CLASS_Library = classLoader.loadClass('io.github.NadhifRadityo.Library.LibraryEntry')
-			METHOD_Library_entry = CLASS_Library.getDeclaredMethod('entry', DefaultProject.class, File.class, Map.class)
-			METHOD_Library_entry.setAccessible(true)
+			loaderInfo.classLoader = new URLClassLoader(sourceURLs, $this.project.getClass().getClassLoader())
+			loaderInfo.CLASS_Library = loaderInfo.classLoader.loadClass('io.github.NadhifRadityo.Library.LibraryEntry')
+			loaderInfo.METHOD_Library_entry = loaderInfo.CLASS_Library.getDeclaredMethod('entry', DefaultProject.class, File.class, Map.class)
+			loaderInfo.METHOD_Library_entry.setAccessible(true)
 		} catch(Exception e) {
 			$this.perror 'Error while loading library entry point\n', e
 		}
-		return classLoader
+		return loaderInfo.classLoader
 	}
 	static boolean available() {
-		return METHOD_Library_entry != null
+		LoaderInfo loaderInfo = get_current_loader_info()
+		return loaderInfo.METHOD_Library_entry != null
 	}
 	static void run(File rootDirectory, Map<String, File> modules) {
+		LoaderInfo loaderInfo = get_current_loader_info()
 		try {
-			METHOD_Library_entry.invoke(null, $this.project, rootDirectory, modules)
+			loaderInfo.METHOD_Library_entry.invoke(null, $this.project, rootDirectory, modules)
 		} catch(Exception e) {
 			$this.perror 'Error while running library entry point\n', e
 		}
 	}
+	static void __default_import_action(def info) {
+		def $that = info.importContext
+		currentBuildHash = null
+		if(!$that.contains_flag('export_functions_only')) {
+			IncludedBuild build = info.build
+			if(build == null) currentBuildHash = $that.rootDir.getCanonicalPath().hashCode()
+			else currentBuildHash = build.projectDir.getCanonicalPath().hashCode()
+			LoaderInfo loaderInfo = buildLoader.get(currentBuildHash)
+			if(loaderInfo == null) {
+				$this.pwarn "New build \"${build != null ? build.name : $that.rootProject.name}\" with hash $currentBuildHash"
+				loaderInfo = new LoaderInfo()
+				buildLoader.put(currentBuildHash, loaderInfo)
+			}
+			loaderInfo.accessed = true
+		}
+	}
 }
-{
-	$.$this = this
-}
-gradle.buildFinished {
-	$.$this = null
+context(this) {
+	scriptApply()
+	scriptInit {
+		$.$this = this
+		ext_common_add_import_action(buildscript.sourceFile, $.&__default_import_action)
+	}
+	scriptDeinit {
+		plog new Error()
+		$.$this = null
+		$.currentBuildHash = null
+		ext_common_remove_import_action(buildscript.sourceFile)
+		Iterator<Map.Entry<Integer, $.LoaderInfo>> iterator = $.buildLoader.entrySet().iterator()
+		while(iterator.hasNext()) {
+			Map.Entry<Integer, $.LoaderInfo> entry = iterator.next()
+			$.LoaderInfo loaderInfo = entry.getValue()
+			if(loaderInfo.accessed) { loaderInfo.accessed = false; continue }
+			pwarn "Removed library loader from build hash ${entry.getKey()}"
+			iterator.remove()
+		}
+	}
 }
 
-ext {
-	ext_libraryLoad_clear = $.&clear
-	ext_libraryLoad_source_files = $.&source_files
-	ext_libraryLoad_load = $.&load
-	ext_libraryLoad_available = $.&available
-	ext_libraryLoad_run = $.&run
-}
+export('ext_libraryLoad_get_current_loader_info', $.&get_current_loader_info)
+export('ext_libraryLoad_clear', $.&clear)
+export('ext_libraryLoad_source_files', $.&source_files)
+export('ext_libraryLoad_load', $.&load)
+export('ext_libraryLoad_available', $.&available)
+export('ext_libraryLoad_run', $.&run)
