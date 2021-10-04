@@ -2,15 +2,6 @@ plugins {
     id 'java'
 }
 
-apply from: 'common.gradle'
-context(this) { require('common.gradle') }
-
-repositories {
-    mavenCentral()
-}
-
 dependencies {
-    implementation project('Packages$Functional')
-}
 
-$_.forwardTask('Library', { it.group == 'library' })
+}

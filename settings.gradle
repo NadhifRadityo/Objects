@@ -1,68 +1,8 @@
-apply from: 'common.gradle'
-context(this) { require([export_functions_only(), 'common.gradle']) }
-
-class $ {
-	static def $this
-	static Map<String, Boolean> extendedProjects = new HashMap<>()
-
-	static void extend(String projectPath, String projectName = null) {
-		def $that = $this.last_context()
-		int splitIndex = projectPath.indexOf(':')
-		List<String> path = Arrays.asList((splitIndex != -1 ? projectPath.substring(0, splitIndex) : projectPath).split('/'))
-		String name = projectName != null ? projectName : splitIndex != -1 ? projectPath.substring(splitIndex + 1) : String.join('$', path.stream()
-				.map{it.substring(0, 1).toUpperCase() + it.substring(1)}.toArray(String[]::new))
-		String id = "${String.join('#', path)}?$name"
-		extendedProjects.put(id, false)
-		$that.include id
-	}
-	static void apply() {
-		def $that = $this.last_context()
-		$that.plog "Configure for project '${$that.rootProject.name}'"
-		$that.apply_settings()
-		$that.rootProject.children.each { project ->
-			String projectName = project.name
-			Boolean applied = extendedProjects.get(projectName)
-			if(applied == null || applied) return
-			extendedProjects.put(projectName, true)
-			int splitIndex = projectName.indexOf('?')
-			List<String> path = Arrays.asList(projectName.substring(0, splitIndex).split("#"))
-			String name = project.name.substring(splitIndex + 1)
-			project.projectDir = new File(String.join('/', path))
-			project.name = name
-			$that.pinfo "Imported ${String.join('/', path)} -> $name settings"
-			assert project.projectDir.isDirectory()
-			assert project.buildFile.isFile()
-		}
-	}
-	static Map<String, Boolean> extended_projects() {
-		return Collections.unmodifiableMap(extendedProjects)
-	}
-}
-context(this) {
-	scriptInit {
-		$.$this = this
-	}
-	scriptDeinit {
-		$.$this = null
-		$.extendedProjects.clear()
-	}
-}
-
-mark_imported(buildscript.sourceFile.getCanonicalPath(), this) {
-	export('ext_settings_extend', $.&extend)
-	export('ext_settings_apply', $.&apply)
-	export('ext_settings_extended_projects', $.&extended_projects)
-}
-
-context(this) {
-	scriptInit {
-		def extend = $.&extend
-		def apply = $.&apply
-		if(!contains_flag('export_functions_only')) {
-			rootProject.name = 'Objects'
-			extend('libraries/__library__', 'Library')
-			extend('packages/Functional')
-			apply()
+includeBuild 'gradle'
+gradle.rootProject {
+	it.buildscript {
+		dependencies {
+			classpath 'io.github.NadhifRadityo.Objects:gradle:LATEST'
 		}
 	}
 }
