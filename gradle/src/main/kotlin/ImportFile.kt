@@ -29,19 +29,19 @@ open class ImportFile(
 	val file: File,
 	val id: String,
 	context: Project?,
-	construct: Runnable?,
-	destruct: Runnable?,
-	exports: MutableMap<String, Any>,
+	construct: (() -> Unit)?,
+	destruct: (() -> Unit)?,
+	exports: MutableMap<String, Any?>,
 	imports: MutableList<ImportInfo>,
 ) {
 	var context: Project? = context
-		protected set
-	var construct: Runnable? = construct
-		protected set
-	var destruct: Runnable? = destruct
-		protected set
-	var exports: MutableMap<String, Any> = exports
-		protected set
+		internal set
+	var construct: (() -> Unit)? = construct
+		internal set
+	var destruct: (() -> Unit)? = destruct
+		internal set
+	var exports: MutableMap<String, Any?> = exports
+		internal set
 	var imports: MutableList<ImportInfo> = imports
-		protected set
+		internal set
 }

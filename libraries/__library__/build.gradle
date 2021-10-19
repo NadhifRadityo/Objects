@@ -5,8 +5,11 @@ plugins {
 
 buildDir = '../__target__/__sources__/'
 
-context(this) { require('libraryModules.gradle') }
-def module = ext_libraryModules_module
-module('GameLibrary - LWJGL')
+context(this) {
+    importFrom('libraryModules.gradle')
 
-context(this) { require('library.gradle') }
+//    def module = ext_libraryModules_module
+//    module('GameLibrary - LWJGL')
+
+    importFrom('library.gradle')
+}

@@ -1,19 +1,27 @@
 import org.gradle.api.initialization.IncludedBuild
-import org.gradle.api.plugins.ExtraPropertiesExtension
 import java.io.File
 import java.util.*
-import kotlin.collections.HashMap
 
 object Import {
-	private val importFiles = HashMap<String, ImportFile>()
-	private val importStack = ThreadLocal.withInitial<LinkedList<ImportInfo>> { LinkedList() }
-	private val importActions = HashMap<String, ((ImportInfo) -> Unit)?>()
+	@JvmStatic private val files = HashMap<String, ImportFile>()
+	@JvmStatic private val stack = ThreadLocal.withInitial<LinkedList<ImportInfo>> { LinkedList() }
+	@JvmStatic private val actions = HashMap<String, ((ImportInfo) -> Unit)?>()
 
-	fun __getLastImport(): ImportFile? {
-		val stack = importStack.get()
-		return if(stack.size > 0) importFiles[stack.last.importId] else null
+	@JvmStatic fun init() {
+		Utils.pushKotlinToGradle(Import)
 	}
-	fun __getScriptFile(file: Any?): Pair<IncludedBuild?, File> {
+	@JvmStatic fun deinit() {
+		Utils.pullKotlinFromGradle(Import)
+		files.clear()
+		Utils.purgeThreadLocal(stack)
+		actions.clear()
+	}
+
+	@JvmStatic fun __getLastImport(): ImportFile? {
+		val stack = stack.get()
+		return if(stack.size > 0) files[stack.last.importId] else null
+	}
+	@JvmStatic fun __getScriptFile(file: Any?): Pair<IncludedBuild?, File> {
 		val that = Common.lastContext()
 		val lastImport = __getLastImport()
 		val build: IncludedBuild?
@@ -56,10 +64,12 @@ object Import {
 	 * - `require('Test:test.gradle')` and `test.gradle` contains `require('test2.gradle')`, loads `test.gradle` from project
 	 *   root build `Test`, then loads `test2.gradle` from the same build too.
 	 */
-	fun require(vararg scripts: Any) {
+	@ExportGradle(names = [ "require", "importFrom" ])
+	@JvmStatic fun require(vararg scripts: Any) {
 		val that = Common.lastContext()
-		val stack = importStack.get()
-		for(i in 0..scripts.size) {
+		val ext = that.extensions.extraProperties
+		val stack = stack.get()
+		for(i in scripts.indices) {
 			val actions: Array<(ImportInfo) -> Unit>
 			val pair: Pair<IncludedBuild?, File>
 			if(scripts[i] is List<*>) {
@@ -78,7 +88,7 @@ object Import {
 			val scriptId = if(scriptNameSplit == -1) scriptName
 					else scriptName.substring(0, scriptNameSplit)
 
-			val importFile = importFiles.computeIfAbsent(scriptId) {
+			val importFile = files.computeIfAbsent(scriptId) {
 				ImportFile(build, script, scriptId, null, null, null, HashMap(), ArrayList())
 			}
 			val importInfo = ImportInfo(that, scriptId, actions.toList())
@@ -91,10 +101,9 @@ object Import {
 			}
 			val postCheck: () -> Boolean = postCheck@{
 				if(importFile.context == null)
-					throw IllegalStateException("Imported script does not call scriptApply")
-				if(that is ExtraPropertiesExtension)
-					for(entry in importFile.exports)
-						that.set(entry.key, entry.value)
+					throw IllegalStateException("Imported script does not call apply()")
+				for(entry in importFile.exports)
+					ext.set(entry.key, entry.value)
 				return@postCheck importFile.imports.add(importInfo)
 			}
 			val catchCheck: (Throwable) -> Throwable? = catchCheck@{ e ->
@@ -119,7 +128,7 @@ object Import {
 				preAction()
 				if(preCheckResult)
 					that.apply { it.from(that.relativePath(script)) }
-				importActions[scriptPath]?.let { it(importInfo) }
+				this.actions[scriptPath]?.let { it(importInfo) }
 				postAction()
 				postCheck()
 			} catch(e: Throwable) {
@@ -128,34 +137,58 @@ object Import {
 			}
 		}
 	}
-
-	fun addImportAction(vararg scripts: Any, action: (ImportInfo) -> Unit) {
-		for(i in 0..scripts.size) {
-			val (_, script) = __getScriptFile(scripts[i])
-			val scriptPath = script.canonicalPath
-			importActions[scriptPath] = action
-		}
+	@ExportGradle(names = [ "apply", "scriptApply" ])
+	@JvmStatic fun apply() {
+		val that = Common.lastContext()
+		val lastImport = __getLastImport()!!
+		lastImport.context = that
 	}
-	fun removeImportAction(vararg scripts: Any) {
-		for(i in 0..scripts.size) {
-			val (_, script) = __getScriptFile(scripts[i])
-			val scriptPath = script.canonicalPath
-			importActions.remove(scriptPath)
-		}
+	@ExportGradle(names = [ "first", "scriptFirst", "scriptInit" ])
+	@JvmStatic fun first(callback: () -> Unit) {
+		val lastImport = __getLastImport()!!
+		lastImport.construct = callback
+		callback()
+	}
+	@ExportGradle(names = [ "last", "scriptLast", "scriptDeinit" ])
+	@JvmStatic fun last(callback: () -> Unit) {
+		val lastImport = __getLastImport()!!
+		lastImport.destruct = callback
+		Common.onBuildFinished.add(callback)
+	}
+	@ExportGradle(names = [ "export", "exportTo" ])
+	@JvmStatic fun export(key: String, value: Any?) {
+		val lastImport = __getLastImport()!!
+		lastImport.exports[key] = value
 	}
 
-	fun includeFlags(vararg flags: String): Array<(ImportInfo) -> Unit> {
+	@ExportGradle
+	@JvmStatic fun addImportAction(script0: Any, action: (ImportInfo) -> Unit) {
+		val (_, script) = __getScriptFile(script0)
+		val scriptPath = script.canonicalPath
+		actions[scriptPath] = action
+	}
+	@ExportGradle
+	@JvmStatic fun removeImportAction(script0: Any) {
+		val (_, script) = __getScriptFile(script0)
+		val scriptPath = script.canonicalPath
+		actions.remove(scriptPath)
+	}
+
+	@ExportGradle
+	@JvmStatic fun includeFlags(vararg flags: String): Array<(ImportInfo) -> Unit> {
 		return arrayOf(
-			{ importInfo -> for(flag in flags) (importInfo.context as ExtraPropertiesExtension).set("${importInfo.importId}_${flag}", true) },
-			{ importInfo -> for(flag in flags) (importInfo.context as ExtraPropertiesExtension).set("${importInfo.importId}_${flag}", null) }
+			{ importInfo -> for(flag in flags) importInfo.context.extensions.extraProperties.set("${importInfo.importId}_${flag}", true) },
+			{ importInfo -> for(flag in flags) importInfo.context.extensions.extraProperties.set("${importInfo.importId}_${flag}", null) }
 		)
 	}
-	fun containsFlag(flag: String): Boolean {
+	@ExportGradle
+	@JvmStatic fun containsFlag(flag: String): Boolean {
 		val that = Common.lastContext()
+		val ext = that.extensions.extraProperties
 		val lastImport = __getLastImport()
 		return if(lastImport == null)
-			(that as ExtraPropertiesExtension).has(flag)
+			ext.has(flag)
 		else
-			(that as ExtraPropertiesExtension).has("${lastImport.id}_${flag}")
+			ext.has("${lastImport.id}_${flag}")
 	}
 }

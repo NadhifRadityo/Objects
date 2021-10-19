@@ -1,5 +1,4 @@
 import org.gradle.api.Project
-import java.util.function.Consumer
 
 /**
  * Store from where the script is imported from.

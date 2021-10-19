@@ -1,8 +1,6 @@
 import java.nio.file.Path
 import java.nio.file.Files
 
-context(this) { require('/common.gradle') }
-
 class $ {
 	static def $this
 	static Map<String, File> loadedModules = new HashMap<>()
@@ -67,21 +65,21 @@ class $ {
 	}
 }
 context(this) {
-	scriptApply()
+	applyScript()
 	scriptInit {
 		$.$this = this
-		ext_common_add_import_action(buildscript.sourceFile, $.&__default_import_action)
+		Import.addImportAction(buildscript.sourceFile, $.&__default_import_action)
 	}
 	scriptDeinit {
 		$.$this = null
-		ext_common_remove_import_action(buildscript.sourceFile)
+		Import.removeImportAction(buildscript.sourceFile)
 		$.relativeToDir = null
 		$.librariesDir = null
 	}
 }
 
-export('ext_libraryModules_set_relative_to_dir', $.&set_relative_to_dir)
-export('ext_libraryModules_set_libraries_dir', $.&set_libraries_dir)
-export('ext_libraryModules_root_directory', $.&root_directory)
-export('ext_libraryModules_module', $.&module)
-export('ext_libraryModules_loaded_modules', $.&loaded_modules)
+exportTo('ext_libraryModules_set_relative_to_dir', $.&set_relative_to_dir)
+exportTo('ext_libraryModules_set_libraries_dir', $.&set_libraries_dir)
+exportTo('ext_libraryModules_root_directory', $.&root_directory)
+exportTo('ext_libraryModules_module', $.&module)
+exportTo('ext_libraryModules_loaded_modules', $.&loaded_modules)

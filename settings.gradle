@@ -1,8 +1,57 @@
+class GLOBAL {
+	protected static final Map<String, Boolean> extendedProjects = new HashMap<>()
+}
+GLOBAL.extendedProjects.clear()
+
+def extend = { String projectPath, String projectName = null ->
+	int splitIndex = projectPath.indexOf(':')
+	List<String> path = Arrays.asList((splitIndex != -1 ? projectPath.substring(0, splitIndex) : projectPath).split('/'))
+	String name = projectName != null ? projectName : splitIndex != -1 ? projectPath.substring(splitIndex + 1) : String.join('$', path.stream()
+			.map{it.substring(0, 1).toUpperCase() + it.substring(1)}.toArray(String[]::new))
+	String id = "${String.join('#', path)}?$name"
+	GLOBAL.extendedProjects.put(id, false)
+	include id
+}
+def apply = { ->
+	println "Configure for project '${rootProject.name}'"
+	rootProject.children.each { project ->
+		String projectName = project.name
+		Boolean applied = GLOBAL.extendedProjects.get(projectName)
+		if(applied == null || applied) return
+		GLOBAL.extendedProjects.put(projectName, true)
+		int splitIndex = projectName.indexOf('?')
+		List<String> path = Arrays.asList(projectName.substring(0, splitIndex).split("#"))
+		String name = project.name.substring(splitIndex + 1)
+		project.projectDir = new File(String.join('/', path))
+		project.name = name
+		println "Imported ${String.join('/', path)} -> $name settings"
+		assert project.projectDir.isDirectory()
+		assert project.buildFile.isFile()
+	}
+}
+def extended_projects = { ->
+	return Collections.unmodifiableMap(GLOBAL.extendedProjects)
+}
+
+ext {
+	set('extend', extend)
+	set('apply', apply)
+	set('extended_projects', extended_projects)
+	gradle.ext.set('settings_extended_projects', extended_projects)
+}
+
 includeBuild 'gradle'
-gradle.rootProject {
+gradle.allprojects {
 	it.buildscript {
 		dependencies {
 			classpath 'io.github.NadhifRadityo.Objects:gradle:LATEST'
 		}
 	}
+}
+
+if(!ext.has('export_functions_only')) {
+	rootProject.name = 'Objects'
+	extend('libraries/__library__', 'Library')
+//	extend('packages/Functional')
+	apply()
 }

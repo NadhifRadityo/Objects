@@ -2,6 +2,10 @@ plugins {
     id 'java'
 }
 
+Common.context(this) {
+    Common.init()
+}
+
 dependencies {
 
 }
