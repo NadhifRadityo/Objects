@@ -13,5 +13,5 @@ import java.util.function.Consumer
 data class ImportInfo(
 	val context: Project,
 	val importId: String,
-	val actions: List<Consumer<ImportInfo>>,
+	val actions: List<(ImportInfo) -> Unit>,
 )
