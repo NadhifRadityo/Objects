@@ -1,4 +1,7 @@
 import GroovyInteroperability.closureToLambda
+import GroovyInteroperability.finishExpandableMeta
+import GroovyInteroperability.newExpandableMeta
+import GroovyInteroperability.setKotlinToGroovy
 import groovy.lang.Closure
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -276,18 +279,11 @@ object Utils {
 		val first = notError.first()
 		return Pair(first.method, first.args!!)
 	}
-	@JvmStatic fun setKotlinToGradle(reflnames: Array<String>?, reflname: String, classCanonical: String, value: Any?, nameProcessor: (String) -> String) {
-		val that = Common.lastContext()
-		val ext = that.extensions.extraProperties
-		val names = if(reflnames != null) if(reflnames.isNotEmpty()) reflnames else arrayOf(reflname) else arrayOf()
-		for(name in names) ext.set(nameProcessor(name), value)
-		val internalName = "__INTERNAL_${classCanonical.replace(".", "$")}_${reflname}"
-		ext.set(nameProcessor(internalName), value)
-	}
 	@JvmStatic fun <T : Any> pushKotlinToGradle(obj: T) {
 		val that = Common.lastContext()
 		val kclass = obj::class as KClass<T>
-		kclass.functions.forEach {
+		newExpandableMeta(that)
+		kclass.functions.toTypedArray().forEach {
 			val id = "${kclass.qualifiedName}.${it.name}"
 			var overloads = kotlinFunctionOverloading[id]
 			if(overloads == null) {
@@ -300,36 +296,40 @@ object Utils {
 						return overloads[matched.first]!!.call(obj, *matched.second)
 					}
 				}
-				setKotlinToGradle(annotation?.names, it.name, kclass.qualifiedName!!, callback) { i -> i }
+				setKotlinToGroovy(that, annotation?.names, it.name, kclass.qualifiedName!!, callback) { i -> i }
 			}
 			overloads[it.javaMethod!!] = it
 		}
-		kclass.memberProperties.forEach {
+		kclass.memberProperties.toTypedArray().forEach {
 			val annotation = it.findAnnotation<ExportGradle>()
 			val getCallback = object: Closure<Any?>(null, that) {
 				override fun call(vararg args: Any?): Any? { return it.get(obj) }
 			}
-			setKotlinToGradle(annotation?.names, it.name, kclass.qualifiedName!!, getCallback) { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
+			setKotlinToGroovy(that, annotation?.names, it.name, kclass.qualifiedName!!, getCallback) { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
 			if(it is KMutableProperty<*>) {
 				val setCallback = object: Closure<Any?>(null, that) {
 					override fun call(vararg args: Any?): Any? { return it.setter.call(obj, *args) }
 				}
-				setKotlinToGradle(annotation?.names, it.name, kclass.qualifiedName!!, setCallback) { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
+				setKotlinToGroovy(that, annotation?.names, it.name, kclass.qualifiedName!!, setCallback) { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
 			}
 		}
+		finishExpandableMeta(that)
 	}
 	@JvmStatic fun <T : Any> pullKotlinFromGradle(obj: T) {
+		val that = Common.lastContext()
 		val kclass = obj::class as KClass<T>
+		newExpandableMeta(that)
 		kotlinFunctionOverloading.clear()
-		kclass.functions.forEach {
+		kclass.functions.toTypedArray().forEach {
 			val annotation = it.findAnnotation<ExportGradle>()
-			setKotlinToGradle(annotation?.names, it.name, kclass.qualifiedName!!, null) { i -> i }
+			setKotlinToGroovy(that, annotation?.names, it.name, kclass.qualifiedName!!, null) { i -> i }
 		}
-		kclass.memberProperties.forEach {
+		kclass.memberProperties.toTypedArray().forEach {
 			val annotation = it.getter.findAnnotation<ExportGradle>()
-			setKotlinToGradle(annotation?.names, it.name, kclass.qualifiedName!!, null) { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
+			setKotlinToGroovy(that, annotation?.names, it.name, kclass.qualifiedName!!, null) { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
 			if(it is KMutableProperty<*>)
-				setKotlinToGradle(annotation?.names, it.name, kclass.qualifiedName!!, null) { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
+				setKotlinToGroovy(that, annotation?.names, it.name, kclass.qualifiedName!!, null) { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
 		}
+		finishExpandableMeta(that)
 	}
 }

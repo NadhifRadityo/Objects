@@ -3,8 +3,11 @@ import Utils.__must_not_happen
 import Utils.pullKotlinFromGradle
 import Utils.pushKotlinToGradle
 import groovy.lang.Closure
+import groovy.lang.ExpandoMetaClass
+import groovy.lang.GroovySystem
 import org.codehaus.groovy.runtime.MethodClosure
 import org.codehaus.groovy.runtime.metaclass.ClosureMetaClass
+import org.gradle.api.Project
 import kotlin.jvm.functions.FunctionN
 
 object GroovyInteroperability {
@@ -116,7 +119,7 @@ object GroovyInteroperability {
 	}
 	@ExportGradle
 	@JvmStatic fun <R> closureToLambdaN(closure: Closure<R>, arity: Int): FunctionN<R> {
-		return object:FunctionN<R> {
+		return object: FunctionN<R> {
 			override val arity: Int
 				get() = arity
 
@@ -171,5 +174,48 @@ object GroovyInteroperability {
 			}
 		}
 		throw __must_not_happen()
+	}
+
+	@JvmStatic fun newExpandableMeta(that: Any) {
+		val javaClass = that::class.java
+		val metaClass = GroovySystem.getMetaClassRegistry().getMetaClass(javaClass)
+		if(metaClass is ExpandoMetaClass) return
+		GroovySystem.getMetaClassRegistry().setMetaClass(javaClass,
+			ExpandoMetaClass(javaClass, true, true))
+	}
+	@JvmStatic fun finishExpandableMeta(that: Any) {
+		val javaClass = that::class.java
+		val metaClass = GroovySystem.getMetaClassRegistry().getMetaClass(javaClass)
+		if(metaClass !is ExpandoMetaClass) return
+		metaClass.initialize()
+	}
+	@JvmStatic fun setKotlinToGroovy(that: Any, reflnames: Array<String>?, reflname: String, classCanonical: String, value: Any?, nameProcessor: (String) -> String) {
+		val javaClass = that::class.java
+		val ext = if(that is Project) that.extensions.extraProperties else null
+		val metaClass = GroovySystem.getMetaClassRegistry().getMetaClass(javaClass) as? ExpandoMetaClass
+
+		val names = if(reflnames != null) if(reflnames.isNotEmpty()) reflnames else arrayOf(reflname) else arrayOf()
+		for(name in names) {
+			val processedName = nameProcessor(name)
+			ext?.set(processedName, value)
+			metaClass?.registerInstanceMethod(processedName, object: Closure<Any?>(value) {
+				override fun call(arguments: Any): Any? {
+					return super.call(arguments)
+				}
+				override fun getParameterTypes(): Array<Class<*>?> {
+					return arrayOf(Array<Any?>::class.java)
+				}
+			})
+		}
+		val internalName = "__INTERNAL_${classCanonical.replace(".", "$")}_${reflname}"
+		ext?.set(nameProcessor(internalName), value)
+		metaClass?.registerInstanceMethod(internalName, object: Closure<Any?>(value) {
+			override fun call(arguments: Any): Any? {
+				return super.call(arguments)
+			}
+			override fun getParameterTypes(): Array<Class<*>?> {
+				return arrayOf(Array<Any?>::class.java)
+			}
+		})
 	}
 }

@@ -65,8 +65,8 @@ object Import {
 	 * - `require('Test:test.gradle')` and `test.gradle` contains `require('test2.gradle')`, loads `test.gradle` from project
 	 *   root build `Test`, then loads `test2.gradle` from the same build too.
 	 */
-	@ExportGradle(names = [ "require", "importFrom" ])
-	@JvmStatic fun require(vararg scripts: Any) {
+	@ExportGradle
+	@JvmStatic fun scriptImport(vararg scripts: Any) {
 		val that = Common.lastContext()
 		val ext = that.extensions.extraProperties
 		val stack = stack.get()
@@ -138,28 +138,28 @@ object Import {
 			}
 		}
 	}
-	@ExportGradle(names = [ "apply", "scriptApply" ])
-	@JvmStatic fun apply() {
+	@ExportGradle
+	@JvmStatic fun scriptExport(key: String, value: Any?) {
+		val lastImport = __getLastImport()!!
+		lastImport.exports[key] = value
+	}
+	@ExportGradle
+	@JvmStatic fun scriptApply() {
 		val that = Common.lastContext()
 		val lastImport = __getLastImport()!!
 		lastImport.context = that
 	}
-	@ExportGradle(names = [ "first", "scriptFirst", "scriptInit" ])
-	@JvmStatic fun first(callback: () -> Unit) {
+	@ExportGradle
+	@JvmStatic fun scriptConstruct(callback: () -> Unit) {
 		val lastImport = __getLastImport()!!
 		lastImport.construct = callback
 		callback()
 	}
-	@ExportGradle(names = [ "last", "scriptLast", "scriptDeinit" ])
-	@JvmStatic fun last(callback: () -> Unit) {
+	@ExportGradle
+	@JvmStatic fun scriptDestruct(callback: () -> Unit) {
 		val lastImport = __getLastImport()!!
 		lastImport.destruct = callback
 		Common.onBuildFinished.add(callback)
-	}
-	@ExportGradle(names = [ "export", "exportTo" ])
-	@JvmStatic fun export(key: String, value: Any?) {
-		val lastImport = __getLastImport()!!
-		lastImport.exports[key] = value
 	}
 
 	@ExportGradle

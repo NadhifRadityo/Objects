@@ -66,11 +66,11 @@ class $ {
 }
 context(this) {
 	scriptApply()
-	scriptInit {
+	scriptConstruct {
 		$.$this = this
 		addImportAction(buildscript.sourceFile, $.&__default_import_action)
 	}
-	scriptDeinit {
+	scriptDestruct {
 		$.$this = null
 		removeImportAction(buildscript.sourceFile)
 		$.relativeToDir = null
@@ -78,8 +78,8 @@ context(this) {
 	}
 }
 
-exportTo('ext_libraryModules_set_relative_to_dir', $.&set_relative_to_dir)
-exportTo('ext_libraryModules_set_libraries_dir', $.&set_libraries_dir)
-exportTo('ext_libraryModules_root_directory', $.&root_directory)
-exportTo('ext_libraryModules_module', $.&module)
-exportTo('ext_libraryModules_loaded_modules', $.&loaded_modules)
+scriptExport('ext_libraryModules_set_relative_to_dir', $.&set_relative_to_dir)
+scriptExport('ext_libraryModules_set_libraries_dir', $.&set_libraries_dir)
+scriptExport('ext_libraryModules_root_directory', $.&root_directory)
+scriptExport('ext_libraryModules_module', $.&module)
+scriptExport('ext_libraryModules_loaded_modules', $.&loaded_modules)
