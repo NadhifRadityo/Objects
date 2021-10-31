@@ -1,3 +1,4 @@
+import Utils.__must_not_happen
 import org.gradle.api.initialization.IncludedBuild
 import java.io.File
 import java.util.*
@@ -120,7 +121,7 @@ object Import {
 					actions[j](importInfo)
 				val lastStack = stack.removeLast()
 				if(importInfo != lastStack)
-					throw IllegalStateException("Must not happen")
+					__must_not_happen()
 			}
 
 			try {

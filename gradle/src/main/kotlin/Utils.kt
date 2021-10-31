@@ -4,6 +4,7 @@ import org.gradle.api.Task
 import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.api.invocation.Gradle
 import org.gradle.api.plugins.ExtraPropertiesExtension
+import org.gradle.groovy.scripts.BasicScript
 import org.gradle.launcher.daemon.server.scaninfo.DaemonScanInfo
 import java.io.File
 import java.lang.management.ManagementFactory
@@ -29,8 +30,11 @@ object Utils {
 		pullKotlinFromGradle(Utils)
 	}
 
-	@JvmStatic private fun __invalid_type(): Throwable {
+	@JvmStatic internal fun __invalid_type(): Throwable {
 		throw Error("Invalid type")
+	}
+	@JvmStatic internal fun __must_not_happen(): Throwable {
+		throw Error("Must not happen")
 	}
 
 	// Gradle Object Conversion
@@ -39,6 +43,7 @@ object Utils {
 		if(project == null) return Common.lastContext()
 		if(project is Project) return project
 		if(project is String) return Common.lastContext().project(project)
+		if(project is BasicScript) return (project.scriptTarget as ProjectInternal)
 		throw __invalid_type()
 	}
 	@ExportGradle
@@ -198,11 +203,17 @@ object Utils {
 		val argsLength = args.size
 		for(method in methods) {
 			val types = method.parameterTypes
+			// empty arguments
+			if(types.isEmpty()) {
+				if(args.isEmpty())
+					filteredMethods[filteredCount++] = method
+				continue
+			}
 			val lastParam = types.last()
 			// vararg type
 			if(lastParam.isArray) {
 				// vararg length may vary from 0...n
-				if(types.size >= args.size - 1) {
+				if(args.size >= types.size - 1) {
 					filteredMethods[filteredCount++] = method
 					continue
 				}
@@ -250,7 +261,7 @@ object Utils {
 			filteredMethods0[filteredCount0++] = method
 		}
 		if(filteredCount0 == 0)
-			throw IllegalStateException("No matched method definition for [${args.joinToString(", ") { it?.javaClass?.canonicalName ?: "NULL" }}] \n " +
+			throw IllegalStateException("No matched method definition for [${args.joinToString(", ") { it.toString() }}] \n " +
 					"Available methods: \n${methods.joinToString("\n") { "- $it" }}")
 		if(filteredCount0 > 1)
 			throw IllegalStateException("Ambiguous method calls: \n${filteredMethods0.copyOfRange(0, filteredCount0).joinToString("\n") { "- $it" }}")

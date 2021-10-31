@@ -65,7 +65,7 @@ class $ {
 	}
 }
 context(this) {
-	applyScript()
+	scriptApply()
 	scriptInit {
 		$.$this = this
 		Import.addImportAction(buildscript.sourceFile, $.&__default_import_action)

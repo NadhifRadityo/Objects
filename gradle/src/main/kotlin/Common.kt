@@ -1,7 +1,7 @@
+import Utils.__must_not_happen
 import groovy.lang.Closure
 import org.gradle.api.GradleException
 import org.gradle.api.Project
-import org.gradle.api.internal.project.ProjectScript
 import java.util.*
 
 object Common {
@@ -53,30 +53,23 @@ object Common {
 	}
 
 	@ExportGradle
-	@JvmStatic fun context(project: Project, callback: () -> Unit) {
+	@JvmStatic fun context(project: Any, callback: () -> Unit) {
+		val asProject = Utils.asProject(project)
 		val stack = contextStack.get()
-		stack.addLast(project)
+		stack.addLast(asProject)
 		try {
 			callback()
 		} catch(e: Throwable) {
 			throw Error(e)
 		} finally {
 			val last = stack.removeLast()
-			if(project != last)
-				throw IllegalStateException("Must not happen")
+			if(asProject != last)
+				__must_not_happen()
 		}
 	}
 	@ExportGradle
-	@JvmStatic fun context(project: Project, callback: Closure<Unit>) {
-		context(project, Utils.closureToLambda0(callback))
-	}
-	@ExportGradle
-	@JvmStatic fun context(project: Any, callback: () -> Unit) {
-		context((project as ProjectScript).scriptTarget, callback)
-	}
-	@ExportGradle
 	@JvmStatic fun context(project: Any, callback: Closure<Unit>) {
-		context((project as ProjectScript).scriptTarget, Utils.closureToLambda0(callback))
+		context(project, Utils.closureToLambda0(callback))
 	}
 	@ExportGradle
 	@JvmStatic fun lastContext(): Project {
