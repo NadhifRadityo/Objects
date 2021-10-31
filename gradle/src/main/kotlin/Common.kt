@@ -1,5 +1,6 @@
 import GroovyInteroperability.closureToLambda0
 import Utils.__must_not_happen
+import Utils.applyKotlinGradle
 import groovy.lang.Closure
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -26,6 +27,7 @@ object Common {
 				Logger.init()
 				Import.init()
 			}
+			applyKotlinGradle(that)
 		}
 	}
 	@JvmStatic fun deinit() {
@@ -39,11 +41,12 @@ object Common {
 				Utils.deinit()
 				GroovyInteroperability.deinit()
 			}
+			Utils.pullKotlinFromGradle(Common)
 			onBuildFinished.reverse()
 			for(callback in onBuildFinished)
 				try { callback() } catch(e: Throwable)
 				{ exception.addSuppressed(e) }
-			Utils.pullKotlinFromGradle(Common)
+			applyKotlinGradle(that)
 		}
 		Utils.purgeThreadLocal(contextStack)
 		onBuildFinished.clear()

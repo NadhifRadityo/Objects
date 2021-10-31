@@ -52,13 +52,13 @@ class $ {
 		return Collections.unmodifiableMap(loadedModules)
 	}
 	static void __default_import_action(def info) {
-		def $that = info.importContext
-		if(!$that.contains_flag('dont_clear_last_state')) {
+		def $that = info.context
+		if(!containsFlag('dont_clear_last_state')) {
 			loadedModules.clear()
 			relativeToDir = null
 			librariesDir = null
 		}
-		if(!$that.contains_flag('export_functions_only') && !$that.contains_flag('dont_clear_last_state')) {
+		if(!containsFlag('export_functions_only') && !containsFlag('dont_clear_last_state')) {
 			set_relative_to_dir($that.buildscript.sourceFile.parentFile as File)
 			set_libraries_dir($that.buildscript.sourceFile.parentFile.parentFile as File)
 		}
@@ -67,10 +67,12 @@ class $ {
 context(this) {
 	scriptApply()
 	scriptConstruct {
+		applyKotlinGradle($)
 		$.$this = this
 		addImportAction(buildscript.sourceFile, $.&__default_import_action)
 	}
 	scriptDestruct {
+		applyKotlinGradle($)
 		$.$this = null
 		removeImportAction(buildscript.sourceFile)
 		$.relativeToDir = null

@@ -5,9 +5,13 @@ import Utils.pushKotlinToGradle
 import groovy.lang.Closure
 import groovy.lang.ExpandoMetaClass
 import groovy.lang.GroovySystem
+import groovy.lang.MetaMethod
+import org.codehaus.groovy.reflection.CachedClass
+import org.codehaus.groovy.reflection.ReflectionCache
 import org.codehaus.groovy.runtime.MethodClosure
 import org.codehaus.groovy.runtime.metaclass.ClosureMetaClass
 import org.gradle.api.Project
+import java.lang.reflect.Modifier
 import kotlin.jvm.functions.FunctionN
 
 object GroovyInteroperability {
@@ -177,20 +181,43 @@ object GroovyInteroperability {
 	}
 
 	@JvmStatic fun newExpandableMeta(that: Any) {
-		val javaClass = that::class.java
+		val javaClass = if(that is Class<*>) that else that::class.java
 		val metaClass = GroovySystem.getMetaClassRegistry().getMetaClass(javaClass)
 		if(metaClass is ExpandoMetaClass) return
 		GroovySystem.getMetaClassRegistry().setMetaClass(javaClass,
 			ExpandoMetaClass(javaClass, true, true))
 	}
 	@JvmStatic fun finishExpandableMeta(that: Any) {
-		val javaClass = that::class.java
+		val javaClass = if(that is Class<*>) that else that::class.java
 		val metaClass = GroovySystem.getMetaClassRegistry().getMetaClass(javaClass)
-		if(metaClass !is ExpandoMetaClass) return
+		if(metaClass == null || metaClass !is ExpandoMetaClass) return
 		metaClass.initialize()
 	}
+	@JvmStatic fun clearExpandableMeta(that: Any) {
+		val javaClass = if(that is Class<*>) that else that::class.java
+		GroovySystem.getMetaClassRegistry().setMetaClass(javaClass, null)
+	}
+	@JvmStatic fun closureToMetaMethod(name: String, closure: Closure<*>): MetaMethod {
+		return object: MetaMethod(arrayOf(Array<Any>::class.java)) {
+			override fun getModifiers(): Int {
+				return Modifier.PUBLIC or Modifier.STATIC or Modifier.FINAL
+			}
+			override fun getName(): String {
+				return name
+			}
+			override fun getReturnType(): Class<*> {
+				return Any::class.java
+			}
+			override fun getDeclaringClass(): CachedClass? {
+				return ReflectionCache.getCachedClass(Any::class.java)
+			}
+			override fun invoke(self: Any?, args: Array<out Any?>): Any? {
+				return closure.call(*(args[0] as Array<*>))
+			}
+		}
+	}
 	@JvmStatic fun setKotlinToGroovy(that: Any, reflnames: Array<String>?, reflname: String, classCanonical: String, value: Any?, nameProcessor: (String) -> String) {
-		val javaClass = that::class.java
+		val javaClass = if(that is Class<*>) that else that::class.java
 		val ext = if(that is Project) that.extensions.extraProperties else null
 		val metaClass = GroovySystem.getMetaClassRegistry().getMetaClass(javaClass) as? ExpandoMetaClass
 
@@ -198,24 +225,12 @@ object GroovyInteroperability {
 		for(name in names) {
 			val processedName = nameProcessor(name)
 			ext?.set(processedName, value)
-			metaClass?.registerInstanceMethod(processedName, object: Closure<Any?>(value) {
-				override fun call(arguments: Any): Any? {
-					return super.call(arguments)
-				}
-				override fun getParameterTypes(): Array<Class<*>?> {
-					return arrayOf(Array<Any?>::class.java)
-				}
-			})
+			if(value is Closure<*>)
+				metaClass?.registerInstanceMethod(closureToMetaMethod(processedName, value))
 		}
 		val internalName = "__INTERNAL_${classCanonical.replace(".", "$")}_${reflname}"
 		ext?.set(nameProcessor(internalName), value)
-		metaClass?.registerInstanceMethod(internalName, object: Closure<Any?>(value) {
-			override fun call(arguments: Any): Any? {
-				return super.call(arguments)
-			}
-			override fun getParameterTypes(): Array<Class<*>?> {
-				return arrayOf(Array<Any?>::class.java)
-			}
-		})
+		if(value is Closure<*>)
+			metaClass?.registerInstanceMethod(closureToMetaMethod(internalName, value))
 	}
 }

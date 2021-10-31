@@ -1,3 +1,4 @@
+import GroovyInteroperability.clearExpandableMeta
 import GroovyInteroperability.closureToLambda
 import GroovyInteroperability.finishExpandableMeta
 import GroovyInteroperability.newExpandableMeta
@@ -128,7 +129,6 @@ object Utils {
 		}
 	}
 
-	@JvmStatic val kotlinFunctionOverloading = HashMap<String, MutableMap<Method, KFunction<Any?>>>()
 	@ExportGradle
 	@JvmStatic val boxedToPrimitive = mapOf(
 		Int::class.javaObjectType to Int::class.javaPrimitiveType,
@@ -279,57 +279,76 @@ object Utils {
 		val first = notError.first()
 		return Pair(first.method, first.args!!)
 	}
+	data class PushedGroovy(
+		val reference: Any,
+		val names: Array<String>?,
+		val name: String,
+		val qualifiedName: String,
+		val callback: Closure<*>,
+		val nameProcessor: (String) -> String
+	)
+	@JvmStatic val pushedGroovies = ArrayList<PushedGroovy>()
+	@JvmStatic val kotlinFunctionOverloading = HashMap<String, MutableMap<Method, KFunction<Any?>>>()
 	@JvmStatic fun <T : Any> pushKotlinToGradle(obj: T) {
-		val that = Common.lastContext()
 		val kclass = obj::class as KClass<T>
-		newExpandableMeta(that)
-		kclass.functions.toTypedArray().forEach {
+		kclass.functions.forEach {
 			val id = "${kclass.qualifiedName}.${it.name}"
 			var overloads = kotlinFunctionOverloading[id]
 			if(overloads == null) {
 				overloads = mutableMapOf()
 				kotlinFunctionOverloading[id] = overloads
 				val annotation = it.findAnnotation<ExportGradle>()
-				val callback = object: Closure<Any?>(null, that) {
+				val callback = object: Closure<Any?>(null, null) {
 					override fun call(vararg args: Any?): Any? {
 						val matched = doOverloading(overloads.keys.toTypedArray(), args)
 						return overloads[matched.first]!!.call(obj, *matched.second)
 					}
 				}
-				setKotlinToGroovy(that, annotation?.names, it.name, kclass.qualifiedName!!, callback) { i -> i }
+				pushedGroovies += PushedGroovy(it, annotation?.names, it.name, kclass.qualifiedName!!, callback) { i -> i }
 			}
 			overloads[it.javaMethod!!] = it
 		}
-		kclass.memberProperties.toTypedArray().forEach {
+		kclass.memberProperties.forEach {
 			val annotation = it.findAnnotation<ExportGradle>()
-			val getCallback = object: Closure<Any?>(null, that) {
+			val getCallback = object: Closure<Any?>(null, null) {
 				override fun call(vararg args: Any?): Any? { return it.get(obj) }
 			}
-			setKotlinToGroovy(that, annotation?.names, it.name, kclass.qualifiedName!!, getCallback) { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
+			pushedGroovies += PushedGroovy(it, annotation?.names, it.name, kclass.qualifiedName!!, getCallback) { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
 			if(it is KMutableProperty<*>) {
-				val setCallback = object: Closure<Any?>(null, that) {
+				val setCallback = object: Closure<Any?>(null, null) {
 					override fun call(vararg args: Any?): Any? { return it.setter.call(obj, *args) }
 				}
-				setKotlinToGroovy(that, annotation?.names, it.name, kclass.qualifiedName!!, setCallback) { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
+				pushedGroovies += PushedGroovy(it, annotation?.names, it.name, kclass.qualifiedName!!, setCallback) { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
 			}
 		}
-		finishExpandableMeta(that)
 	}
 	@JvmStatic fun <T : Any> pullKotlinFromGradle(obj: T) {
-		val that = Common.lastContext()
 		val kclass = obj::class as KClass<T>
-		newExpandableMeta(that)
 		kotlinFunctionOverloading.clear()
-		kclass.functions.toTypedArray().forEach {
-			val annotation = it.findAnnotation<ExportGradle>()
-			setKotlinToGroovy(that, annotation?.names, it.name, kclass.qualifiedName!!, null) { i -> i }
+		kclass.functions.forEach { ref ->
+			pushedGroovies.removeIf { it.reference == ref }
 		}
-		kclass.memberProperties.toTypedArray().forEach {
-			val annotation = it.getter.findAnnotation<ExportGradle>()
-			setKotlinToGroovy(that, annotation?.names, it.name, kclass.qualifiedName!!, null) { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
-			if(it is KMutableProperty<*>)
-				setKotlinToGroovy(that, annotation?.names, it.name, kclass.qualifiedName!!, null) { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
+		kclass.memberProperties.forEach { ref ->
+			pushedGroovies.removeIf { it.reference == ref }
 		}
-		finishExpandableMeta(that)
+	}
+	@JvmStatic val objectOverloadedGradle = HashMap<Any, Array<PushedGroovy>>()
+	@ExportGradle
+	@JvmStatic fun applyKotlinGradle(obj: Any) {
+		var appliedGroovies = objectOverloadedGradle[obj]
+		if(appliedGroovies != null) {
+			for(pushed in appliedGroovies)
+				setKotlinToGroovy(obj, pushed.names, pushed.name, pushed.qualifiedName, null, pushed.nameProcessor)
+			clearExpandableMeta(obj)
+			objectOverloadedGradle.remove(obj)
+		}
+		if(pushedGroovies.isEmpty())
+			return
+		appliedGroovies = pushedGroovies.toTypedArray()
+		objectOverloadedGradle[obj] = appliedGroovies
+		newExpandableMeta(obj)
+		for(pushed in appliedGroovies)
+			setKotlinToGroovy(obj, pushed.names, pushed.name, pushed.qualifiedName, pushed.callback, pushed.nameProcessor)
+		finishExpandableMeta(obj)
 	}
 }

@@ -1,3 +1,4 @@
+import Common.lastContext
 import Utils.__must_not_happen
 import org.gradle.api.initialization.IncludedBuild
 import java.io.File
@@ -18,13 +19,17 @@ object Import {
 		actions.clear()
 	}
 
-	@JvmStatic fun __getLastImport(): ImportFile? {
+	@JvmStatic fun __getLastImport(): ImportInfo? {
 		val stack = stack.get()
-		return if(stack.size > 0) files[stack.last.importId] else null
+		return if(stack.size > 0) stack.last else null
+	}
+	@JvmStatic fun __getLastImportFile(): ImportFile? {
+		val lastImport = __getLastImport()
+		return if(lastImport != null) files[lastImport.importId] else null
 	}
 	@JvmStatic fun __getScriptFile(file: Any?): Pair<IncludedBuild?, File> {
 		val that = Common.lastContext()
-		val lastImport = __getLastImport()
+		val lastImportFile = __getLastImportFile()
 		val build: IncludedBuild?
 		val script: File
 
@@ -34,8 +39,8 @@ object Import {
 			val path = file.substring(split + 1)
 			build = that.gradle.includedBuild(buildName)
 			script = File(build.projectDir, path)
-		} else if(lastImport?.build != null) {
-			build = lastImport.build
+		} else if(lastImportFile?.build != null) {
+			build = lastImportFile.build
 			script = if(file is String && file.startsWith('/'))
 				File(build.projectDir, file)
 			else if(file is String)
@@ -140,25 +145,25 @@ object Import {
 	}
 	@ExportGradle
 	@JvmStatic fun scriptExport(key: String, value: Any?) {
-		val lastImport = __getLastImport()!!
-		lastImport.exports[key] = value
+		val lastImportFile = __getLastImportFile()!!
+		lastImportFile.exports[key] = value
 	}
 	@ExportGradle
 	@JvmStatic fun scriptApply() {
 		val that = Common.lastContext()
-		val lastImport = __getLastImport()!!
-		lastImport.context = that
+		val lastImportFile = __getLastImportFile()!!
+		lastImportFile.context = that
 	}
 	@ExportGradle
 	@JvmStatic fun scriptConstruct(callback: () -> Unit) {
-		val lastImport = __getLastImport()!!
-		lastImport.construct = callback
+		val lastImportFile = __getLastImportFile()!!
+		lastImportFile.construct = callback
 		callback()
 	}
 	@ExportGradle
 	@JvmStatic fun scriptDestruct(callback: () -> Unit) {
-		val lastImport = __getLastImport()!!
-		lastImport.destruct = callback
+		val lastImportFile = __getLastImportFile()!!
+		lastImportFile.destruct = callback
 		Common.onBuildFinished.add(callback)
 	}
 
@@ -184,12 +189,12 @@ object Import {
 	}
 	@ExportGradle
 	@JvmStatic fun containsFlag(flag: String): Boolean {
-		val that = Common.lastContext()
-		val ext = that.extensions.extraProperties
 		val lastImport = __getLastImport()
+		val that = lastImport?.context ?: lastContext()
+		val ext = that.extensions.extraProperties
 		return if(lastImport == null)
 			ext.has(flag)
 		else
-			ext.has("${lastImport.id}_${flag}")
+			ext.has("${lastImport.importId}_${flag}")
 	}
 }
