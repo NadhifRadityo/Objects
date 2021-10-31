@@ -1,3 +1,4 @@
+import GroovyInteroperability.closureToLambda
 import groovy.lang.Closure
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -21,11 +22,9 @@ import kotlin.reflect.jvm.javaMethod
 
 object Utils {
 
-	@ExportGradle
 	@JvmStatic fun init() {
 		pushKotlinToGradle(Utils)
 	}
-	@ExportGradle
 	@JvmStatic fun deinit() {
 		pullKotlinFromGradle(Utils)
 	}
@@ -125,14 +124,6 @@ object Utils {
 			} catch(ignored: Throwable) { }
 		}
 	}
-	@ExportGradle
-	@JvmStatic fun <R> closureToLambda0(closure: Closure<R>): () -> R {
-		return { closure.call() }
-	}
-	@ExportGradle
-	@JvmStatic fun <A0, R> closureToLambda1(closure: Closure<R>): (A0) -> R {
-		return { closure.call(it) }
-	}
 
 	@JvmStatic val kotlinFunctionOverloading = HashMap<String, MutableMap<Method, KFunction<Any?>>>()
 	@ExportGradle
@@ -145,68 +136,27 @@ object Utils {
 		Char::class.javaObjectType to Char::class.javaPrimitiveType,
 		Byte::class.javaObjectType to Byte::class.javaPrimitiveType,
 		Boolean::class.javaObjectType to Boolean::class.javaPrimitiveType)
-	@JvmStatic fun parseArgsVararg(method: Method, args: Array<out Any?>): Array<Any?> {
-		val result = arrayOfNulls<Any>(args.size)
-		var count = 0
-		val types = method.parameterTypes
-		for(i in types.indices) {
-			val type = types[i]
-			val arg = args[i]
-			if(type.isPrimitive) { // shallow check primitive types
-				if(arg == null)
-					throw IllegalArgumentException("Cannot cast null to $type (primitive)")
-				if(!boxedToPrimitive.containsKey(arg.javaClass))
-					throw IllegalArgumentException("Cannot cast ${arg.javaClass} to $type (primitive)")
-				// primitive will be boxed anyway, don't bother to convert it
-				result[count++] = arg
-				continue
-			} else {
-				// exact match
-				if(arg == null || type.isAssignableFrom(arg.javaClass)) {
-					result[count++] = arg
-					continue
-				}
-				// vararg type
-				if(type.isArray && type.componentType.isAssignableFrom(arg.javaClass)) {
-					val componentType = type.componentType
-					if(i != types.size - 1)
-						throw IllegalArgumentException("Vararg must be at the end of parameters")
-					for(j in i until args.size) {
-						val varargv = args[j]
-						if(componentType.isPrimitive) {
-							if(varargv == null)
-								throw IllegalArgumentException("Cannot cast null to $componentType (primitive) [vararg $j]")
-							if(!boxedToPrimitive.containsKey(varargv.javaClass))
-								throw IllegalArgumentException("Cannot cast ${varargv.javaClass} to $componentType (primitive) [vararg $j]")
-						}
-						if(varargv != null && !componentType.isAssignableFrom(varargv.javaClass))
-							throw IllegalArgumentException("Cannot cast ${varargv.javaClass} to $componentType [vararg $j]")
-					}
-					val vararg = java.lang.reflect.Array.newInstance(type.componentType, args.size - i)
-					System.arraycopy(args, i, vararg, 0, java.lang.reflect.Array.getLength(vararg))
-					result[count++] = vararg
-					continue
-				}
-				throw IllegalArgumentException("Cannot cast ${arg.javaClass} to $type")
-			}
-		}
-		return result.copyOfRange(0, count)
-	}
-	@JvmStatic fun doOverloading(methods: Array<Method>, args: Array<out Any?>): Method {
+	@JvmStatic fun doOverloading(methods: Array<Method>, args: Array<out Any?>): Pair<Method, Array<Any?>> {
+		data class CallData(
+			var method: Method,
+			var args: Array<Any?>? = null,
+			var error: String? = null,
+			var notExactMatchCount: Int = 0,
+			var changedArgsCount: Int = 0
+		)
 		/* Length analysis
 		 * n-1, if last param is vararg, then that vararg's length is 0
 		 * n  , equal length, need to check more about the inheritance
 		 * n.., vararg argument
 		 */
-		val filteredMethods = arrayOfNulls<Method>(methods.size)
-		var filteredCount = 0
+		val filteredMethods = mutableListOf<CallData>()
 		val argsLength = args.size
 		for(method in methods) {
 			val types = method.parameterTypes
 			// empty arguments
 			if(types.isEmpty()) {
 				if(args.isEmpty())
-					filteredMethods[filteredCount++] = method
+					filteredMethods += CallData(method)
 				continue
 			}
 			val lastParam = types.last()
@@ -214,66 +164,117 @@ object Utils {
 			if(lastParam.isArray) {
 				// vararg length may vary from 0...n
 				if(args.size >= types.size - 1) {
-					filteredMethods[filteredCount++] = method
+					filteredMethods += CallData(method)
 					continue
 				}
 			}
 			// if length at least the same
 			if(types.size == argsLength)
-				filteredMethods[filteredCount++] = method
+				filteredMethods += CallData(method)
 		}
 		/* Type analysis
 		 * every parameter will be checked if it's assignable from args
 		 */
-		val filteredMethods0 = arrayOfNulls<Method>(filteredCount)
-		var filteredCount0 = 0
-		Outer@for(i in 0 until filteredCount) {
-			val method = filteredMethods[i]!!
+		val pushArg: (CallData, Int, Any?) -> Unit = { data, i, arg ->
+			if(data.args == null)
+				data.args = arrayOfNulls(args.size)
+			data.args!![i] = arg
+		}
+		val tryChangeArg: (CallData, Any?, Class<*>) -> Any? = { data, arg, type ->
+			var result = arg
+			if(arg is Closure<*> && Function::class.java.isAssignableFrom(type)) {
+				result = closureToLambda(arg, type as Class<Function<*>>)
+				data.changedArgsCount++
+			}
+			result
+		}
+		Outer@for(data in filteredMethods) {
+			val method = data.method
 			val types = method.parameterTypes
-			for(j in types.indices) {
-				val type = types[j]
-				val arg = args[j]
+			for(i in types.indices) {
+				val type = types[i]
+				val arg = tryChangeArg(data, args[i], type)
 				if(type.isPrimitive) {
-					if(arg == null) continue@Outer
-					if(!boxedToPrimitive.containsKey(arg.javaClass)) continue@Outer
+					if(arg == null) {
+						data.error = "Cannot cast null to $type (primitive)"
+						continue@Outer
+					}
+					if(!boxedToPrimitive.containsKey(arg.javaClass)) {
+						data.error = "Cannot cast ${arg.javaClass} to $type (primitive)"
+						continue@Outer
+					}
+					pushArg(data, i, arg)
 					continue
 				} else {
-					if(arg == null || type.isAssignableFrom(arg.javaClass))
-						continue
-					if(type.isArray && type.componentType.isAssignableFrom(arg.javaClass)) {
-						val componentType = type.componentType
-						if(j != types.size - 1)
-							continue@Outer
-						for(k in j until args.size) {
-							val varargv = args[k]
-							if(componentType.isPrimitive) {
-								if(varargv == null) continue@Outer
-								if(!boxedToPrimitive.containsKey(varargv.javaClass)) continue@Outer
-							}
-							if(varargv != null && !componentType.isAssignableFrom(varargv.javaClass))
-								continue@Outer
-						}
+					if(arg == null || type.isAssignableFrom(arg.javaClass)) {
+						if(arg != null && type != arg.javaClass)
+							data.notExactMatchCount++
+						pushArg(data, i, arg)
 						continue
 					}
+					if(type.isArray && type.componentType.isAssignableFrom(arg.javaClass)) {
+						val componentType = type.componentType
+						if(i != types.size - 1) {
+							data.error = "Vararg must be at the end of parameters"
+							continue@Outer
+						}
+						for(k in i until args.size) {
+							val varargv = args[k]
+							if(componentType.isPrimitive) {
+								if(varargv == null) {
+									data.error = "Cannot cast null to $componentType (primitive) [vararg $i]"
+									continue@Outer
+								}
+								if(!boxedToPrimitive.containsKey(varargv.javaClass)) {
+									data.error = "Cannot cast ${varargv.javaClass} to $componentType (primitive) [vararg $i]"
+									continue@Outer
+								}
+							}
+							if(varargv != null && !componentType.isAssignableFrom(varargv.javaClass)) {
+								data.error = "Cannot cast ${varargv.javaClass} to $componentType [vararg $i]"
+								continue@Outer
+							}
+						}
+						val vararg = java.lang.reflect.Array.newInstance(type.componentType, args.size - i)
+						System.arraycopy(args, i, vararg, 0, java.lang.reflect.Array.getLength(vararg))
+						pushArg(data, i, vararg)
+						continue
+					}
+					data.error = "Cannot cast ${arg.javaClass} to $type"
 					continue@Outer
 				}
 			}
-			filteredMethods0[filteredCount0++] = method
 		}
-		if(filteredCount0 == 0)
+		val notError = filteredMethods.filter { it.error == null }
+		// Only happen when the parameter is empty,
+		// thus args.size always zero. But whatever.
+		for(data in notError) if(data.args == null)
+			data.args = arrayOfNulls(args.size)
+		if(notError.isEmpty())
 			throw IllegalStateException("No matched method definition for [${args.joinToString(", ") { it.toString() }}] \n " +
-					"Available methods: \n${methods.joinToString("\n") { "- $it" }}")
-		if(filteredCount0 > 1)
-			throw IllegalStateException("Ambiguous method calls: \n${filteredMethods0.copyOfRange(0, filteredCount0).joinToString("\n") { "- $it" }}")
-		return filteredMethods0[0]!!
-	}
-	@JvmStatic fun replaceArguments(args: Array<out Any?>): Array<out Any?> {
-		val result = arrayOfNulls<Any?>(args.size)
-		for(i in args.indices) {
-			val value = args[i]
-			result[i] = value
+					"Available methods: \n${filteredMethods.joinToString("\n") { "- ${it.method} (${it.error})" }}")
+		if(notError.size > 1) {
+			/* Exact match
+			 */
+			val minNotExactMatchCount = notError.minOf { it.notExactMatchCount }
+			val exactMatch = notError.filter { it.notExactMatchCount == minNotExactMatchCount }
+			if(exactMatch.size == 1) {
+				val first = exactMatch.first()
+				return Pair(first.method, first.args!!)
+			}
+			/* Prefer args not changed
+			 */
+			val minChangedArgsCount = exactMatch.minOf { it.changedArgsCount }
+			val notChangedArgs = exactMatch.filter { it.changedArgsCount == minChangedArgsCount }
+			if(notChangedArgs.size == 1) {
+				val first = notChangedArgs.first()
+				return Pair(first.method, first.args!!)
+			}
+			throw IllegalStateException("Ambiguous method calls [${args.joinToString(", ") { it.toString() }}] \n " +
+					"Matched methods: \n${notError.joinToString("\n") { "- ${it.method}" }}")
 		}
-		return result
+		val first = notError.first()
+		return Pair(first.method, first.args!!)
 	}
 	@JvmStatic fun setKotlinToGradle(reflnames: Array<String>?, reflname: String, classCanonical: String, value: Any?, nameProcessor: (String) -> String) {
 		val that = Common.lastContext()
@@ -294,10 +295,9 @@ object Utils {
 				kotlinFunctionOverloading[id] = overloads
 				val annotation = it.findAnnotation<ExportGradle>()
 				val callback = object: Closure<Any?>(null, that) {
-					override fun call(vararg args0: Any?): Any? {
-						val args = replaceArguments(args0)
+					override fun call(vararg args: Any?): Any? {
 						val matched = doOverloading(overloads.keys.toTypedArray(), args)
-						return overloads[matched]!!.call(obj, *parseArgsVararg(matched, args))
+						return overloads[matched.first]!!.call(obj, *matched.second)
 					}
 				}
 				setKotlinToGradle(annotation?.names, it.name, kclass.qualifiedName!!, callback) { i -> i }
@@ -320,6 +320,7 @@ object Utils {
 	}
 	@JvmStatic fun <T : Any> pullKotlinFromGradle(obj: T) {
 		val kclass = obj::class as KClass<T>
+		kotlinFunctionOverloading.clear()
 		kclass.functions.forEach {
 			val annotation = it.findAnnotation<ExportGradle>()
 			setKotlinToGradle(annotation?.names, it.name, kclass.qualifiedName!!, null) { i -> i }

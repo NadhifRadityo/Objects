@@ -1,3 +1,4 @@
+import GroovyInteroperability.closureToLambda0
 import Utils.__must_not_happen
 import groovy.lang.Closure
 import org.gradle.api.GradleException
@@ -19,6 +20,7 @@ object Common {
 			gradle.buildFinished { deinit() }
 			Utils.pushKotlinToGradle(Common)
 			run {
+				GroovyInteroperability.init()
 				Utils.init()
 				Progress.init()
 				Logger.init()
@@ -35,6 +37,7 @@ object Common {
 				Logger.deinit()
 				Progress.deinit()
 				Utils.deinit()
+				GroovyInteroperability.deinit()
 			}
 			onBuildFinished.reverse()
 			for(callback in onBuildFinished)
@@ -69,7 +72,7 @@ object Common {
 	}
 	@ExportGradle
 	@JvmStatic fun context(project: Any, callback: Closure<Unit>) {
-		context(project, Utils.closureToLambda0(callback))
+		context(project, closureToLambda0(callback))
 	}
 	@ExportGradle
 	@JvmStatic fun lastContext(): Project {

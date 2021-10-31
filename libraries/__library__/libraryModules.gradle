@@ -68,11 +68,11 @@ context(this) {
 	scriptApply()
 	scriptInit {
 		$.$this = this
-		Import.addImportAction(buildscript.sourceFile, $.&__default_import_action)
+		addImportAction(buildscript.sourceFile, $.&__default_import_action)
 	}
 	scriptDeinit {
 		$.$this = null
-		Import.removeImportAction(buildscript.sourceFile)
+		removeImportAction(buildscript.sourceFile)
 		$.relativeToDir = null
 		$.librariesDir = null
 	}
