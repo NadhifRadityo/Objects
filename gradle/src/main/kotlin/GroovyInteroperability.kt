@@ -243,15 +243,50 @@ object GroovyInteroperability {
 	fun setMetaMethod(metaClass: MetaClassImpl, name: String, declaringClass: Class<*>, closure: Closure<*>?) {
 		val metaMethodIndex = FIELD_MetaClassImpl_metaMethodIndex.get(metaClass) as MetaMethodIndex
 		val allMethods = FIELD_MetaClassImpl_allMethods.get(metaClass) as MutableList<MetaMethod>
+		val header = metaMethodIndex.getHeader(declaringClass)
 		if(closure == null) {
-			val metaMethod = allMethods.firstOrNull { it is GroovyInteroperabilityMetaMethodImpl &&
-					it.name0 == name && it.declaringClass0 == declaringClass } ?: return
-			allMethods -= metaMethod
+			run {
+				val iterator = allMethods.iterator()
+				while(iterator.hasNext()) {
+					val elem = iterator.next()
+					val asImpl = elem as? GroovyInteroperabilityMetaMethodImpl
+					if(asImpl == null || asImpl.name0 != name || asImpl.declaringClass0 != declaringClass)
+						continue
+					iterator.remove()
+					break
+				}
+			}
+			run {
+				val table = metaMethodIndex.table
+				val hash = MetaMethodIndex.hash(31 * declaringClass.hashCode() + name.hashCode())
+				val index = hash and (table.size - 1)
+				var elem = table[index]
+				while(elem != null) {
+					val asImpl = elem.methods as? GroovyInteroperabilityMetaMethodImpl
+					if(elem.hash != hash || asImpl == null || asImpl.name0 != name || asImpl.declaringClass0 != declaringClass) {
+						elem = elem.nextHashEntry
+						continue
+					}
+					table[index] = elem.nextHashEntry
+					break
+				}
+			}
+			run {
+				var head = header.head
+				while(head != null) {
+					val asImpl = head.methods as? GroovyInteroperabilityMetaMethodImpl
+					if(asImpl == null || asImpl.name0 != name || asImpl.declaringClass0 != declaringClass) {
+						head = head.nextClassEntry
+						continue
+					}
+					header.head = head.nextClassEntry
+					break
+				}
+			}
 			return
 		}
 
 		val metaMethod = GroovyInteroperabilityMetaMethodImpl(name, declaringClass, closure)
-		val header = metaMethodIndex.getHeader(declaringClass)
 		allMethods += metaMethod
 		METHOD_MetaClassImpl_addMetaMethodToIndex.invoke(metaClass, metaMethod, header)
 	}

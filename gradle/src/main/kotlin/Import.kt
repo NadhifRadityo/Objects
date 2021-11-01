@@ -116,24 +116,21 @@ object Import {
 				ext.set(asVariable, Collections.unmodifiableMap(importFile.exports))
 			return@postCheck importFile.imports.add(importInfo)
 		}
-		val catchCheck: (Throwable) -> Throwable? = catchCheck@{ e ->
-			importFile.imports.remove(importInfo)
-			return@catchCheck e
-		}
 		val preAction: () -> Unit = preAction@{
-			stack.addLast(importInfo)
 			for(j in actions.indices step 2)
 				actions[j](importInfo)
 		}
 		val postAction: () -> Unit = postAction@{
 			for(j in actions.size - 1 downTo 0 step 2)
 				actions[j](importInfo)
-			val lastStack = stack.removeLast()
-			if(importInfo != lastStack)
-				__must_not_happen()
+		}
+		val catchCheck: (Throwable) -> Throwable? = catchCheck@{ e ->
+			importFile.imports.remove(importInfo)
+			return@catchCheck e
 		}
 
 		try {
+			stack.addLast(importInfo)
 			val preCheckResult = preCheck()
 			preAction()
 			if(preCheckResult)
@@ -144,6 +141,10 @@ object Import {
 		} catch(e: Throwable) {
 			val e0 = catchCheck(e)
 			if(e0 != null) throw e0
+		} finally {
+			val lastStack = stack.removeLast()
+			if(importInfo != lastStack)
+				__must_not_happen()
 		}
 		return Collections.unmodifiableMap(importFile.exports)
 	}

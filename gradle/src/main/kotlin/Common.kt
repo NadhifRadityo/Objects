@@ -72,8 +72,6 @@ object Common {
 		stack.addLast(context)
 		try {
 			callback()
-		} catch(e: Throwable) {
-			throw Error(e)
 		} finally {
 			val last = stack.removeLast()
 			if(context != last)
