@@ -1,5 +1,7 @@
 import Common.lastContext
+import Common.onBuildFinished
 import Utils.__must_not_happen
+import Utils.attachObject
 import org.gradle.api.initialization.IncludedBuild
 import java.io.File
 import java.util.*
@@ -157,6 +159,7 @@ object Import {
 		val lastImportFile = __getLastImportFile()!!
 		val context = lastContext()
 		lastImportFile.context = context
+		attachObject(context)
 	}
 	@ExportGradle
 	@JvmStatic
@@ -170,7 +173,7 @@ object Import {
 	fun scriptDestruct(callback: () -> Unit) {
 		val lastImportFile = __getLastImportFile()!!
 		lastImportFile.destruct = callback
-		Common.onBuildFinished.add(callback)
+		onBuildFinished += callback
 	}
 
 	@ExportGradle

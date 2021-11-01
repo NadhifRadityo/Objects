@@ -1,9 +1,9 @@
 import GroovyInteroperability.closureToLambda0
 import Utils.__must_not_happen
-import Utils.applyKotlinGradle
+import Utils.attachObject
+import Utils.detachObject
 import groovy.lang.Closure
 import org.gradle.api.GradleException
-import org.gradle.api.Project
 import java.util.*
 
 object Common {
@@ -12,15 +12,15 @@ object Common {
 	@JvmStatic
 	internal val onBuildFinished = ArrayList<() -> Unit>()
 	@JvmStatic
-	private var initContext: Any? = null
+	private var initContext: Context? = null
 
 	@JvmStatic
 	fun init() {
 		if(initContext != null)
 			throw IllegalStateException("Init must be called once")
-		val that = lastContext().that
-		initContext = that
-		context(that) {
+		val context = lastContext()
+		initContext = context
+		context(context.that) {
 			val gradle = Utils.asGradle()
 			gradle.buildFinished { deinit() }
 			Utils.pushKotlinToGradle(Common)
@@ -31,14 +31,14 @@ object Common {
 				Logger.init()
 				Import.init()
 			}
-			applyKotlinGradle(that)
+			attachObject(context)
 		}
 	}
 	@JvmStatic
 	fun deinit() {
-		val that = initContext!!
+		val context = initContext!!
 		val exception = GradleException("Error while running callback")
-		context(that) {
+		context(context.that) {
 			run {
 				Import.deinit()
 				Logger.deinit()
@@ -51,7 +51,7 @@ object Common {
 			for(callback in onBuildFinished)
 				try { callback() } catch(e: Throwable)
 				{ exception.addSuppressed(e) }
-			applyKotlinGradle(that)
+			detachObject(context)
 		}
 		Utils.purgeThreadLocal(contextStack)
 		onBuildFinished.clear()

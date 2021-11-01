@@ -50,15 +50,14 @@ def loaded_modules = { ->
 	return Collections.unmodifiableMap(loadedModules)
 }
 def __default_import_action = { def info ->
-	def $that = info.context
 	if(!containsFlag('dont_clear_last_state')) {
 		loadedModules.clear()
 		relativeToDir = null
 		librariesDir = null
 	}
 	if(!containsFlag('export_functions_only') && !containsFlag('dont_clear_last_state')) {
-		set_relative_to_dir($that.buildscript.sourceFile.parentFile as File)
-		set_libraries_dir($that.buildscript.sourceFile.parentFile.parentFile as File)
+		set_relative_to_dir(buildscript.sourceFile.parentFile as File)
+		set_libraries_dir(buildscript.sourceFile.parentFile.parentFile as File)
 	}
 }
 

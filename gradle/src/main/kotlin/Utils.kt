@@ -1,3 +1,4 @@
+import Common.onBuildFinished
 import GroovyInteroperability.closureToLambda
 import GroovyInteroperability.setKotlinToGroovy
 import groovy.lang.Closure
@@ -18,6 +19,7 @@ import kotlin.reflect.KMutableProperty
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.functions
 import kotlin.reflect.full.memberProperties
+import kotlin.reflect.jvm.javaMethod
 
 object Utils {
 
@@ -347,7 +349,8 @@ object Utils {
 				}
 			}
 			pushedGroovies += PushedGroovy(function, annotation?.names, function.name, kclass.qualifiedName!!, callback) { i -> i }
-			jclass.methods.filter { m -> m.name == function.name }.forEach {
+			val baseName = function.javaMethod?.name ?: function.name
+			jclass.declaredMethods.filter { m -> m.name == baseName }.forEach {
 					m -> if(!overloads.contains(m)) overloads += m; }
 		}
 		for(member in kclass.memberProperties) {
@@ -377,22 +380,61 @@ object Utils {
 			pushedGroovies.removeIf { it.reference == member }
 		}
 	}
+
 	@JvmStatic
-	val objectOverloadedGradle = HashMap<Any, Array<PushedGroovy>>()
+	internal val injectedAnyObjects = HashMap<Any, Array<PushedGroovy>>()
+	@JvmStatic
+	internal val injectedProjectObjects = HashMap<Project, Array<PushedGroovy>>()
 	@ExportGradle
 	@JvmStatic
-	fun applyKotlinGradle(obj: Any) {
-		var appliedGroovies = objectOverloadedGradle[obj]
-		if(appliedGroovies != null) {
-			for(pushed in appliedGroovies)
-				setKotlinToGroovy(obj, pushed.names, pushed.name, pushed.qualifiedName, null, pushed.nameProcessor)
-			objectOverloadedGradle.remove(obj)
-		}
+	fun attachObject(context: Context) {
+		attachAnyObject(context.that)
+		attachProjectObject(context.project)
+	}
+	@ExportGradle
+	@JvmStatic
+	fun attachAnyObject(that: Any) {
+		if(injectedAnyObjects.containsKey(that))
+			detachAnyObject(that)
 		if(pushedGroovies.isEmpty())
 			return
-		appliedGroovies = pushedGroovies.toTypedArray()
-		objectOverloadedGradle[obj] = appliedGroovies
+		val appliedGroovies = pushedGroovies.toTypedArray()
+		injectedAnyObjects[that] = appliedGroovies
 		for(pushed in appliedGroovies)
-			setKotlinToGroovy(obj, pushed.names, pushed.name, pushed.qualifiedName, pushed.callback, pushed.nameProcessor)
+			setKotlinToGroovy(that, null, pushed.names, pushed.name, pushed.qualifiedName, pushed.callback, pushed.nameProcessor)
+		onBuildFinished += { detachAnyObject(that) }
+	}
+	@ExportGradle
+	@JvmStatic
+	fun attachProjectObject(project: Project) {
+		if(injectedProjectObjects.containsKey(project))
+			detachProjectObject(project)
+		if(pushedGroovies.isEmpty())
+			return
+		val appliedGroovies = pushedGroovies.toTypedArray()
+		injectedProjectObjects[project] = appliedGroovies
+		for(pushed in appliedGroovies)
+			setKotlinToGroovy(null, project, pushed.names, pushed.name, pushed.qualifiedName, pushed.callback, pushed.nameProcessor)
+		onBuildFinished += { detachProjectObject(project) }
+	}
+	@ExportGradle
+	@JvmStatic
+	fun detachObject(context: Context) {
+		detachAnyObject(context.that)
+		detachProjectObject(context.project)
+	}
+	@ExportGradle
+	@JvmStatic
+	fun detachAnyObject(that: Any) {
+		val appliedGroovies = injectedAnyObjects.remove(that) ?: return
+		for(pushed in appliedGroovies)
+			setKotlinToGroovy(that, null, pushed.names, pushed.name, pushed.qualifiedName, null, pushed.nameProcessor)
+	}
+	@ExportGradle
+	@JvmStatic
+	fun detachProjectObject(project: Project) {
+		val appliedGroovies = injectedProjectObjects.remove(project) ?: return
+		for(pushed in appliedGroovies)
+			setKotlinToGroovy(null, project, pushed.names, pushed.name, pushed.qualifiedName, null, pushed.nameProcessor)
 	}
 }

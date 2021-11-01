@@ -256,19 +256,19 @@ object GroovyInteroperability {
 		METHOD_MetaClassImpl_addMetaMethodToIndex.invoke(metaClass, metaMethod, header)
 	}
 	@JvmStatic
-	fun setKotlinToGroovy(that: Any, reflnames: Array<String>?, reflname: String, classCanonical: String, value: Any?, nameProcessor: (String) -> String) {
-		val ext = (that as? Project)?.extensions?.extraProperties
+	fun setKotlinToGroovy(that: Any?, project: Project?, reflnames: Array<String>?, reflname: String, classCanonical: String, value: Any?, nameProcessor: (String) -> String) {
+		val ext = project?.extensions?.extraProperties
 		val metaClass = (that as? GroovyObject)?.metaClass as? MetaClassImpl
 		val names = if(reflnames != null) if(reflnames.isNotEmpty()) reflnames else arrayOf(reflname) else arrayOf()
 
 		for(name in names) {
 			val processedName = nameProcessor(name)
-//			ext?.set(processedName, value)
+			ext?.set(processedName, value)
 			if(metaClass != null && (value == null || value is Closure<*>))
 				setMetaMethod(metaClass, processedName, that.javaClass, value as Closure<*>?)
 		}
 		val internalName = nameProcessor("__INTERNAL_${classCanonical.replace(".", "$")}_${reflname}")
-//		ext?.set(internalName, value)
+		ext?.set(internalName, value)
 		if(metaClass != null && (value == null || value is Closure<*>))
 			setMetaMethod(metaClass, internalName, that.javaClass, value as Closure<*>?)
 	}

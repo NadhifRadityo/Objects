@@ -4,7 +4,6 @@ plugins {
 
 Common.context(this) {
     Common.init()
-    llog "AAAA"
 }
 
 dependencies {
