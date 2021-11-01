@@ -1,5 +1,3 @@
-import org.gradle.api.Project
-
 /**
  * Store from where the script is imported from.
  *
@@ -10,7 +8,7 @@ import org.gradle.api.Project
  * [actions] an even sized array, where `n/2` is pre action, and `n/2+1` is post action.
  */
 data class ImportInfo(
-	val context: Project,
+	val context: Context,
 	val importId: String,
 	val actions: List<(ImportInfo) -> Unit>,
 )

@@ -7,14 +7,18 @@ import org.gradle.api.Project
 import java.util.*
 
 object Common {
-	@JvmStatic private val contextStack = ThreadLocal.withInitial<LinkedList<Project>> { LinkedList() }
-	@JvmStatic internal val onBuildFinished = ArrayList<() -> Unit>()
-	@JvmStatic private var initContext: Project? = null
+	@JvmStatic
+	private val contextStack = ThreadLocal.withInitial<LinkedList<Context>> { LinkedList() }
+	@JvmStatic
+	internal val onBuildFinished = ArrayList<() -> Unit>()
+	@JvmStatic
+	private var initContext: Any? = null
 
-	@JvmStatic fun init() {
+	@JvmStatic
+	fun init() {
 		if(initContext != null)
 			throw IllegalStateException("Init must be called once")
-		val that = lastContext()
+		val that = lastContext().that
 		initContext = that
 		context(that) {
 			val gradle = Utils.asGradle()
@@ -30,7 +34,8 @@ object Common {
 			applyKotlinGradle(that)
 		}
 	}
-	@JvmStatic fun deinit() {
+	@JvmStatic
+	fun deinit() {
 		val that = initContext!!
 		val exception = GradleException("Error while running callback")
 		context(that) {
@@ -54,31 +59,35 @@ object Common {
 		if(exception.suppressed.isNotEmpty())
 			throw exception
 	}
-	@JvmStatic fun initProject() {
+	@JvmStatic
+	fun initProject() {
 
 	}
 
 	@ExportGradle
-	@JvmStatic fun context(project: Any, callback: () -> Unit) {
-		val asProject = Utils.asProject(project)
+	@JvmStatic
+	fun context(that: Any, callback: () -> Unit) {
+		val context = Context(that, Utils.asProject(that))
 		val stack = contextStack.get()
-		stack.addLast(asProject)
+		stack.addLast(context)
 		try {
 			callback()
 		} catch(e: Throwable) {
 			throw Error(e)
 		} finally {
 			val last = stack.removeLast()
-			if(asProject != last)
+			if(context != last)
 				__must_not_happen()
 		}
 	}
 	@ExportGradle
-	@JvmStatic fun context(project: Any, callback: Closure<Unit>) {
-		context(project, closureToLambda0(callback))
+	@JvmStatic
+	fun context(that: Any, callback: Closure<Unit>) {
+		context(that, closureToLambda0(callback))
 	}
 	@ExportGradle
-	@JvmStatic fun lastContext(): Project {
+	@JvmStatic
+	fun lastContext(): Context {
 		val stack = contextStack.get()
 		if(stack.size == 0)
 			throw IllegalStateException("context is not available")

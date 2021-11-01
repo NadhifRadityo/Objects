@@ -5,13 +5,14 @@ plugins {
 
 buildDir = '../__target__/__sources__/'
 
-context(this) {
-    def a = scriptImport('libraryModules.gradle', 'aa')
-    llog aa.set_relative_to_dir
-    llog a.set_relative_to_dir
+//context(this) {
+//    scriptImport('libraryModules.gradle')
+//    this.rootProject.metaClass.methods.forEach {
+//        llog it
+//    }
 
 //    def module = ext_libraryModules_module
 //    module('GameLibrary - LWJGL')
 
 //    scriptImport('library.gradle')
-}
+//}

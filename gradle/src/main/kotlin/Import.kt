@@ -36,7 +36,7 @@ object Import {
 	}
 	@JvmStatic
 	fun __getScriptFile(scriptObj: Any): Pair<IncludedBuild?, File> {
-		val that = lastContext()
+		val project = lastContext().project
 		val lastImportFile = __getLastImportFile()
 		val build: IncludedBuild?
 		val scriptFile: File
@@ -45,24 +45,24 @@ object Import {
 			val split = scriptObj.indexOf(':')
 			val buildName = scriptObj.substring(0, split)
 			val path = scriptObj.substring(split + 1)
-			build = that.gradle.includedBuild(buildName)
+			build = project.gradle.includedBuild(buildName)
 			scriptFile = File(build.projectDir, path)
 		} else if(lastImportFile?.build != null) {
 			build = lastImportFile.build
 			scriptFile = if(scriptObj is String && scriptObj.startsWith('/'))
 				File(build.projectDir, scriptObj)
 			else if(scriptObj is String)
-				File(that.buildscript.sourceFile!!.parentFile, scriptObj)
+				File(project.buildscript.sourceFile!!.parentFile, scriptObj)
 			else if(scriptObj is File)
 				scriptObj
 			else
 				throw IllegalArgumentException("Unsupported argument type")
 		} else if(scriptObj is String && scriptObj.startsWith('/')) {
 			build = null
-			scriptFile = File(that.rootDir, scriptObj)
+			scriptFile = File(project.rootDir, scriptObj)
 		} else {
 			build = null
-			scriptFile = that.file(scriptObj)
+			scriptFile = project.file(scriptObj)
 		}
 		return Pair(build, scriptFile)
 	}
@@ -81,8 +81,9 @@ object Import {
 	@ExportGradle
 	@JvmStatic @JvmOverloads
 	fun scriptImport(scriptObj: Any, asVariable: String? = null, actions: Array<(ImportInfo) -> Unit> = arrayOf()): Map<String, Any?> {
-		val that = lastContext()
-		val ext = that.extensions.extraProperties
+		val context = lastContext()
+		val project = context.project
+		val ext = project.extensions.extraProperties
 		val stack = stack.get()
 		val (build, scriptFile) = __getScriptFile(scriptObj)
 
@@ -95,7 +96,7 @@ object Import {
 		val importFile = files.computeIfAbsent(scriptId) {
 			ImportFile(build, scriptFile, scriptId, null, null, null, HashMap(), ArrayList())
 		}
-		val importInfo = ImportInfo(that, scriptId, actions.toList())
+		val importInfo = ImportInfo(context, scriptId, actions.toList())
 		if(importFile.file.canonicalPath != scriptPath)
 			throw IllegalStateException("Duplicate gradle script id \"$scriptId\", another " +
 					"import is from \"${importFile.file.canonicalPath}\"")
@@ -134,7 +135,7 @@ object Import {
 			val preCheckResult = preCheck()
 			preAction()
 			if(preCheckResult)
-				that.apply { it.from(that.relativePath(scriptFile)) }
+				project.apply { it.from(project.relativePath(scriptFile)) }
 			this.actions[scriptPath]?.let { it(importInfo) }
 			postAction()
 			postCheck()
@@ -153,9 +154,9 @@ object Import {
 	@ExportGradle
 	@JvmStatic
 	fun scriptApply() {
-		val that = lastContext()
 		val lastImportFile = __getLastImportFile()!!
-		lastImportFile.context = that
+		val context = lastContext()
+		lastImportFile.context = context
 	}
 	@ExportGradle
 	@JvmStatic
@@ -191,16 +192,16 @@ object Import {
 	@JvmStatic
 	fun includeFlags(vararg flags: String): Array<(ImportInfo) -> Unit> {
 		return arrayOf(
-			{ importInfo -> for(flag in flags) importInfo.context.extensions.extraProperties.set("${importInfo.importId}_${flag}", true) },
-			{ importInfo -> for(flag in flags) importInfo.context.extensions.extraProperties.set("${importInfo.importId}_${flag}", null) }
+			{ importInfo -> for(flag in flags) importInfo.context.project.extensions.extraProperties.set("${importInfo.importId}_${flag}", true) },
+			{ importInfo -> for(flag in flags) importInfo.context.project.extensions.extraProperties.set("${importInfo.importId}_${flag}", null) }
 		)
 	}
 	@ExportGradle
 	@JvmStatic
 	fun containsFlag(flag: String): Boolean {
 		val lastImport = __getLastImport()
-		val that = lastImport?.context ?: lastContext()
-		val ext = that.extensions.extraProperties
+		val context = lastImport?.context ?: lastContext()
+		val ext = context.project.extensions.extraProperties
 		return if(lastImport == null)
 			ext.has(flag)
 		else

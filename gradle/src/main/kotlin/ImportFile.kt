@@ -28,13 +28,13 @@ open class ImportFile(
 	val build: IncludedBuild?,
 	val file: File,
 	val id: String,
-	context: Project?,
+	context: Context?,
 	construct: (() -> Unit)?,
 	destruct: (() -> Unit)?,
 	exports: MutableMap<String, Any?>,
 	imports: MutableList<ImportInfo>,
 ) {
-	var context: Project? = context
+	var context: Context? = context
 		internal set
 	var construct: (() -> Unit)? = construct
 		internal set

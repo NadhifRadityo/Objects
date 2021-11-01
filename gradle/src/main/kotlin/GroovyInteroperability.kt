@@ -2,14 +2,12 @@ import Utils.__invalid_type
 import Utils.__must_not_happen
 import Utils.pullKotlinFromGradle
 import Utils.pushKotlinToGradle
-import groovy.lang.Closure
-import groovy.lang.ExpandoMetaClass
-import groovy.lang.GroovySystem
-import groovy.lang.MetaMethod
+import groovy.lang.*
 import org.codehaus.groovy.reflection.CachedClass
 import org.codehaus.groovy.reflection.ReflectionCache
 import org.codehaus.groovy.runtime.MethodClosure
 import org.codehaus.groovy.runtime.metaclass.ClosureMetaClass
+import org.codehaus.groovy.runtime.metaclass.MetaMethodIndex
 import org.gradle.api.Project
 import java.lang.reflect.Modifier
 import kotlin.jvm.functions.FunctionN
@@ -209,61 +207,69 @@ object GroovyInteroperability {
 	}
 
 	@JvmStatic
-	fun newExpandableMeta(that: Any) {
-		val javaClass = if(that is Class<*>) that else that::class.java
-		val metaClass = GroovySystem.getMetaClassRegistry().getMetaClass(javaClass)
-		if(metaClass is ExpandoMetaClass) return
-		GroovySystem.getMetaClassRegistry().setMetaClass(javaClass,
-			ExpandoMetaClass(javaClass, true, true))
-	}
+	val FIELD_MetaClassImpl_metaMethodIndex = MetaClassImpl::class.java.getDeclaredField("metaMethodIndex")
 	@JvmStatic
-	fun finishExpandableMeta(that: Any) {
-		val javaClass = if(that is Class<*>) that else that::class.java
-		val metaClass = GroovySystem.getMetaClassRegistry().getMetaClass(javaClass)
-		if(metaClass == null || metaClass !is ExpandoMetaClass) return
-		metaClass.initialize()
-	}
+	val FIELD_MetaClassImpl_allMethods = MetaClassImpl::class.java.getDeclaredField("allMethods")
 	@JvmStatic
-	fun clearExpandableMeta(that: Any) {
-		val javaClass = if(that is Class<*>) that else that::class.java
-		GroovySystem.getMetaClassRegistry().setMetaClass(javaClass, null)
+	val METHOD_MetaClassImpl_addMetaMethodToIndex = MetaClassImpl::class.java.getDeclaredMethod("addMetaMethodToIndex", MetaMethod::class.java, MetaMethodIndex.Header::class.java)
+	init {
+		FIELD_MetaClassImpl_metaMethodIndex.isAccessible = true
+		FIELD_MetaClassImpl_allMethods.isAccessible = true
+		METHOD_MetaClassImpl_addMetaMethodToIndex.isAccessible = true
 	}
-	@JvmStatic
-	fun closureToMetaMethod(name: String, closure: Closure<*>): MetaMethod {
-		return object: MetaMethod(arrayOf(Array<Any>::class.java)) {
-			override fun getModifiers(): Int {
-				return Modifier.PUBLIC or Modifier.STATIC or Modifier.FINAL
-			}
-			override fun getName(): String {
-				return name
-			}
-			override fun getReturnType(): Class<*> {
-				return Any::class.java
-			}
-			override fun getDeclaringClass(): CachedClass? {
-				return ReflectionCache.getCachedClass(Any::class.java)
-			}
-			override fun invoke(self: Any?, args: Array<out Any?>): Any? {
-				return closure.call(*(args[0] as Array<*>))
-			}
+
+	class GroovyInteroperabilityMetaMethodImpl(
+		val name0: String,
+		val declaringClass0: Class<*>,
+		val closure: Closure<*>
+	): MetaMethod(arrayOf(Array<Any>::class.java)) {
+		override fun getModifiers(): Int {
+			return Modifier.PUBLIC or Modifier.STATIC or Modifier.FINAL
 		}
+		override fun getName(): String {
+			return name0
+		}
+		override fun getReturnType(): Class<*> {
+			return Any::class.java
+		}
+		override fun getDeclaringClass(): CachedClass? {
+			return ReflectionCache.getCachedClass(declaringClass0)
+		}
+		override fun invoke(self: Any?, args: Array<out Any?>): Any? {
+			return closure.call(*(args[0] as Array<*>))
+		}
+	}
+	@JvmStatic
+	fun setMetaMethod(metaClass: MetaClassImpl, name: String, declaringClass: Class<*>, closure: Closure<*>?) {
+		val metaMethodIndex = FIELD_MetaClassImpl_metaMethodIndex.get(metaClass) as MetaMethodIndex
+		val allMethods = FIELD_MetaClassImpl_allMethods.get(metaClass) as MutableList<MetaMethod>
+		if(closure == null) {
+			val metaMethod = allMethods.firstOrNull { it is GroovyInteroperabilityMetaMethodImpl &&
+					it.name0 == name && it.declaringClass0 == declaringClass } ?: return
+			allMethods -= metaMethod
+			return
+		}
+
+		val metaMethod = GroovyInteroperabilityMetaMethodImpl(name, declaringClass, closure)
+		val header = metaMethodIndex.getHeader(declaringClass)
+		allMethods += metaMethod
+		METHOD_MetaClassImpl_addMetaMethodToIndex.invoke(metaClass, metaMethod, header)
 	}
 	@JvmStatic
 	fun setKotlinToGroovy(that: Any, reflnames: Array<String>?, reflname: String, classCanonical: String, value: Any?, nameProcessor: (String) -> String) {
-		val javaClass = if(that is Class<*>) that else that::class.java
-		val ext = if(that is Project) that.extensions.extraProperties else null
-		val metaClass = GroovySystem.getMetaClassRegistry().getMetaClass(javaClass) as? ExpandoMetaClass
-
+		val ext = (that as? Project)?.extensions?.extraProperties
+		val metaClass = (that as? GroovyObject)?.metaClass as? MetaClassImpl
 		val names = if(reflnames != null) if(reflnames.isNotEmpty()) reflnames else arrayOf(reflname) else arrayOf()
+
 		for(name in names) {
 			val processedName = nameProcessor(name)
-			ext?.set(processedName, value)
-			if(value is Closure<*>)
-				metaClass?.registerInstanceMethod(closureToMetaMethod(processedName, value))
+//			ext?.set(processedName, value)
+			if(metaClass != null && (value == null || value is Closure<*>))
+				setMetaMethod(metaClass, processedName, that.javaClass, value as Closure<*>?)
 		}
-		val internalName = "__INTERNAL_${classCanonical.replace(".", "$")}_${reflname}"
-		ext?.set(nameProcessor(internalName), value)
-		if(value is Closure<*>)
-			metaClass?.registerInstanceMethod(closureToMetaMethod(internalName, value))
+		val internalName = nameProcessor("__INTERNAL_${classCanonical.replace(".", "$")}_${reflname}")
+//		ext?.set(internalName, value)
+		if(metaClass != null && (value == null || value is Closure<*>))
+			setMetaMethod(metaClass, internalName, that.javaClass, value as Closure<*>?)
 	}
 }

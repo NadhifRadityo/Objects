@@ -1,7 +1,4 @@
-import GroovyInteroperability.clearExpandableMeta
 import GroovyInteroperability.closureToLambda
-import GroovyInteroperability.finishExpandableMeta
-import GroovyInteroperability.newExpandableMeta
 import GroovyInteroperability.setKotlinToGroovy
 import groovy.lang.Closure
 import org.gradle.api.Project
@@ -46,9 +43,9 @@ object Utils {
 	@ExportGradle
 	@JvmStatic @JvmOverloads
 	fun asProject(project: Any? = null): Project {
-		if(project == null) return Common.lastContext()
+		if(project == null) return Common.lastContext().project
 		if(project is Project) return project
-		if(project is String) return Common.lastContext().project(project)
+		if(project is String) return Common.lastContext().project.project(project)
 		if(project is BasicScript) return (project.scriptTarget as ProjectInternal)
 		throw __invalid_type()
 	}
@@ -94,7 +91,7 @@ object Utils {
 	@ExportGradle
 	@JvmStatic
 	fun forwardTask(project: Any?, filter: (Task) -> Boolean, exec: (Task) -> Unit) {
-		val project0 = Common.lastContext()
+		val project0 = Common.lastContext().project
 		val project1 = asProject(project)
 		project1.tasks.filter(filter).map { task -> project0.task(task.name) {
 			it.group = task.group; it.dependsOn(task) } }.forEach(exec)
@@ -389,16 +386,13 @@ object Utils {
 		if(appliedGroovies != null) {
 			for(pushed in appliedGroovies)
 				setKotlinToGroovy(obj, pushed.names, pushed.name, pushed.qualifiedName, null, pushed.nameProcessor)
-			clearExpandableMeta(obj)
 			objectOverloadedGradle.remove(obj)
 		}
 		if(pushedGroovies.isEmpty())
 			return
 		appliedGroovies = pushedGroovies.toTypedArray()
 		objectOverloadedGradle[obj] = appliedGroovies
-		newExpandableMeta(obj)
 		for(pushed in appliedGroovies)
 			setKotlinToGroovy(obj, pushed.names, pushed.name, pushed.qualifiedName, pushed.callback, pushed.nameProcessor)
-		finishExpandableMeta(obj)
 	}
 }
