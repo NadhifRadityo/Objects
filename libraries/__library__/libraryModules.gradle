@@ -1,87 +1,81 @@
 import java.nio.file.Path
 import java.nio.file.Files
 
-class $ {
-	static def $this
-	static Map<String, File> loadedModules = new HashMap<>()
-	static File relativeToDir
-	static File librariesDir
+Map<String, File> loadedModules = new HashMap<>()
+File relativeToDir
+File librariesDir
 
-	static void set_relative_to_dir(File relativeToDir) {
-		$.relativeToDir = relativeToDir
-		if(relativeToDir == $this.buildscript.sourceFile.parentFile) return
-		Path target = new File($this.buildscript.sourceFile.parentFile, 'src').toPath()
-		Path link = new File(relativeToDir, 'src').toPath()
-		if(Files.isSymbolicLink(link) && Files.readSymbolicLink(link).toAbsolutePath() == target.toAbsolutePath())
-			return
-		Files.deleteIfExists(link)
-		try { Files.createSymbolicLink(link, target) } catch(Throwable ignored) { }
-		if(Files.exists(link)) return
-		$this.pwarn 'Cannot create library junction, reverting to use srcDirs alternative. Your IDE might not like this because modules cannot share the same content root.'
-		$this.pwarn 'If you have problem with this alternative, try to elevate either gradle or your IDE as administrator.'
-		String sourcePath = $this.$_.getRelativeFile(relativeToDir, target.resolve('main').toFile()).getPath()
-		$this.sourceSets {
-			main.java { srcDirs = [ "$sourcePath/java" ] }
-			main.kotlin { srcDirs = [ "$sourcePath/kotlin" ] }
-			main.resources { srcDirs = [ "$sourcePath/resources" ] }
-		}
-	}
-	static void set_libraries_dir(File librariesDir) {
-		$.librariesDir = librariesDir
-	}
-	static File root_directory() {
-		return $this.$_.getRelativeFile(new File(System.getProperty('user.dir')), librariesDir)
-	}
-	static void module(String path) {
-		String moduleIdentifier = path.toLowerCase().replaceAll('[^A-Za-z0-9]', '_')
-		File modulePath = new File(root_directory(), path)
-		if(loadedModules.containsKey(moduleIdentifier)) {
-			$this.pwarn "Library module '$path' has the same identifier"
-			return
-		}
-		$this.pinfo "Imported library module '$path'"
-		loadedModules.put(moduleIdentifier, modulePath)
-		String sourcePath = $this.$_.getRelativeFile(relativeToDir, modulePath).getPath()
-		$this.sourceSets {
-			main.java { srcDir "$sourcePath/java" }
-			main.kotlin { srcDir "$sourcePath/kotlin" }
-			main.resources { srcDir "$sourcePath/resources" }
-		}
-	}
-	static Map<String, File> loaded_modules() {
-		return Collections.unmodifiableMap(loadedModules)
-	}
-	static void __default_import_action(def info) {
-		def $that = info.context
-		if(!containsFlag('dont_clear_last_state')) {
-			loadedModules.clear()
-			relativeToDir = null
-			librariesDir = null
-		}
-		if(!containsFlag('export_functions_only') && !containsFlag('dont_clear_last_state')) {
-			set_relative_to_dir($that.buildscript.sourceFile.parentFile as File)
-			set_libraries_dir($that.buildscript.sourceFile.parentFile.parentFile as File)
-		}
+def set_relative_to_dir = { File relativeToDir0 ->
+	relativeToDir = relativeToDir0
+	if(relativeToDir == buildscript.sourceFile.parentFile) return
+	Path target = new File(buildscript.sourceFile.parentFile, 'src').toPath()
+	Path link = new File(relativeToDir, 'src').toPath()
+	if(Files.isSymbolicLink(link) && Files.readSymbolicLink(link).toAbsolutePath() == target.toAbsolutePath())
+		return
+	Files.deleteIfExists(link)
+	try { Files.createSymbolicLink(link, target) } catch(Throwable ignored) { }
+	if(Files.exists(link)) return
+	lwarn 'Cannot create library junction, reverting to use srcDirs alternative. Your IDE might not like this because modules cannot share the same content root.'
+	lwarn 'If you have problem with this alternative, try to elevate either gradle or your IDE as administrator.'
+	String sourcePath = getRelativeFile(relativeToDir, target.resolve('main').toFile()).getPath()
+	sourceSets {
+		main.java { srcDirs = [ "$sourcePath/java" ] }
+		main.kotlin { srcDirs = [ "$sourcePath/kotlin" ] }
+		main.resources { srcDirs = [ "$sourcePath/resources" ] }
 	}
 }
+def set_libraries_dir = { File librariesDir0 ->
+	librariesDir = librariesDir0
+}
+def root_directory = { ->
+	return getRelativeFile(new File(System.getProperty('user.dir')), librariesDir)
+}
+def module = { String path ->
+	String moduleIdentifier = path.toLowerCase().replaceAll('[^A-Za-z0-9]', '_')
+	File modulePath = new File(root_directory(), path)
+	if(loadedModules.containsKey(moduleIdentifier)) {
+		lwarn "Library module '$path' has the same identifier"
+		return
+	}
+	linfo "Imported library module '$path'"
+	loadedModules.put(moduleIdentifier, modulePath)
+	String sourcePath = getRelativeFile(relativeToDir, modulePath).getPath()
+	sourceSets {
+		main.java { srcDir "$sourcePath/java" }
+		main.kotlin { srcDir "$sourcePath/kotlin" }
+		main.resources { srcDir "$sourcePath/resources" }
+	}
+}
+def loaded_modules = { ->
+	return Collections.unmodifiableMap(loadedModules)
+}
+def __default_import_action = { def info ->
+	def $that = info.context
+	if(!containsFlag('dont_clear_last_state')) {
+		loadedModules.clear()
+		relativeToDir = null
+		librariesDir = null
+	}
+	if(!containsFlag('export_functions_only') && !containsFlag('dont_clear_last_state')) {
+		set_relative_to_dir($that.buildscript.sourceFile.parentFile as File)
+		set_libraries_dir($that.buildscript.sourceFile.parentFile.parentFile as File)
+	}
+}
+
 context(this) {
 	scriptApply()
 	scriptConstruct {
-		applyKotlinGradle($)
-		$.$this = this
-		addImportAction(buildscript.sourceFile, $.&__default_import_action)
+		addImportAction(buildscript.sourceFile, __default_import_action)
 	}
 	scriptDestruct {
-		applyKotlinGradle($)
-		$.$this = null
 		removeImportAction(buildscript.sourceFile)
-		$.relativeToDir = null
-		$.librariesDir = null
+		relativeToDir = null
+		librariesDir = null
 	}
 }
 
-scriptExport('ext_libraryModules_set_relative_to_dir', $.&set_relative_to_dir)
-scriptExport('ext_libraryModules_set_libraries_dir', $.&set_libraries_dir)
-scriptExport('ext_libraryModules_root_directory', $.&root_directory)
-scriptExport('ext_libraryModules_module', $.&module)
-scriptExport('ext_libraryModules_loaded_modules', $.&loaded_modules)
+scriptExport('set_relative_to_dir', set_relative_to_dir)
+scriptExport('set_libraries_dir', set_libraries_dir)
+scriptExport('root_directory', root_directory)
+scriptExport('module', module)
+scriptExport('loaded_modules', loaded_modules)

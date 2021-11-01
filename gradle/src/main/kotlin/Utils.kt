@@ -17,32 +17,35 @@ import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.nio.file.Paths
 import kotlin.reflect.KClass
-import kotlin.reflect.KFunction
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.functions
 import kotlin.reflect.full.memberProperties
-import kotlin.reflect.jvm.javaMethod
 
 object Utils {
 
-	@JvmStatic fun init() {
+	@JvmStatic
+	fun init() {
 		pushKotlinToGradle(Utils)
 	}
-	@JvmStatic fun deinit() {
+	@JvmStatic
+	fun deinit() {
 		pullKotlinFromGradle(Utils)
 	}
 
-	@JvmStatic internal fun __invalid_type(): Throwable {
+	@JvmStatic
+	internal fun __invalid_type(): Throwable {
 		throw Error("Invalid type")
 	}
-	@JvmStatic internal fun __must_not_happen(): Throwable {
+	@JvmStatic
+	internal fun __must_not_happen(): Throwable {
 		throw Error("Must not happen")
 	}
 
 	// Gradle Object Conversion
 	@ExportGradle
-	@JvmStatic fun asProject(project: Any? = null): Project {
+	@JvmStatic @JvmOverloads
+	fun asProject(project: Any? = null): Project {
 		if(project == null) return Common.lastContext()
 		if(project is Project) return project
 		if(project is String) return Common.lastContext().project(project)
@@ -50,87 +53,99 @@ object Utils {
 		throw __invalid_type()
 	}
 	@ExportGradle
-	@JvmStatic fun asGradle(project: Any? = null): Gradle {
+	@JvmStatic @JvmOverloads
+	fun asGradle(project: Any? = null): Gradle {
 		return asProject(project).gradle
 	}
 	@ExportGradle
-	@JvmStatic fun asTask(task: Any?, project: Any? = null): Task {
+	@JvmStatic @JvmOverloads
+	fun asTask(task: Any, project: Any? = null): Task {
 		if(task is Task) return task
 		if(task is String) return asProject(project).tasks.getByName(task)
 		throw __invalid_type()
 	}
 	@ExportGradle
-	@JvmStatic fun <T> asService(clazz: Class<T>, project: Any? = null): T {
+	@JvmStatic @JvmOverloads
+	fun <T> asService(clazz: Class<T>, project: Any? = null): T {
 		return (asProject(project) as ProjectInternal).services.get(clazz)
 	}
 
 	// Gradle Global Ext
 	@ExportGradle
-	@JvmStatic fun hasGlobalExt(key: String, project: Any? = null): Boolean {
+	@JvmStatic @JvmOverloads
+	fun hasGlobalExt(key: String, project: Any? = null): Boolean {
 		val gradleExt = asGradle(project) as ExtraPropertiesExtension
 		return gradleExt.has(key)
 	}
 	@ExportGradle
-	@JvmStatic fun <T> getGlobalExt(key: String, project: Any? = null): T? {
+	@JvmStatic @JvmOverloads
+	fun <T> getGlobalExt(key: String, project: Any? = null): T? {
 		val gradleExt = asGradle(project) as ExtraPropertiesExtension
 		return if(gradleExt.has(key)) gradleExt.get(key) as T? else null
 	}
 	@ExportGradle
-	@JvmStatic fun <T> setGlobalExt(key: String, obj: T, project: Any? = null) {
+	@JvmStatic @JvmOverloads
+	fun <T> setGlobalExt(key: String, obj: T, project: Any? = null) {
 		val gradleExt = asGradle(project) as ExtraPropertiesExtension
 		gradleExt.set(key, obj)
 	}
 
 	// Gradle Task
 	@ExportGradle
-	@JvmStatic fun forwardTask(project: Any?, filter: (Task) -> Boolean, exec: (Task) -> Unit) {
+	@JvmStatic
+	fun forwardTask(project: Any?, filter: (Task) -> Boolean, exec: (Task) -> Unit) {
 		val project0 = Common.lastContext()
 		val project1 = asProject(project)
 		project1.tasks.filter(filter).map { task -> project0.task(task.name) {
 			it.group = task.group; it.dependsOn(task) } }.forEach(exec)
 	}
 	@ExportGradle
-	@JvmStatic fun runAfterAnotherTask(tasks: Collection<Any?>, project: Any? = null) {
+	@JvmStatic @JvmOverloads
+	fun runAfterAnotherTask(tasks: Collection<Any>, project: Any? = null) {
 		val tasks0 = tasks.map { asTask(it, project) }
 		for(i in 1 until tasks0.size) tasks0[i].mustRunAfter(tasks0[i - 1])
 	}
 
 	// Gradle Daemon
 	@ExportGradle
-	@JvmStatic fun isSingleUseDaemon(project: Any? = null): Boolean {
+	@JvmStatic @JvmOverloads
+	fun isSingleUseDaemon(project: Any? = null): Boolean {
 		return asService(DaemonScanInfo::class.java, project).isSingleUse
 	}
 	@ExportGradle
-	@JvmStatic fun isRunningOnDebug(): Boolean {
+	@JvmStatic
+	fun isRunningOnDebug(): Boolean {
 		return ManagementFactory.getRuntimeMXBean().getInputArguments().stream()
 			.filter { it.indexOf("-agentlib:jdwp") != -1 }.count() > 0
 	}
 	@ExportGradle
-	@JvmStatic fun isDaemonProbablyUnstable(project: Any? = null): Boolean {
+	@JvmStatic @JvmOverloads
+	fun isDaemonProbablyUnstable(project: Any? = null): Boolean {
 		return isSingleUseDaemon(project) || isRunningOnDebug()
 	}
 
 	// ETC
 	@ExportGradle
-	@JvmStatic fun getRelativeFile(from: File, what: File): File {
+	@JvmStatic
+	fun getRelativeFile(from: File, what: File): File {
 		return Paths.get(from.canonicalPath).relativize(Paths.get(what.canonicalPath)).toFile()
 	}
 	@ExportGradle
-	@JvmStatic fun purgeThreadLocal(threadLocal: ThreadLocal<*>) {
-		Thread.getAllStackTraces().keys.forEach {
-			try {
-				val FIELD_Thread_threadLocals: Field = it.javaClass.getDeclaredField("threadLocals")
-				FIELD_Thread_threadLocals.isAccessible = true
-				val threadLocals = FIELD_Thread_threadLocals.get(it) ?: return
-				val `FIELD_ThreadLocal$ThreadLocalMap_remove`: Method = threadLocals.javaClass.getDeclaredMethod("remove", ThreadLocal::class.java)
-				`FIELD_ThreadLocal$ThreadLocalMap_remove`.isAccessible = true
-				`FIELD_ThreadLocal$ThreadLocalMap_remove`.invoke(threadLocals, threadLocal)
-			} catch(ignored: Throwable) { }
-		}
+	@JvmStatic
+	fun purgeThreadLocal(threadLocal: ThreadLocal<*>) {
+		for(thread in Thread.getAllStackTraces().keys) { try {
+			val FIELD_Thread_threadLocals: Field = thread.javaClass.getDeclaredField("threadLocals")
+			FIELD_Thread_threadLocals.isAccessible = true
+			val threadLocals = FIELD_Thread_threadLocals.get(thread) ?: continue
+			val `FIELD_ThreadLocal$ThreadLocalMap_remove`: Method = threadLocals.javaClass.getDeclaredMethod("remove", ThreadLocal::class.java)
+			`FIELD_ThreadLocal$ThreadLocalMap_remove`.isAccessible = true
+			`FIELD_ThreadLocal$ThreadLocalMap_remove`.invoke(threadLocals, threadLocal)
+		} catch(ignored: Throwable) { } }
 	}
 
 	@ExportGradle
-	@JvmStatic val boxedToPrimitive = mapOf(
+	@JvmStatic
+	val boxedToPrimitive = mapOf(
 		Int::class.javaObjectType to Int::class.javaPrimitiveType,
 		Long::class.javaObjectType to Long::class.javaPrimitiveType,
 		Short::class.javaObjectType to Short::class.javaPrimitiveType,
@@ -139,7 +154,8 @@ object Utils {
 		Char::class.javaObjectType to Char::class.javaPrimitiveType,
 		Byte::class.javaObjectType to Byte::class.javaPrimitiveType,
 		Boolean::class.javaObjectType to Boolean::class.javaPrimitiveType)
-	@JvmStatic fun doOverloading(methods: Array<Method>, args: Array<out Any?>): Pair<Method, Array<Any?>> {
+	@JvmStatic
+	fun doOverloading(methods: Array<Method>, args: Array<out Any?>): Pair<Method, Array<Any?>> {
 		data class CallData(
 			var method: Method,
 			var args: Array<Any?>? = null,
@@ -153,7 +169,6 @@ object Utils {
 		 * n.., vararg argument
 		 */
 		val filteredMethods = mutableListOf<CallData>()
-		val argsLength = args.size
 		for(method in methods) {
 			val types = method.parameterTypes
 			// empty arguments
@@ -172,7 +187,7 @@ object Utils {
 				}
 			}
 			// if length at least the same
-			if(types.size == argsLength)
+			if(types.size == args.size)
 				filteredMethods += CallData(method)
 		}
 		/* Type analysis
@@ -180,7 +195,7 @@ object Utils {
 		 */
 		val pushArg: (CallData, Int, Any?) -> Unit = { data, i, arg ->
 			if(data.args == null)
-				data.args = arrayOfNulls(args.size)
+				data.args = arrayOfNulls(data.method.parameterCount)
 			data.args!![i] = arg
 		}
 		val tryChangeArg: (CallData, Any?, Class<*>) -> Any? = { data, arg, type ->
@@ -196,7 +211,8 @@ object Utils {
 			val types = method.parameterTypes
 			for(i in types.indices) {
 				val type = types[i]
-				val arg = tryChangeArg(data, args[i], type)
+				val arg = tryChangeArg(data, if(i < args.size) args[i] else null, type)
+				// Strict primitive checking
 				if(type.isPrimitive) {
 					if(arg == null) {
 						data.error = "Cannot cast null to $type (primitive)"
@@ -208,44 +224,58 @@ object Utils {
 					}
 					pushArg(data, i, arg)
 					continue
-				} else {
-					if(arg == null || type.isAssignableFrom(arg.javaClass)) {
-						if(arg != null && type != arg.javaClass)
-							data.notExactMatchCount++
-						pushArg(data, i, arg)
-						continue
+				}
+				// Empty vararg
+				if(type.isArray && i == args.size) {
+					val componentType = type.componentType
+					if(i != types.size - 1) {
+						data.error = "Vararg must be at the end of parameters"
+						continue@Outer
 					}
-					if(type.isArray && type.componentType.isAssignableFrom(arg.javaClass)) {
-						val componentType = type.componentType
-						if(i != types.size - 1) {
-							data.error = "Vararg must be at the end of parameters"
-							continue@Outer
-						}
-						for(k in i until args.size) {
-							val varargv = args[k]
-							if(componentType.isPrimitive) {
-								if(varargv == null) {
-									data.error = "Cannot cast null to $componentType (primitive) [vararg $i]"
-									continue@Outer
-								}
-								if(!boxedToPrimitive.containsKey(varargv.javaClass)) {
-									data.error = "Cannot cast ${varargv.javaClass} to $componentType (primitive) [vararg $i]"
-									continue@Outer
-								}
-							}
-							if(varargv != null && !componentType.isAssignableFrom(varargv.javaClass)) {
-								data.error = "Cannot cast ${varargv.javaClass} to $componentType [vararg $i]"
+					data.notExactMatchCount++
+					val vararg = java.lang.reflect.Array.newInstance(componentType, 0)
+					pushArg(data, i, vararg)
+					continue
+				}
+				// Inheritance
+				if(arg == null || type.isAssignableFrom(arg.javaClass)) {
+					if(arg != null && type != arg.javaClass)
+						data.notExactMatchCount++
+					pushArg(data, i, arg)
+					continue
+				}
+				// Non-empty vararg
+				if(type.isArray && type.componentType.isAssignableFrom(arg.javaClass)) {
+					val componentType = type.componentType
+					if(i != types.size - 1) {
+						data.error = "Vararg must be at the end of parameters"
+						continue@Outer
+					}
+					for(j in i until args.size) {
+						val varargv = args[j]
+						if(componentType.isPrimitive) {
+							if(varargv == null) {
+								data.error = "Cannot cast null to $componentType (primitive) [vararg $j]"
 								continue@Outer
 							}
+							if(!boxedToPrimitive.containsKey(varargv.javaClass)) {
+								data.error = "Cannot cast ${varargv.javaClass} to $componentType (primitive) [vararg $j]"
+								continue@Outer
+							}
+							continue
 						}
-						val vararg = java.lang.reflect.Array.newInstance(type.componentType, args.size - i)
-						System.arraycopy(args, i, vararg, 0, java.lang.reflect.Array.getLength(vararg))
-						pushArg(data, i, vararg)
-						continue
+						if(varargv == null || componentType.isAssignableFrom(varargv.javaClass))
+							continue
+						data.error = "Cannot cast ${varargv.javaClass} to $componentType [vararg $j]"
+						continue@Outer
 					}
-					data.error = "Cannot cast ${arg.javaClass} to $type"
-					continue@Outer
+					val vararg = java.lang.reflect.Array.newInstance(componentType, args.size - i)
+					System.arraycopy(args, i, vararg, 0, java.lang.reflect.Array.getLength(vararg))
+					pushArg(data, i, vararg)
+					continue
 				}
+				data.error = "Cannot cast ${arg.javaClass} to $type"
+				continue@Outer
 			}
 		}
 		val notError = filteredMethods.filter { it.error == null }
@@ -254,8 +284,10 @@ object Utils {
 		for(data in notError) if(data.args == null)
 			data.args = arrayOfNulls(args.size)
 		if(notError.isEmpty())
-			throw IllegalStateException("No matched method definition for [${args.joinToString(", ") { it.toString() }}] \n " +
-					"Available methods: \n${filteredMethods.joinToString("\n") { "- ${it.method} (${it.error})" }}")
+			throw IllegalStateException("No matched method definition for [${args.joinToString(", ") { if(it != null) it::class.java.toString() else "NULL" }}]\n" +
+					"\t\twith values [${args.joinToString(", ") { it.toString() }}]\n" +
+					"Filtered methods: \n${filteredMethods.joinToString("\n") { "\t- ${it.method} (${it.error})" }}\n" +
+					"Non-filtered methods: \n${methods.filter { m -> filteredMethods.find { it.method == m } == null }.joinToString("\n") { "\t- $it" }}")
 		if(notError.size > 1) {
 			/* Exact match
 			 */
@@ -287,54 +319,72 @@ object Utils {
 		val callback: Closure<*>,
 		val nameProcessor: (String) -> String
 	)
-	@JvmStatic val pushedGroovies = ArrayList<PushedGroovy>()
-	@JvmStatic val kotlinFunctionOverloading = HashMap<String, MutableMap<Method, KFunction<Any?>>>()
-	@JvmStatic fun <T : Any> pushKotlinToGradle(obj: T) {
+	@JvmStatic
+	val pushedGroovies = ArrayList<PushedGroovy>()
+	@JvmStatic
+	val kotlinFunctionOverloading = HashMap<String, ArrayList<Method>>()
+	@JvmStatic
+	fun <T : Any> pushKotlinToGradle(obj: T) {
 		val kclass = obj::class as KClass<T>
-		kclass.functions.forEach {
-			val id = "${kclass.qualifiedName}.${it.name}"
+		val jclass = obj::class.java
+		val functions = kclass.functions
+		for(function in functions) {
+			val id = "${kclass.qualifiedName}.${function.name}"
 			var overloads = kotlinFunctionOverloading[id]
-			if(overloads == null) {
-				overloads = mutableMapOf()
-				kotlinFunctionOverloading[id] = overloads
-				val annotation = it.findAnnotation<ExportGradle>()
-				val callback = object: Closure<Any?>(null, null) {
-					override fun call(vararg args: Any?): Any? {
-						val matched = doOverloading(overloads.keys.toTypedArray(), args)
-						return overloads[matched.first]!!.call(obj, *matched.second)
-					}
+			// JvmOverloads does not available in the runtime
+//			val jvmOverloadsAnnotated = function.hasAnnotation<JvmOverloads>()
+//			val containsOptional = function.parameters.any { function.isOptional }
+//			if(containsOptional && !jvmOverloadsAnnotated)
+//				System.err.println("Method $function contains optional parameters but doesn't annotate @JvmOverloads")
+			if(overloads != null) continue
+			overloads = ArrayList()
+			kotlinFunctionOverloading[id] = overloads
+			val annotation = function.findAnnotation<ExportGradle>()
+			val callback = object: Closure<Any?>(null, null) {
+				override fun call(vararg args: Any?): Any? {
+					val matched = doOverloading(overloads.toTypedArray(), args)
+					return matched.first.invoke(null, *matched.second)
 				}
-				pushedGroovies += PushedGroovy(it, annotation?.names, it.name, kclass.qualifiedName!!, callback) { i -> i }
+				override fun toString(): String {
+					return function.toString()
+				}
 			}
-			overloads[it.javaMethod!!] = it
+			pushedGroovies += PushedGroovy(function, annotation?.names, function.name, kclass.qualifiedName!!, callback) { i -> i }
+			jclass.methods.filter { m -> m.name == function.name }.forEach {
+					m -> if(!overloads.contains(m)) overloads += m; }
 		}
-		kclass.memberProperties.forEach {
-			val annotation = it.findAnnotation<ExportGradle>()
+		for(member in kclass.memberProperties) {
+			val annotation = member.findAnnotation<ExportGradle>()
 			val getCallback = object: Closure<Any?>(null, null) {
-				override fun call(vararg args: Any?): Any? { return it.get(obj) }
+				override fun call(vararg args: Any?): Any? { return member.get(obj) }
+				override fun toString(): String { return member.toString() }
 			}
-			pushedGroovies += PushedGroovy(it, annotation?.names, it.name, kclass.qualifiedName!!, getCallback) { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
-			if(it is KMutableProperty<*>) {
+			pushedGroovies += PushedGroovy(member, annotation?.names, member.name, kclass.qualifiedName!!, getCallback) { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
+			if(member is KMutableProperty<*>) {
 				val setCallback = object: Closure<Any?>(null, null) {
-					override fun call(vararg args: Any?): Any? { return it.setter.call(obj, *args) }
+					override fun call(vararg args: Any?): Any? { return member.setter.call(obj, *args) }
+					override fun toString(): String { return member.toString() }
 				}
-				pushedGroovies += PushedGroovy(it, annotation?.names, it.name, kclass.qualifiedName!!, setCallback) { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
+				pushedGroovies += PushedGroovy(member, annotation?.names, member.name, kclass.qualifiedName!!, setCallback) { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
 			}
 		}
 	}
-	@JvmStatic fun <T : Any> pullKotlinFromGradle(obj: T) {
+	@JvmStatic
+	fun <T : Any> pullKotlinFromGradle(obj: T) {
 		val kclass = obj::class as KClass<T>
 		kotlinFunctionOverloading.clear()
-		kclass.functions.forEach { ref ->
-			pushedGroovies.removeIf { it.reference == ref }
+		for(function in kclass.functions) {
+			pushedGroovies.removeIf { it.reference == function }
 		}
-		kclass.memberProperties.forEach { ref ->
-			pushedGroovies.removeIf { it.reference == ref }
+		for(member in kclass.memberProperties) {
+			pushedGroovies.removeIf { it.reference == member }
 		}
 	}
-	@JvmStatic val objectOverloadedGradle = HashMap<Any, Array<PushedGroovy>>()
+	@JvmStatic
+	val objectOverloadedGradle = HashMap<Any, Array<PushedGroovy>>()
 	@ExportGradle
-	@JvmStatic fun applyKotlinGradle(obj: Any) {
+	@JvmStatic
+	fun applyKotlinGradle(obj: Any) {
 		var appliedGroovies = objectOverloadedGradle[obj]
 		if(appliedGroovies != null) {
 			for(pushed in appliedGroovies)
