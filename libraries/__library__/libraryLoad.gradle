@@ -35,7 +35,7 @@ def load = { ->
 	if(loaderInfo.classLoader != null) return loaderInfo.classLoader
 	URL[] sourceURLs = Stream.of(source_files()).map { it.toURI().toURL() }.toArray(URL[]::new)
 	try {
-		loaderInfo.classLoader = new URLClassLoader(sourceURLs, $this.project.getClass().getClassLoader())
+		loaderInfo.classLoader = new URLClassLoader(sourceURLs, project.getClass().getClassLoader())
 		loaderInfo.CLASS_Library = loaderInfo.classLoader.loadClass('io.github.NadhifRadityo.Library.LibraryEntry')
 		loaderInfo.METHOD_Library_entry = loaderInfo.CLASS_Library.getDeclaredMethod('entry', DefaultProject.class, File.class, Map.class)
 		loaderInfo.METHOD_Library_entry.setAccessible(true)
@@ -51,7 +51,7 @@ def available = { ->
 def run = { File rootDirectory, Map<String, File> modules ->
 	LoaderInfo loaderInfo = get_current_loader_info()
 	try {
-		loaderInfo.METHOD_Library_entry.invoke(null, $this.project, rootDirectory, modules)
+		loaderInfo.METHOD_Library_entry.invoke(null, project, rootDirectory, modules)
 	} catch(Exception e) {
 		lerror 'Error while running library entry point\n', e
 	}

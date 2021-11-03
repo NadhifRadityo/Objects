@@ -1,12 +1,16 @@
+import Common.groovyKotlinCaches
 import Common.lastContext
 import Common.onBuildFinished
 import Utils.__must_not_happen
 import Utils.attachObject
+import Utils.prepareGroovyKotlinCache
 import org.gradle.api.initialization.IncludedBuild
 import java.io.File
 import java.util.*
 
 object Import {
+	@JvmStatic
+	private var cache: GroovyKotlinCache<*>? = null
 	@JvmStatic
 	private val scripts = HashMap<String, Script>()
 	@JvmStatic
@@ -16,14 +20,12 @@ object Import {
 
 	@JvmStatic
 	fun init() {
-		Utils.pushKotlinToGradle(Import)
+		cache = prepareGroovyKotlinCache(Import)
+		groovyKotlinCaches += cache!!
 	}
 	@JvmStatic
 	fun deinit() {
-		Utils.pullKotlinFromGradle(Import)
-		scripts.clear()
-		Utils.purgeThreadLocal(stack)
-		actions.clear()
+		groovyKotlinCaches -= cache!!
 	}
 
 	@ExportGradle
@@ -173,7 +175,6 @@ object Import {
 		val lastImportFile = __getLastImportFile()!!
 		val context = lastContext()
 		lastImportFile.context = context
-		attachObject(context)
 	}
 	@ExportGradle
 	@JvmStatic

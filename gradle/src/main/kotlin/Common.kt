@@ -2,17 +2,23 @@ import GroovyInteroperability.closureToLambda0
 import Utils.__must_not_happen
 import Utils.attachObject
 import Utils.detachObject
+import Utils.prepareGroovyKotlinCache
 import groovy.lang.Closure
 import org.gradle.api.GradleException
 import java.util.*
+import kotlin.collections.ArrayList
 
 object Common {
+	@JvmStatic
+	internal val groovyKotlinCaches = ArrayList<GroovyKotlinCache<*>>()
 	@JvmStatic
 	private val contextStack = ThreadLocal.withInitial<LinkedList<Context>> { LinkedList() }
 	@JvmStatic
 	internal val onBuildFinished = ArrayList<() -> Unit>()
 	@JvmStatic
 	private var initContext: Context? = null
+	@JvmStatic
+	private var cache: GroovyKotlinCache<*>? = null
 
 	@JvmStatic
 	fun init() {
@@ -23,15 +29,17 @@ object Common {
 		context(context.that) {
 			val gradle = Utils.asGradle()
 			gradle.buildFinished { deinit() }
-			Utils.pushKotlinToGradle(Common)
 			run {
+				cache = prepareGroovyKotlinCache(Common)
+				groovyKotlinCaches += cache!!
 				GroovyInteroperability.init()
 				Utils.init()
 				Progress.init()
 				Logger.init()
 				Import.init()
 			}
-			attachObject(context)
+			for(cache in groovyKotlinCaches)
+				attachObject(context, cache)
 		}
 	}
 	@JvmStatic
@@ -39,19 +47,20 @@ object Common {
 		val context = initContext!!
 		val exception = GradleException("Error while running callback")
 		context(context.that) {
+			onBuildFinished.reverse()
+			for(callback in onBuildFinished)
+				try { callback() } catch(e: Throwable)
+				{ exception.addSuppressed(e) }
+			for(cache in groovyKotlinCaches.reversed())
+				detachObject(context, cache)
 			run {
 				Import.deinit()
 				Logger.deinit()
 				Progress.deinit()
 				Utils.deinit()
 				GroovyInteroperability.deinit()
+				groovyKotlinCaches -= cache!!
 			}
-			Utils.pullKotlinFromGradle(Common)
-			onBuildFinished.reverse()
-			for(callback in onBuildFinished)
-				try { callback() } catch(e: Throwable)
-				{ exception.addSuppressed(e) }
-			detachObject(context)
 		}
 		Utils.purgeThreadLocal(contextStack)
 		onBuildFinished.clear()

@@ -1,7 +1,7 @@
+import Common.groovyKotlinCaches
 import Common.onBuildFinished
-import GroovyInteroperability.closureToLambda
 import GroovyInteroperability.setKotlinToGroovy
-import groovy.lang.Closure
+import KotlinClosure.Companion.getKFunctionOverloads
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.internal.project.ProjectInternal
@@ -14,22 +14,25 @@ import java.lang.management.ManagementFactory
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.nio.file.Paths
-import kotlin.reflect.KClass
-import kotlin.reflect.KMutableProperty
+import kotlin.reflect.KMutableProperty1
+import kotlin.reflect.KProperty1
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.functions
+import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.memberProperties
-import kotlin.reflect.jvm.javaMethod
 
 object Utils {
+	@JvmStatic
+	private var cache: GroovyKotlinCache<*>? = null
 
 	@JvmStatic
 	fun init() {
-		pushKotlinToGradle(Utils)
+		cache = prepareGroovyKotlinCache(Utils)
+		groovyKotlinCaches += cache!!
 	}
 	@JvmStatic
 	fun deinit() {
-		pullKotlinFromGradle(Utils)
+		groovyKotlinCaches -= cache!!
 	}
 
 	@JvmStatic
@@ -153,288 +156,103 @@ object Utils {
 		Char::class.javaObjectType to Char::class.javaPrimitiveType,
 		Byte::class.javaObjectType to Byte::class.javaPrimitiveType,
 		Boolean::class.javaObjectType to Boolean::class.javaPrimitiveType)
-	@JvmStatic
-	fun doOverloading(methods: Array<Method>, args: Array<out Any?>): Pair<Method, Array<Any?>> {
-		data class CallData(
-			var method: Method,
-			var args: Array<Any?>? = null,
-			var error: String? = null,
-			var notExactMatchCount: Int = 0,
-			var changedArgsCount: Int = 0
-		)
-		/* Length analysis
-		 * n-1, if last param is vararg, then that vararg's length is 0
-		 * n  , equal length, need to check more about the inheritance
-		 * n.., vararg argument
-		 */
-		val filteredMethods = mutableListOf<CallData>()
-		for(method in methods) {
-			val types = method.parameterTypes
-			// empty arguments
-			if(types.isEmpty()) {
-				if(args.isEmpty())
-					filteredMethods += CallData(method)
-				continue
-			}
-			val lastParam = types.last()
-			// vararg type
-			if(lastParam.isArray) {
-				// vararg length may vary from 0...n
-				if(args.size >= types.size - 1) {
-					filteredMethods += CallData(method)
-					continue
-				}
-			}
-			// if length at least the same
-			if(types.size == args.size)
-				filteredMethods += CallData(method)
-		}
-		/* Type analysis
-		 * every parameter will be checked if it's assignable from args
-		 */
-		val pushArg: (CallData, Int, Any?) -> Unit = { data, i, arg ->
-			if(data.args == null)
-				data.args = arrayOfNulls(data.method.parameterCount)
-			data.args!![i] = arg
-		}
-		val tryChangeArg: (CallData, Any?, Class<*>) -> Any? = { data, arg, type ->
-			var result = arg
-			if(arg is Closure<*> && Function::class.java.isAssignableFrom(type)) {
-				result = closureToLambda(arg, type as Class<Function<*>>)
-				data.changedArgsCount++
-			}
-			result
-		}
-		Outer@for(data in filteredMethods) {
-			val method = data.method
-			val types = method.parameterTypes
-			for(i in types.indices) {
-				val type = types[i]
-				val arg = tryChangeArg(data, if(i < args.size) args[i] else null, type)
-				// Strict primitive checking
-				if(type.isPrimitive) {
-					if(arg == null) {
-						data.error = "Cannot cast null to $type (primitive)"
-						continue@Outer
-					}
-					if(!boxedToPrimitive.containsKey(arg.javaClass)) {
-						data.error = "Cannot cast ${arg.javaClass} to $type (primitive)"
-						continue@Outer
-					}
-					pushArg(data, i, arg)
-					continue
-				}
-				// Empty vararg
-				if(type.isArray && i == args.size) {
-					val componentType = type.componentType
-					if(i != types.size - 1) {
-						data.error = "Vararg must be at the end of parameters"
-						continue@Outer
-					}
-					data.notExactMatchCount++
-					val vararg = java.lang.reflect.Array.newInstance(componentType, 0)
-					pushArg(data, i, vararg)
-					continue
-				}
-				// Inheritance
-				if(arg == null || type.isAssignableFrom(arg.javaClass)) {
-					if(arg != null && type != arg.javaClass)
-						data.notExactMatchCount++
-					pushArg(data, i, arg)
-					continue
-				}
-				// Non-empty vararg
-				if(type.isArray && type.componentType.isAssignableFrom(arg.javaClass)) {
-					val componentType = type.componentType
-					if(i != types.size - 1) {
-						data.error = "Vararg must be at the end of parameters"
-						continue@Outer
-					}
-					for(j in i until args.size) {
-						val varargv = args[j]
-						if(componentType.isPrimitive) {
-							if(varargv == null) {
-								data.error = "Cannot cast null to $componentType (primitive) [vararg $j]"
-								continue@Outer
-							}
-							if(!boxedToPrimitive.containsKey(varargv.javaClass)) {
-								data.error = "Cannot cast ${varargv.javaClass} to $componentType (primitive) [vararg $j]"
-								continue@Outer
-							}
-							continue
-						}
-						if(varargv == null || componentType.isAssignableFrom(varargv.javaClass))
-							continue
-						data.error = "Cannot cast ${varargv.javaClass} to $componentType [vararg $j]"
-						continue@Outer
-					}
-					val vararg = java.lang.reflect.Array.newInstance(componentType, args.size - i)
-					System.arraycopy(args, i, vararg, 0, java.lang.reflect.Array.getLength(vararg))
-					pushArg(data, i, vararg)
-					continue
-				}
-				data.error = "Cannot cast ${arg.javaClass} to $type"
-				continue@Outer
-			}
-		}
-		val notError = filteredMethods.filter { it.error == null }
-		// Only happen when the parameter is empty,
-		// thus args.size always zero. But whatever.
-		for(data in notError) if(data.args == null)
-			data.args = arrayOfNulls(args.size)
-		if(notError.isEmpty())
-			throw IllegalStateException("No matched method definition for [${args.joinToString(", ") { if(it != null) it::class.java.toString() else "NULL" }}]\n" +
-					"\t\twith values [${args.joinToString(", ") { it.toString() }}]\n" +
-					"Filtered methods: \n${filteredMethods.joinToString("\n") { "\t- ${it.method} (${it.error})" }}\n" +
-					"Non-filtered methods: \n${methods.filter { m -> filteredMethods.find { it.method == m } == null }.joinToString("\n") { "\t- $it" }}")
-		if(notError.size > 1) {
-			/* Exact match
-			 */
-			val minNotExactMatchCount = notError.minOf { it.notExactMatchCount }
-			val exactMatch = notError.filter { it.notExactMatchCount == minNotExactMatchCount }
-			if(exactMatch.size == 1) {
-				val first = exactMatch.first()
-				return Pair(first.method, first.args!!)
-			}
-			/* Prefer args not changed
-			 */
-			val minChangedArgsCount = exactMatch.minOf { it.changedArgsCount }
-			val notChangedArgs = exactMatch.filter { it.changedArgsCount == minChangedArgsCount }
-			if(notChangedArgs.size == 1) {
-				val first = notChangedArgs.first()
-				return Pair(first.method, first.args!!)
-			}
-			throw IllegalStateException("Ambiguous method calls [${args.joinToString(", ") { it.toString() }}] \n " +
-					"Matched methods: \n${notError.joinToString("\n") { "- ${it.method}" }}")
-		}
-		val first = notError.first()
-		return Pair(first.method, first.args!!)
-	}
-	data class PushedGroovy(
-		val reference: Any,
-		val names: Array<String>?,
-		val name: String,
-		val qualifiedName: String,
-		val callback: Closure<*>,
-		val nameProcessor: (String) -> String
-	)
-	@JvmStatic
-	val pushedGroovies = ArrayList<PushedGroovy>()
-	@JvmStatic
-	val kotlinFunctionOverloading = HashMap<String, ArrayList<Method>>()
-	@JvmStatic
-	fun <T : Any> pushKotlinToGradle(obj: T) {
-		val kclass = obj::class as KClass<T>
+	fun <T : Any> prepareGroovyKotlinCache(obj: T): GroovyKotlinCache<T> {
+		val kclass = obj::class
 		val jclass = obj::class.java
-		val functions = kclass.functions
-		for(function in functions) {
-			val id = "${kclass.qualifiedName}.${function.name}"
-			var overloads = kotlinFunctionOverloading[id]
-			// JvmOverloads does not available in the runtime
-//			val jvmOverloadsAnnotated = function.hasAnnotation<JvmOverloads>()
-//			val containsOptional = function.parameters.any { function.isOptional }
-//			if(containsOptional && !jvmOverloadsAnnotated)
-//				System.err.println("Method $function contains optional parameters but doesn't annotate @JvmOverloads")
-			if(overloads != null) continue
-			overloads = ArrayList()
-			kotlinFunctionOverloading[id] = overloads
-			val annotation = function.findAnnotation<ExportGradle>()
-			val callback = object: Closure<Any?>(null, null) {
-				override fun call(vararg args: Any?): Any? {
-					val matched = doOverloading(overloads.toTypedArray(), args)
-					return matched.first.invoke(null, *matched.second)
-				}
-				override fun toString(): String {
-					return function.toString()
-				}
-			}
-			pushedGroovies += PushedGroovy(function, annotation?.names, function.name, kclass.qualifiedName!!, callback) { i -> i }
-			val baseName = function.javaMethod?.name ?: function.name
-			jclass.declaredMethods.filter { m -> m.name == baseName }.forEach {
-					m -> if(!overloads.contains(m)) overloads += m; }
-		}
-		for(member in kclass.memberProperties) {
-			val annotation = member.findAnnotation<ExportGradle>()
-			val getCallback = object: Closure<Any?>(null, null) {
-				override fun call(vararg args: Any?): Any? { return member.get(obj) }
-				override fun toString(): String { return member.toString() }
-			}
-			pushedGroovies += PushedGroovy(member, annotation?.names, member.name, kclass.qualifiedName!!, getCallback) { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
-			if(member is KMutableProperty<*>) {
-				val setCallback = object: Closure<Any?>(null, null) {
-					override fun call(vararg args: Any?): Any? { return member.setter.call(obj, *args) }
-					override fun toString(): String { return member.toString() }
-				}
-				pushedGroovies += PushedGroovy(member, annotation?.names, member.name, kclass.qualifiedName!!, setCallback) { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
-			}
-		}
-	}
-	@JvmStatic
-	fun <T : Any> pullKotlinFromGradle(obj: T) {
-		val kclass = obj::class as KClass<T>
-		kotlinFunctionOverloading.clear()
+		val cache = GroovyKotlinCache(obj, kclass, jclass)
 		for(function in kclass.functions) {
-			pushedGroovies.removeIf { it.reference == function }
+			if(!function.hasAnnotation<JvmStatic>()) continue
+			val qualifiedName = kclass.qualifiedName!!
+			val functionName = function.name
+			val annotation = function.findAnnotation<ExportGradle>()
+
+			val id = "${qualifiedName}.${functionName}"
+			if(cache.pushed.containsKey(id)) continue
+
+			val names = ArrayList<String>()
+			if(annotation?.names != null) names += annotation.names
+			if(annotation != null) names += functionName
+			names += "__INTERNAL_${qualifiedName.replace(".", "$")}_${functionName}"
+
+			val closure = KotlinClosure(functionName)
+			closure.overloads += getKFunctionOverloads(arrayOf(obj), function)
+
+			cache.pushed[id] = Pair(names.toTypedArray(), closure)
 		}
 		for(member in kclass.memberProperties) {
-			pushedGroovies.removeIf { it.reference == member }
+			if(!member.hasAnnotation<JvmStatic>()) continue
+			val qualifiedName = kclass.qualifiedName!!
+			val memberName = member.name
+			val annotation = member.findAnnotation<ExportGradle>()
+
+			if(true) {
+				val id = "${qualifiedName}.${memberName}.get"
+				if(cache.pushed.containsKey(id)) continue
+
+				val names = ArrayList<String>()
+				if(annotation?.names != null) names += annotation.names.map { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
+				if(annotation != null) names += "get${memberName.replaceFirstChar { c -> c.uppercase() }}"
+				names += "get__INTERNAL_${qualifiedName.replace(".", "$")}_${memberName}"
+
+				val closure = KotlinClosure(memberName)
+				closure.overloads += KotlinClosure.KProperty1Overload(obj, member as KProperty1<T, *>)
+
+				cache.pushed[id] = Pair(names.toTypedArray(), closure)
+			}
+			if(member is KMutableProperty1<*, *>) {
+				val id = "${qualifiedName}.${memberName}.set"
+				if(cache.pushed.containsKey(id)) continue
+
+				val names = ArrayList<String>()
+				if(annotation?.names != null) names += annotation.names.map { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
+				if(annotation != null) names += "set${memberName.replaceFirstChar { c -> c.uppercase() }}"
+				names += "set__INTERNAL_${qualifiedName.replace(".", "$")}_${memberName}"
+
+				val closure = KotlinClosure(memberName)
+				closure.overloads += KotlinClosure.KMutableProperty1Overload(obj, member as KMutableProperty1<T, *>)
+
+				cache.pushed[id] = Pair(names.toTypedArray(), closure)
+			}
 		}
+		return cache
 	}
 
-	@JvmStatic
-	internal val injectedAnyObjects = HashMap<Any, Array<PushedGroovy>>()
-	@JvmStatic
-	internal val injectedProjectObjects = HashMap<Project, Array<PushedGroovy>>()
 	@ExportGradle
 	@JvmStatic
-	fun attachObject(context: Context) {
-		attachAnyObject(context.that)
-		attachProjectObject(context.project)
+	fun attachObject(context: Context, cache: GroovyKotlinCache<*>) {
+		attachAnyObject(context.that, cache)
+		attachProjectObject(context.project, cache)
 	}
 	@ExportGradle
 	@JvmStatic
-	fun attachAnyObject(that: Any) {
-		if(injectedAnyObjects.containsKey(that))
-			detachAnyObject(that)
-		if(pushedGroovies.isEmpty())
-			return
-		val appliedGroovies = pushedGroovies.toTypedArray()
-		injectedAnyObjects[that] = appliedGroovies
-		for(pushed in appliedGroovies)
-			setKotlinToGroovy(that, null, pushed.names, pushed.name, pushed.qualifiedName, pushed.callback, pushed.nameProcessor)
-		onBuildFinished += { detachAnyObject(that) }
+	fun attachAnyObject(that: Any, cache: GroovyKotlinCache<*>) {
+		for(pushed in cache.pushed.values)
+			setKotlinToGroovy(that, null, pushed.first, pushed.second)
+		onBuildFinished += { detachAnyObject(that, cache) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun attachProjectObject(project: Project) {
-		if(injectedProjectObjects.containsKey(project))
-			detachProjectObject(project)
-		if(pushedGroovies.isEmpty())
-			return
-		val appliedGroovies = pushedGroovies.toTypedArray()
-		injectedProjectObjects[project] = appliedGroovies
-		for(pushed in appliedGroovies)
-			setKotlinToGroovy(null, project, pushed.names, pushed.name, pushed.qualifiedName, pushed.callback, pushed.nameProcessor)
-		onBuildFinished += { detachProjectObject(project) }
+	fun attachProjectObject(project: Project, cache: GroovyKotlinCache<*>) {
+		for(pushed in cache.pushed.values)
+			setKotlinToGroovy(null, project, pushed.first, pushed.second)
+		onBuildFinished += { detachProjectObject(project, cache) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun detachObject(context: Context) {
-		detachAnyObject(context.that)
-		detachProjectObject(context.project)
+	fun detachObject(context: Context, cache: GroovyKotlinCache<*>) {
+		detachAnyObject(context.that, cache)
+		detachProjectObject(context.project, cache)
 	}
 	@ExportGradle
 	@JvmStatic
-	fun detachAnyObject(that: Any) {
-		val appliedGroovies = injectedAnyObjects.remove(that) ?: return
-		for(pushed in appliedGroovies)
-			setKotlinToGroovy(that, null, pushed.names, pushed.name, pushed.qualifiedName, null, pushed.nameProcessor)
+	fun detachAnyObject(that: Any, cache: GroovyKotlinCache<*>) {
+		for(pushed in cache.pushed.values)
+			setKotlinToGroovy(that, null, pushed.first, null)
 	}
 	@ExportGradle
 	@JvmStatic
-	fun detachProjectObject(project: Project) {
-		val appliedGroovies = injectedProjectObjects.remove(project) ?: return
-		for(pushed in appliedGroovies)
-			setKotlinToGroovy(null, project, pushed.names, pushed.name, pushed.qualifiedName, null, pushed.nameProcessor)
+	fun detachProjectObject(project: Project, cache: GroovyKotlinCache<*>) {
+		for(pushed in cache.pushed.values)
+			setKotlinToGroovy(null, project, pushed.first, null)
 	}
 }

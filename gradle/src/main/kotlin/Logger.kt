@@ -1,3 +1,5 @@
+import Common.groovyKotlinCaches
+import Utils.prepareGroovyKotlinCache
 import org.gradle.api.logging.LogLevel
 import org.gradle.internal.logging.text.StyledTextOutput
 import org.gradle.internal.logging.text.StyledTextOutputFactory
@@ -6,98 +8,96 @@ import java.io.StringWriter
 
 object Logger {
 	@JvmStatic
+	private var cache: GroovyKotlinCache<*>? = null
+	@JvmStatic
 	private var factory: StyledTextOutputFactory? = null
 	@JvmStatic
 	private var instances: MutableMap<Int, StyledTextOutput>? = null
 
 	@JvmStatic
 	fun init() {
-		Utils.pushKotlinToGradle(Logger)
+		cache = prepareGroovyKotlinCache(Logger)
+		groovyKotlinCaches += cache!!
 		factory = Utils.asService(StyledTextOutputFactory::class.java)
 		instances = HashMap()
 	}
 	@JvmStatic
 	fun deinit() {
-		Utils.pullKotlinFromGradle(Logger)
+		groovyKotlinCaches -= cache!!
 		factory = null
 		instances = null
-	}
-	@ExportGradle
-	@JvmStatic
-	fun available(): Boolean {
-		return factory != null
 	}
 
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun create(identifier: Any? = null, loggerCategory: String?) {
+	fun loggerCreate(identifier: Any? = null, loggerCategory: String?) {
 		val instance = factory!!.create(loggerCategory)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun create(identifier: Any? = null, loggerCategory: String?, logLevel: LogLevel?) {
+	fun loggerCreate(identifier: Any? = null, loggerCategory: String?, logLevel: LogLevel?) {
 		val instance = factory!!.create(loggerCategory, logLevel)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun create(identifier: Any? = null, loggerCategory: Class<*>?) {
+	fun loggerCreate(identifier: Any? = null, loggerCategory: Class<*>?) {
 		val instance = factory!!.create(loggerCategory)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun create(identifier: Any? = null, loggerCategory: Class<*>?, logLevel: LogLevel?) {
+	fun loggerCreate(identifier: Any? = null, loggerCategory: Class<*>?, logLevel: LogLevel?) {
 		val instance = factory!!.create(loggerCategory, logLevel)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun destroy(identifier: Any? = null) {
+	fun loggerDestroy(identifier: Any? = null) {
 		instances!!.remove(System.identityHashCode(identifier))
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun instance(identifier: Any? = null): StyledTextOutput? {
+	fun loggerInstance(identifier: Any? = null): StyledTextOutput? {
 		return instances!![System.identityHashCode(identifier)]
 	}
 
 	@JvmStatic @JvmOverloads
 	fun __on_print(identifier: Any? = null, callback: (StyledTextOutput) -> Unit) {
-		val instance = instance(identifier)
+		val instance = loggerInstance(identifier)
 		if(instance != null) { callback(instance); return }
-		create(identifier, identifier?.toString() ?: "default")
-		callback(instance(identifier)!!)
+		loggerCreate(identifier, identifier?.toString() ?: "default")
+		callback(loggerInstance(identifier)!!)
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun append(identifier: Any? = null, c: Char) {
+	fun loggerAppend(identifier: Any? = null, c: Char) {
 		__on_print(identifier) { it.append(c) }
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun append(identifier: Any? = null, csq: CharSequence?) {
+	fun loggerAppend(identifier: Any? = null, csq: CharSequence?) {
 		__on_print(identifier) { it.append(csq) }
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun append(identifier: Any? = null, csq: CharSequence?, start: Int, end: Int) {
+	fun loggerAppend(identifier: Any? = null, csq: CharSequence?, start: Int, end: Int) {
 		__on_print(identifier) { it.append(csq, start, end) }
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun style(identifier: Any? = null, style: StyledTextOutput.Style?) {
+	fun loggerStyle(identifier: Any? = null, style: StyledTextOutput.Style?) {
 		__on_print(identifier) { it.style(style) }
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun text(identifier: Any? = null, text: Any?) {
+	fun loggerText(identifier: Any? = null, text: Any?) {
 		__on_print(identifier) { it.text(text) }
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun println(identifier: Any? = null, text: Any? = null) {
+	fun loggerPrintln(identifier: Any? = null, text: Any? = null) {
 		__on_print(identifier) { if(text != null) it.println(text) else it.println() }
 	}
 //	@ExportGradle
@@ -112,17 +112,17 @@ object Logger {
 //	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun format(identifier: Any? = null, pattern: String, vararg args: Any?) {
+	fun loggerFormat(identifier: Any? = null, pattern: String, vararg args: Any?) {
 		__on_print(identifier) { it.format(pattern, args); }
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun formatln(identifier: Any? = null, pattern: String, vararg args: Any?) {
+	fun loggerFormatln(identifier: Any? = null, pattern: String, vararg args: Any?) {
 		__on_print(identifier) { it.formatln(pattern, args); }
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun exception(identifier: Any? = null, throwable: Throwable?) {
+	fun loggerException(identifier: Any? = null, throwable: Throwable?) {
 		__on_print(identifier) { it.exception(throwable); }
 	}
 
@@ -164,8 +164,8 @@ object Logger {
 		}
 		var compiledString = args.map { it.toString() }.joinToString("")
 		compiledString += __escapeCodes["freset"] + __escapeCodes["breset"]
-		if(!available()) { kotlin.io.println(compiledString); return }
-		println(null, compiledString)
+		if(factory == null) { kotlin.io.println(compiledString); return }
+		loggerPrintln(null, compiledString)
 	}
 	@JvmStatic
 	fun __inject_additional(inject: Array<Any?>, args: Array<out Any?>): Array<Any?> {

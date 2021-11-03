@@ -1,8 +1,12 @@
+import Common.groovyKotlinCaches
+import Utils.prepareGroovyKotlinCache
 import org.gradle.internal.logging.progress.ProgressLogger
 import org.gradle.internal.logging.progress.ProgressLoggerFactory
 import org.gradle.internal.operations.BuildOperationDescriptor
 
 object Progress {
+	@JvmStatic
+	private var cache: GroovyKotlinCache<*>? = null
 	@JvmStatic
 	private var factory: ProgressLoggerFactory? = null
 	@JvmStatic
@@ -10,63 +14,59 @@ object Progress {
 
 	@JvmStatic
 	fun init() {
-		Utils.pushKotlinToGradle(Progress)
+		cache = prepareGroovyKotlinCache(Progress)
+		groovyKotlinCaches += cache!!
 		factory = Utils.asService(ProgressLoggerFactory::class.java)
 		instances = HashMap()
 	}
 	@JvmStatic
 	fun deinit() {
-		Utils.pullKotlinFromGradle(Progress)
+		groovyKotlinCaches -= cache!!
 		factory = null
 		instances = null
-	}
-	@ExportGradle
-	@JvmStatic
-	fun available(): Boolean {
-		return factory != null
 	}
 
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun create(identifier: Any? = null, progressCategory: String?) {
+	fun progressCreate(identifier: Any? = null, progressCategory: String?) {
 		val instance = factory!!.newOperation(progressCategory)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun create(identifier: Any? = null, progressCategory: Class<*>?) {
+	fun progressCreate(identifier: Any? = null, progressCategory: Class<*>?) {
 		val instance = factory!!.newOperation(progressCategory)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun create(identifier: Any? = null, progressCategory: Class<*>?, buildOperationDescriptor: BuildOperationDescriptor?) {
+	fun progressCreate(identifier: Any? = null, progressCategory: Class<*>?, buildOperationDescriptor: BuildOperationDescriptor?) {
 		val instance = factory!!.newOperation(progressCategory, buildOperationDescriptor)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun create(identifier: Any? = null, progressCategory: Class<*>?, progressLogger: ProgressLogger?) {
+	fun progressCreate(identifier: Any? = null, progressCategory: Class<*>?, progressLogger: ProgressLogger?) {
 		val instance = factory!!.newOperation(progressCategory, progressLogger)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun destroy(identifier: Any? = null) {
+	fun progressDestroy(identifier: Any? = null) {
 		instances!!.remove(System.identityHashCode(identifier))
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun instance(identifier: Any? = null): ProgressLogger? {
+	fun progressInstance(identifier: Any? = null): ProgressLogger? {
 		return instances!![System.identityHashCode(identifier)]
 	}
 
 	@JvmStatic @JvmOverloads
 	fun __on_start(identifier: Any? = null, callback: (ProgressLogger) -> Unit) {
-		val instance = instance(identifier)
+		val instance = progressInstance(identifier)
 		if(instance != null) { callback(instance); return }
-		create(identifier, identifier?.toString() ?: "default")
-		callback(instance(identifier)!!)
+		progressCreate(identifier, identifier?.toString() ?: "default")
+		callback(progressInstance(identifier)!!)
 	}
 	@JvmStatic @JvmOverloads
 	fun __on_do(identifier: Any? = null, callback: (ProgressLogger) -> Unit) {
@@ -76,7 +76,7 @@ object Progress {
 	fun __on_end(identifier: Any? = null, callback: (ProgressLogger) -> Unit) {
 		__on_start(identifier) {
 			callback(it)
-			destroy(identifier)
+			progressDestroy(identifier)
 		}
 	}
 	@ExportGradle
