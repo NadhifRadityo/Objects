@@ -2,10 +2,7 @@ import Common.groovyKotlinCaches
 import Utils.__invalid_type
 import Utils.__must_not_happen
 import Utils.prepareGroovyKotlinCache
-import groovy.lang.Closure
-import groovy.lang.GroovyObject
-import groovy.lang.MetaClassImpl
-import groovy.lang.MetaMethod
+import groovy.lang.*
 import org.codehaus.groovy.reflection.CachedClass
 import org.codehaus.groovy.reflection.ReflectionCache
 import org.codehaus.groovy.runtime.MethodClosure
@@ -220,15 +217,26 @@ object GroovyInteroperability {
 	@JvmStatic
 	val METHOD_MetaClassImpl_addMetaMethodToIndex = MetaClassImpl::class.java.getDeclaredMethod("addMetaMethodToIndex", MetaMethod::class.java, MetaMethodIndex.Header::class.java)
 	@JvmStatic
+	val METHOD_MetaClassImpl_reinitialize = MetaClassImpl::class.java.getDeclaredMethod("reinitialize")
+	@JvmStatic
 	val FIELD_MetaMethodIndex_size = MetaMethodIndex::class.java.getDeclaredField("size")
 	init {
 		FIELD_MetaClassImpl_metaMethodIndex.isAccessible = true
 		FIELD_MetaClassImpl_allMethods.isAccessible = true
 		METHOD_MetaClassImpl_addMetaMethodToIndex.isAccessible = true
+		METHOD_MetaClassImpl_reinitialize.isAccessible = true
 		FIELD_MetaMethodIndex_size.isAccessible = true
 	}
 
-	class KotlinMetaMethod(
+	open class DummyGroovyObject : GroovyObjectSupport() {
+		init {
+			metaClass = MetaClassImpl(DummyGroovyObject::class.java)
+		}
+		fun finalize() {
+			METHOD_MetaClassImpl_reinitialize.invoke(metaClass)
+		}
+	}
+	open class KotlinMetaMethod(
 		val name0: String,
 		val declaringClass0: Class<*>,
 		val closure: Closure<*>

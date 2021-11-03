@@ -42,15 +42,38 @@ class KotlinClosure(
 	open class MethodOverload(
 		val owner: Any?,
 		val method: Method
-	) : Overload(method.parameterTypes, { method.invoke(owner, *it) })
+	) : Overload(method.parameterTypes, { method.invoke(owner, *it) }) {
+		override fun toString(): String {
+			return method.toString()
+		}
+	}
 	open class FieldGetOverload(
 		val owner: Any?,
 		val field: Field
-	) : Overload(arrayOf(), { field.get(owner) })
+	) : Overload(arrayOf(), { field.get(owner) }) {
+		override fun toString(): String {
+			return "get${field.toString().replaceFirstChar { c -> c.uppercase() }}"
+		}
+	}
 	open class FieldSetOverload(
 		val owner: Any?,
 		val field: Field
-	) : Overload(arrayOf(field.type), { field.set(owner, it[0]) })
+	) : Overload(arrayOf(field.type), { field.set(owner, it[0]) }) {
+		override fun toString(): String {
+			return "set${field.toString().replaceFirstChar { c -> c.uppercase() }}"
+		}
+	}
+	open class KLambdaOverload(
+		val lambda: (Array<out Any?>) -> Any?
+	) : Overload(arrayOf(Array<Any?>::class.java), {
+			val args = it[0] ?: arrayOf<Any?>()
+			lambda(args as Array<out Any?>)
+		}
+	) {
+		override fun toString(): String {
+			return lambda.toString()
+		}
+	}
 	open class KFunctionOverload<R>(
 		val owners: Array<Any?>,
 		val function: KFunction<R>,
@@ -65,34 +88,80 @@ class KotlinClosure(
 				else args[v] = owners[offset++]
 			}
 			function.callBy(args)
-		})
+		}
+	) {
+		override fun toString(): String {
+			val stringBuilder = StringBuilder()
+			with(stringBuilder) {
+				append("fun ").append(function.name).append("(")
+				var count = 0
+				for(param in kParameters) {
+					if(param.kind == KParameter.Kind.INSTANCE) continue
+					append(param.type).append(", ")
+					count++
+				}
+				if(count != 0)
+					setLength(length - 2)
+				append(")").append(": ")
+				append(function.returnType.toString())
+			}
+			return stringBuilder.toString()
+		}
+	}
 	open class KProperty0Overload<V>(
 		val property: KProperty0<V>
-	) : Overload(arrayOf(), { property.get() })
+	) : Overload(arrayOf(), { property.get() }) {
+		override fun toString(): String {
+			return "get${property.toString().replaceFirstChar { c -> c.uppercase() }}"
+		}
+	}
 	open class KMutableProperty0Overload<V>(
 		val property: KMutableProperty0<V>
 	) : Overload(arrayOf(property.returnType.jvmErasure.java),
-		{ property.set(it[0] as V) })
+		{ property.set(it[0] as V) }
+	) {
+		override fun toString(): String {
+			return "set${property.toString().replaceFirstChar { c -> c.uppercase() }}"
+		}
+	}
 	open class KProperty1Overload<T, V>(
 		val owner: T,
 		val property: KProperty1<T, V>
-	) : Overload(arrayOf(), { property.get(owner) })
+	) : Overload(arrayOf(), { property.get(owner) }) {
+		override fun toString(): String {
+			return "get${property.toString().replaceFirstChar { c -> c.uppercase() }}"
+		}
+	}
 	open class KMutableProperty1Overload<T, V>(
 		val owner: T,
 		val property: KMutableProperty1<T, V>
 	) : Overload(arrayOf(property.returnType.jvmErasure.java),
-		{ property.set(owner, it[0] as V) })
+		{ property.set(owner, it[0] as V) }
+	) {
+		override fun toString(): String {
+			return "set${property.toString().replaceFirstChar { c -> c.uppercase() }}"
+		}
+	}
 	open class KProperty2Overload<D, E, V>(
 		val owner1: D,
 		val owner2: E,
 		val property: KProperty2<D, E, V>
-	) : Overload(arrayOf(), { property.get(owner1, owner2) })
+	) : Overload(arrayOf(), { property.get(owner1, owner2) }) {
+		override fun toString(): String {
+			return "get${property.toString().replaceFirstChar { c -> c.uppercase() }}"
+		}
+	}
 	open class KMutableProperty2Overload<D, E, V>(
 		val owner1: D,
 		val owner2: E,
 		val property: KMutableProperty2<D, E, V>
 	) : Overload(arrayOf(property.returnType.jvmErasure.java),
-		{ property.set(owner1, owner2, it[0] as V) })
+		{ property.set(owner1, owner2, it[0] as V) }
+	) {
+		override fun toString(): String {
+			return "set${property.toString().replaceFirstChar { c -> c.uppercase() }}"
+		}
+	}
 
 	companion object {
 		@JvmStatic

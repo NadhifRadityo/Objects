@@ -6,9 +6,9 @@ plugins {
 buildDir = '../__target__/__sources__/'
 
 context(this) {
-    scriptImport('libraryModules.gradle', 'libraryModules')
+    scriptImport arrayOf('module'), from('libraryModules.gradle')
 
-    libraryModules.module('GameLibrary - LWJGL')
+    module('GameLibrary - LWJGL')
 
-    scriptImport('library.gradle')
+    scriptImport from('library.gradle')
 }

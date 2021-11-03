@@ -157,6 +157,7 @@ object Utils {
 		Char::class.javaObjectType to Char::class.javaPrimitiveType,
 		Byte::class.javaObjectType to Byte::class.javaPrimitiveType,
 		Boolean::class.javaObjectType to Boolean::class.javaPrimitiveType)
+	@JvmStatic
 	fun <T : Any> prepareGroovyKotlinCache(obj: T): GroovyKotlinCache<T> {
 		val kclass = obj::class
 		val jclass = obj::class.java
@@ -168,17 +169,16 @@ object Utils {
 			val annotation = function.findAnnotation<ExportGradle>()
 
 			val id = "${qualifiedName}.${functionName}"
-			if(cache.pushed.containsKey(id)) continue
-
-			val names = ArrayList<String>()
-			if(annotation?.names != null) names += annotation.names
-			if(annotation != null) names += functionName
-			names += "__INTERNAL_${qualifiedName.replace(".", "$")}_${functionName}"
-
-			val closure = KotlinClosure(functionName)
+			var closure = cache.pushed[id]?.second
+			if(closure == null) {
+				val names = ArrayList<String>()
+				if(annotation?.names != null) names += annotation.names
+				if(annotation != null) names += functionName
+				names += "__INTERNAL_${qualifiedName.replace(".", "$")}_${functionName}"
+				closure = KotlinClosure(functionName)
+				cache.pushed[id] = Pair(names.toTypedArray(), closure)
+			}
 			closure.overloads += getKFunctionOverloads(arrayOf(obj), function)
-
-			cache.pushed[id] = Pair(names.toTypedArray(), closure)
 		}
 		for(member in kclass.memberProperties) {
 			if(!member.hasAnnotation<JvmStatic>()) continue
@@ -188,32 +188,42 @@ object Utils {
 
 			if(true) {
 				val id = "${qualifiedName}.${memberName}.get"
-				if(cache.pushed.containsKey(id)) continue
-
-				val names = ArrayList<String>()
-				if(annotation?.names != null) names += annotation.names.map { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
-				if(annotation != null) names += "get${memberName.replaceFirstChar { c -> c.uppercase() }}"
-				names += "get__INTERNAL_${qualifiedName.replace(".", "$")}_${memberName}"
-
-				val closure = KotlinClosure(memberName)
+				var closure = cache.pushed[id]?.second
+				if(closure == null) {
+					val names = ArrayList<String>()
+					if(annotation?.names != null) names += annotation.names.map { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
+					if(annotation != null) names += "get${memberName.replaceFirstChar { c -> c.uppercase() }}"
+					names += "get__INTERNAL_${qualifiedName.replace(".", "$")}_${memberName}"
+					closure = KotlinClosure(memberName)
+					cache.pushed[id] = Pair(names.toTypedArray(), closure)
+				}
 				closure.overloads += KotlinClosure.KProperty1Overload(obj, member as KProperty1<T, *>)
-
-				cache.pushed[id] = Pair(names.toTypedArray(), closure)
 			}
 			if(member is KMutableProperty1<*, *>) {
 				val id = "${qualifiedName}.${memberName}.set"
-				if(cache.pushed.containsKey(id)) continue
-
-				val names = ArrayList<String>()
-				if(annotation?.names != null) names += annotation.names.map { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
-				if(annotation != null) names += "set${memberName.replaceFirstChar { c -> c.uppercase() }}"
-				names += "set__INTERNAL_${qualifiedName.replace(".", "$")}_${memberName}"
-
-				val closure = KotlinClosure(memberName)
+				var closure = cache.pushed[id]?.second
+				if(closure == null) {
+					val names = ArrayList<String>()
+					if(annotation?.names != null) names += annotation.names.map { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
+					if(annotation != null) names += "set${memberName.replaceFirstChar { c -> c.uppercase() }}"
+					names += "set__INTERNAL_${qualifiedName.replace(".", "$")}_${memberName}"
+					closure = KotlinClosure(memberName)
+					cache.pushed[id] = Pair(names.toTypedArray(), closure)
+				}
 				closure.overloads += KotlinClosure.KMutableProperty1Overload(obj, member as KMutableProperty1<T, *>)
-
-				cache.pushed[id] = Pair(names.toTypedArray(), closure)
 			}
+		}
+		return cache
+	}
+	@JvmStatic
+	fun prepareGroovyKotlinCache(obj: Map<String, (Array<out Any?>) -> Any?>): GroovyKotlinCache<*> {
+		val cache = GroovyKotlinCache(obj, Any::class, Any::class.java)
+		for(entry in obj.entries) {
+			val name = entry.key
+			val lambda = entry.value
+			val closure = KotlinClosure(name)
+			closure.overloads += KotlinClosure.KLambdaOverload(lambda)
+			cache.pushed[name] = Pair(arrayOf(name), closure)
 		}
 		return cache
 	}

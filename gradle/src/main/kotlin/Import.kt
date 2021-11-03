@@ -1,12 +1,17 @@
 import Common.groovyKotlinCaches
 import Common.lastContext
 import Common.onBuildFinished
+import Keywords.being
+import Keywords.with
 import Utils.__must_not_happen
+import Utils.attachAnyObject
 import Utils.attachObject
 import Utils.prepareGroovyKotlinCache
+import groovy.lang.Closure
 import org.gradle.api.initialization.IncludedBuild
 import java.io.File
 import java.util.*
+import kotlin.collections.HashMap
 
 object Import {
 	@JvmStatic
@@ -87,6 +92,48 @@ object Import {
 		}
 		return Pair(build, scriptFile)
 	}
+	@JvmStatic
+	fun __applyImport(script: Script, what: Array<String>?, being: String?) {
+		val context = lastContext()
+		val interfaces = HashMap<String, (Array<out Any?>) -> Any?>(script.exports.size)
+		what?.forEach { if(!script.exports.containsKey(it))
+			throw IllegalArgumentException("There's no such export '$it' from ${script.file}") }
+		for(export in script.exports) {
+			val key = export.key
+			val value = export.value
+			if(what != null && !what.contains(key))
+				continue
+			if(value is Closure<*>)
+				interfaces[key] = { args ->
+					value.call(*args)
+				}
+			else if(containsFlag("reflection_import")) {
+				interfaces["get${key.replaceFirstChar { c -> c.uppercase() }}"] = {
+					script.exports[key]
+				}
+				interfaces["set${key.replaceFirstChar { c -> c.uppercase() }}"] = { args ->
+					script.exports[key] = args[0]
+				}
+			} else {
+				interfaces[key] = {
+					script.exports[key]
+				}
+			}
+		}
+		val cache = prepareGroovyKotlinCache(interfaces)
+		if(being == null) {
+			attachObject(context, cache)
+		} else {
+			val dummy = GroovyInteroperability.DummyGroovyObject()
+			attachAnyObject(dummy, cache)
+			dummy.finalize()
+			context.project.extensions.extraProperties.set(being, dummy)
+//			val intrf = HashMap<String, (Array<out Any?>) -> Any?>(1)
+//			intrf[being] = { dummy }
+//			val cache2 = prepareGroovyKotlinCache(intrf)
+//			attachObject(context, cache2)
+		}
+	}
 
 	/**
 	 * Import script. If the script is already imported before, then it will only extract [Script.exports].
@@ -101,12 +148,12 @@ object Import {
 	 */
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun scriptImport(scriptObj: Any, asVariable: String? = null, actions: Array<(ImportInfo) -> Unit> = arrayOf()): Map<String, Any?> {
+	fun scriptImport(what: Array<String>?, from: Any, being: String? = null, with: Array<(ImportInfo) -> Unit> = arrayOf()): Map<String, Any?> {
 		val context = lastContext()
 		val project = context.project
 		val ext = project.extensions.extraProperties
 		val stack = stack.get()
-		val (build, scriptFile) = __getScriptFile(scriptObj)
+		val (build, scriptFile) = __getScriptFile(from)
 
 		val scriptPath = scriptFile.canonicalPath
 		val scriptName = scriptFile.name
@@ -117,7 +164,7 @@ object Import {
 		val script = scripts.computeIfAbsent(scriptId) {
 			Script(build, scriptFile, scriptId, null, null, null, HashMap(), ArrayList())
 		}
-		val importInfo = ImportInfo(context, scriptId, actions.toList())
+		val importInfo = ImportInfo(context, scriptId, with.toList())
 		if(script.file.canonicalPath != scriptPath)
 			throw IllegalStateException("Duplicate gradle script id \"$scriptId\", another " +
 					"import is from \"${script.file.canonicalPath}\"")
@@ -128,20 +175,16 @@ object Import {
 		val postCheck: () -> Boolean = postCheck@{
 			if(script.context == null)
 				throw IllegalStateException("Imported script does not call scriptApply()")
-			if(asVariable == null)
-				for(entry in script.exports)
-					ext.set(entry.key, entry.value)
-			else
-				ext.set(asVariable, Collections.unmodifiableMap(script.exports))
+			__applyImport(script, what, being)
 			return@postCheck script.imports.add(importInfo)
 		}
 		val preAction: () -> Unit = preAction@{
-			for(j in actions.indices step 2)
-				actions[j](importInfo)
+			for(j in with.indices step 2)
+				with[j](importInfo)
 		}
 		val postAction: () -> Unit = postAction@{
-			for(j in actions.size - 1 downTo 0 step 2)
-				actions[j](importInfo)
+			for(j in with.size - 1 downTo 0 step 2)
+				with[j](importInfo)
 		}
 		val catchCheck: (Throwable) -> Throwable? = catchCheck@{ e ->
 			script.imports.remove(importInfo)
@@ -166,6 +209,28 @@ object Import {
 				__must_not_happen()
 		}
 		return Collections.unmodifiableMap(script.exports)
+	}
+	@ExportGradle
+	@JvmStatic @JvmOverloads
+	fun scriptImport(what: Array<Any>?, from: Any, being: String? = null, with: Array<(ImportInfo) -> Unit> = arrayOf()): Map<String, Any?> {
+		return scriptImport(what?.filterIsInstance<String>()?.toTypedArray() as Array<String>?, from, being, with)
+	}
+	@ExportGradle
+	@JvmStatic @JvmOverloads
+	fun scriptImport(from: Any, being: String? = null, with: Array<(ImportInfo) -> Unit> = arrayOf()): Map<String, Any?> {
+		return scriptImport(null as Array<Any>?, from, being, with)
+	}
+	@ExportGradle
+	@JvmStatic
+	fun scriptImport(what: Array<Any>?, from: Keywords.From<Any>, being: Keywords.Being<String?> = being(null),
+					 with: Keywords.With<Array<(ImportInfo) -> Unit>> = with(arrayOf())): Map<String, Any?> {
+		return scriptImport(what, from.user, being.user, with.user)
+	}
+	@ExportGradle
+	@JvmStatic
+	fun scriptImport(from: Keywords.From<Any>, being: Keywords.Being<String?> = being(null),
+					 with: Keywords.With<Array<(ImportInfo) -> Unit>> = with(arrayOf())): Map<String, Any?> {
+		return scriptImport(null as Array<Any>?, from.user, being.user, with.user)
 	}
 	@ExportGradle
 	@JvmStatic

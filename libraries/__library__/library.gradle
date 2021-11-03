@@ -2,8 +2,8 @@ import java.util.stream.Stream
 
 context(this) {
 	scriptApply()
-	scriptImport('libraryModules.gradle', 'libraryModules')
-	scriptImport('libraryLoad.gradle', 'libraryLoad')
+	scriptImport from('libraryModules.gradle'), being('libraryModules')
+	scriptImport from('libraryLoad.gradle'), being('libraryLoad')
 }
 
 repositories {
