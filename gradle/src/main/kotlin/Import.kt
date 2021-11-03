@@ -26,16 +26,24 @@ object Import {
 		actions.clear()
 	}
 
+	@ExportGradle
+	@JvmStatic
+	fun getImportFile(id: String): ImportFile {
+		return files[id]!!
+	}
+	@ExportGradle
 	@JvmStatic
 	fun __getLastImport(): ImportInfo? {
 		val stack = stack.get()
 		return if(stack.size > 0) stack.last else null
 	}
+	@ExportGradle
 	@JvmStatic
 	fun __getLastImportFile(): ImportFile? {
 		val lastImport = __getLastImport()
 		return if(lastImport != null) files[lastImport.importId] else null
 	}
+
 	@JvmStatic
 	fun __getScriptFile(scriptObj: Any): Pair<IncludedBuild?, File> {
 		val project = lastContext().project
@@ -108,7 +116,7 @@ object Import {
 		}
 		val postCheck: () -> Boolean = postCheck@{
 			if(importFile.context == null)
-				throw IllegalStateException("Imported script does not call apply()")
+				throw IllegalStateException("Imported script does not call scriptApply()")
 			if(asVariable == null)
 				for(entry in importFile.exports)
 					ext.set(entry.key, entry.value)
