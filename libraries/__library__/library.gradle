@@ -29,7 +29,11 @@ test {
 // If the Daemon is single use, then this has no information
 // about the cached ClassLoader. And forcefully, have to load
 // latest compilation no matter what.
-if(isDaemonProbablyUnstable() && libraryLoad.source_files().length > 0)
+def daemonProbablyUnstable = false
+context(this) {
+	daemonProbablyUnstable = isDaemonProbablyUnstable()
+}
+if(daemonProbablyUnstable && libraryLoad.source_files().length > 0)
 	libraryLoad.load()
 if(libraryLoad.available())
 	libraryLoad.run(libraryModules.root_directory(), libraryModules.loaded_modules())
@@ -45,11 +49,11 @@ task libraryLoad {
 		libraryLoad.source_files().length > 0
 	}
 	doFirst {
-		if(isDaemonProbablyUnstable() || anyChanged())
+		if(daemonProbablyUnstable || anyChanged())
 			libraryLoad.clear()
 	}
 	doLast {
-		if(isDaemonProbablyUnstable()) return
+		if(daemonProbablyUnstable) return
 		if(!libraryLoad.available() || anyChanged())
 			libraryLoad.load()
 	}
@@ -58,7 +62,7 @@ task libraryUnload {
 	group = 'library'
 	description = 'Unload library scripts from daemon cache.'
 	onlyIf {
-		!isDaemonProbablyUnstable()
+		!daemonProbablyUnstable
 	}
 	doLast {
 		libraryLoad.clear()

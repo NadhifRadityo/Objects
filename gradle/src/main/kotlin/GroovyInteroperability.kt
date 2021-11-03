@@ -27,6 +27,7 @@ object GroovyInteroperability {
 	@JvmStatic
 	fun deinit() {
 		groovyKotlinCaches -= cache!!
+		cache = null
 	}
 
 	/*
@@ -218,10 +219,13 @@ object GroovyInteroperability {
 	val FIELD_MetaClassImpl_allMethods = MetaClassImpl::class.java.getDeclaredField("allMethods")
 	@JvmStatic
 	val METHOD_MetaClassImpl_addMetaMethodToIndex = MetaClassImpl::class.java.getDeclaredMethod("addMetaMethodToIndex", MetaMethod::class.java, MetaMethodIndex.Header::class.java)
+	@JvmStatic
+	val FIELD_MetaMethodIndex_size = MetaMethodIndex::class.java.getDeclaredField("size")
 	init {
 		FIELD_MetaClassImpl_metaMethodIndex.isAccessible = true
 		FIELD_MetaClassImpl_allMethods.isAccessible = true
 		METHOD_MetaClassImpl_addMetaMethodToIndex.isAccessible = true
+		FIELD_MetaMethodIndex_size.isAccessible = true
 	}
 
 	class KotlinMetaMethod(
@@ -259,7 +263,7 @@ object GroovyInteroperability {
 			System.err.println("Redefining meta method '$name' for '$declaringClass' at '$metaClass' with `$closure`")
 
 		if(closure == null) {
-			run {
+			if(true) {
 				val iterator = allMethods.iterator()
 				while(iterator.hasNext()) {
 					val elem = iterator.next()
@@ -270,33 +274,47 @@ object GroovyInteroperability {
 					break
 				}
 			}
-			run {
+			if(true) {
 				val table = metaMethodIndex.table
 				val hash = MetaMethodIndex.hash(31 * declaringClass.hashCode() + name.hashCode())
 				val index = hash and (table.size - 1)
+				val size = metaMethodIndex.size()
 				var elem = table[index]
+				var prev: MetaMethodIndex.Entry? = null
 				while(elem != null) {
 					val asImpl = elem.methods as? KotlinMetaMethod
 					if(elem.hash != hash || asImpl == null || asImpl.name0 != name || asImpl.declaringClass0 != declaringClass) {
+						prev = elem
 						elem = elem.nextHashEntry
 						continue
 					}
-					table[index] = elem.nextHashEntry
+					if(prev == null)
+						table[index] = elem.nextHashEntry
+					else prev.nextHashEntry = elem.nextHashEntry
+					elem.nextHashEntry = null
+					FIELD_MetaMethodIndex_size.set(metaMethodIndex, size - 1)
 					break
 				}
 			}
-			run {
+			if(true) {
 				var head = header.head
+				var prev: MetaMethodIndex.Entry? = null
 				while(head != null) {
 					val asImpl = head.methods as? KotlinMetaMethod
 					if(asImpl == null || asImpl.name0 != name || asImpl.declaringClass0 != declaringClass) {
+						prev = head
 						head = head.nextClassEntry
 						continue
 					}
-					header.head = head.nextClassEntry
+					if(prev == null)
+						header.head = head.nextClassEntry
+					else prev.nextClassEntry = head.nextClassEntry
+					head.nextClassEntry = null
 					break
 				}
 			}
+			if(header.head == null)
+				metaMethodIndex.methodHeaders.remove(declaringClass)
 			return
 		}
 

@@ -9,3 +9,7 @@ Common.context(this) {
 dependencies {
 
 }
+
+context(this) {
+    forwardTask("Library", { it.group == "library" })
+}

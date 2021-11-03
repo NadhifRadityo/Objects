@@ -33,6 +33,7 @@ object Utils {
 	@JvmStatic
 	fun deinit() {
 		groovyKotlinCaches -= cache!!
+		cache = null
 	}
 
 	@JvmStatic
@@ -94,8 +95,8 @@ object Utils {
 
 	// Gradle Task
 	@ExportGradle
-	@JvmStatic
-	fun forwardTask(project: Any?, filter: (Task) -> Boolean, exec: (Task) -> Unit) {
+	@JvmStatic @JvmOverloads
+	fun forwardTask(project: Any?, filter: (Task) -> Boolean, exec: (Task) -> Unit = {}) {
 		val project0 = Common.lastContext().project
 		val project1 = asProject(project)
 		project1.tasks.filter(filter).map { task -> project0.task(task.name) {

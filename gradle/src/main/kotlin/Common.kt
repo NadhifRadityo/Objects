@@ -60,8 +60,12 @@ object Common {
 				Utils.deinit()
 				GroovyInteroperability.deinit()
 				groovyKotlinCaches -= cache!!
+				cache = null
 			}
 		}
+		for(cache in groovyKotlinCaches)
+			System.err.println("Cache `${cache.owner.toString()}` [${cache.owner?.javaClass.toString()}] is not cleared")
+		groovyKotlinCaches.clear()
 		Utils.purgeThreadLocal(contextStack)
 		onBuildFinished.clear()
 		initContext = null

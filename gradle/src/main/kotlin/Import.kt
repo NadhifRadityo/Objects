@@ -26,6 +26,10 @@ object Import {
 	@JvmStatic
 	fun deinit() {
 		groovyKotlinCaches -= cache!!
+		cache = null
+		scripts.clear()
+		Utils.purgeThreadLocal(stack)
+		actions.clear()
 	}
 
 	@ExportGradle
@@ -175,6 +179,8 @@ object Import {
 		val lastImportFile = __getLastImportFile()!!
 		val context = lastContext()
 		lastImportFile.context = context
+		for(cache in groovyKotlinCaches)
+			attachObject(context, cache)
 	}
 	@ExportGradle
 	@JvmStatic

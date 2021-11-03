@@ -24,6 +24,7 @@ object Logger {
 	@JvmStatic
 	fun deinit() {
 		groovyKotlinCaches -= cache!!
+		cache = null
 		factory = null
 		instances = null
 	}
