@@ -21,9 +21,9 @@ import java.io.File
  *
  * [exports] objects exported by the script. This map will be copied to `ext`.
  *
- * [imports] all references to [ImportInfo] where the [ImportInfo.importId] is [id]
+ * [imports] all references to [ImportInfo] where the [ImportInfo.scriptId] is [id]
  */
-open class ImportFile(
+open class Script(
 	val build: IncludedBuild?,
 	val file: File,
 	val id: String,

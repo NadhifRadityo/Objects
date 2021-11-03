@@ -1,7 +1,7 @@
 /**
  * Store from where the script is imported from.
  *
- * Identify the target script from [importId].
+ * Identify the target script from [scriptId].
  *
  * [context] the value `this` from which the script is imported.
  *
@@ -9,6 +9,6 @@
  */
 data class ImportInfo(
 	val context: Context,
-	val importId: String,
+	val scriptId: String,
 	val actions: List<(ImportInfo) -> Unit>,
 )

@@ -59,7 +59,7 @@ def run = { File rootDirectory, Map<String, File> modules ->
 def __default_import_action = { def info ->
 	currentBuildHash = null
 	if(!containsFlag('export_functions_only')) {
-		IncludedBuild build = getImportFile(info.importId).build
+		IncludedBuild build = getScript(info).build
 		if(build == null) currentBuildHash = rootDir.getCanonicalPath().hashCode()
 		else currentBuildHash = build.projectDir.getCanonicalPath().hashCode()
 		LoaderInfo loaderInfo = buildLoader.get(currentBuildHash)

@@ -8,7 +8,7 @@ import java.util.*
 
 object Import {
 	@JvmStatic
-	private val files = HashMap<String, ImportFile>()
+	private val scripts = HashMap<String, Script>()
 	@JvmStatic
 	private val stack = ThreadLocal.withInitial<LinkedList<ImportInfo>> { LinkedList() }
 	@JvmStatic
@@ -21,15 +21,20 @@ object Import {
 	@JvmStatic
 	fun deinit() {
 		Utils.pullKotlinFromGradle(Import)
-		files.clear()
+		scripts.clear()
 		Utils.purgeThreadLocal(stack)
 		actions.clear()
 	}
 
 	@ExportGradle
 	@JvmStatic
-	fun getImportFile(id: String): ImportFile {
-		return files[id]!!
+	fun getScript(id: String): Script {
+		return scripts[id]!!
+	}
+	@ExportGradle
+	@JvmStatic
+	fun getScript(info: ImportInfo): Script {
+		return getScript(info.scriptId)
 	}
 	@ExportGradle
 	@JvmStatic
@@ -39,9 +44,9 @@ object Import {
 	}
 	@ExportGradle
 	@JvmStatic
-	fun __getLastImportFile(): ImportFile? {
+	fun __getLastImportFile(): Script? {
 		val lastImport = __getLastImport()
-		return if(lastImport != null) files[lastImport.importId] else null
+		return if(lastImport != null) scripts[lastImport.scriptId] else null
 	}
 
 	@JvmStatic
@@ -78,8 +83,8 @@ object Import {
 	}
 
 	/**
-	 * Import script. If the script is already imported before, then it will only extract [ImportFile.exports].
-	 * If not, it loads the script, calls the [ImportFile.construct], and extracts the exported list.
+	 * Import script. If the script is already imported before, then it will only extract [Script.exports].
+	 * If not, it loads the script, calls the [Script.construct], and extracts the exported list.
 	 *
 	 * Example:
 	 * - `require('test.gradle')` loads `test.gradle` from current path
@@ -103,26 +108,26 @@ object Import {
 		val scriptId = if(scriptNameSplit == -1) scriptName
 				else scriptName.substring(0, scriptNameSplit)
 
-		val importFile = files.computeIfAbsent(scriptId) {
-			ImportFile(build, scriptFile, scriptId, null, null, null, HashMap(), ArrayList())
+		val script = scripts.computeIfAbsent(scriptId) {
+			Script(build, scriptFile, scriptId, null, null, null, HashMap(), ArrayList())
 		}
 		val importInfo = ImportInfo(context, scriptId, actions.toList())
-		if(importFile.file.canonicalPath != scriptPath)
+		if(script.file.canonicalPath != scriptPath)
 			throw IllegalStateException("Duplicate gradle script id \"$scriptId\", another " +
-					"import is from \"${importFile.file.canonicalPath}\"")
+					"import is from \"${script.file.canonicalPath}\"")
 
 		val preCheck: () -> Boolean = preCheck@{
-			return@preCheck importFile.imports.size == 0
+			return@preCheck script.imports.size == 0
 		}
 		val postCheck: () -> Boolean = postCheck@{
-			if(importFile.context == null)
+			if(script.context == null)
 				throw IllegalStateException("Imported script does not call scriptApply()")
 			if(asVariable == null)
-				for(entry in importFile.exports)
+				for(entry in script.exports)
 					ext.set(entry.key, entry.value)
 			else
-				ext.set(asVariable, Collections.unmodifiableMap(importFile.exports))
-			return@postCheck importFile.imports.add(importInfo)
+				ext.set(asVariable, Collections.unmodifiableMap(script.exports))
+			return@postCheck script.imports.add(importInfo)
 		}
 		val preAction: () -> Unit = preAction@{
 			for(j in actions.indices step 2)
@@ -133,7 +138,7 @@ object Import {
 				actions[j](importInfo)
 		}
 		val catchCheck: (Throwable) -> Throwable? = catchCheck@{ e ->
-			importFile.imports.remove(importInfo)
+			script.imports.remove(importInfo)
 			return@catchCheck e
 		}
 
@@ -154,7 +159,7 @@ object Import {
 			if(importInfo != lastStack)
 				__must_not_happen()
 		}
-		return Collections.unmodifiableMap(importFile.exports)
+		return Collections.unmodifiableMap(script.exports)
 	}
 	@ExportGradle
 	@JvmStatic
@@ -204,8 +209,8 @@ object Import {
 	@JvmStatic
 	fun includeFlags(vararg flags: String): Array<(ImportInfo) -> Unit> {
 		return arrayOf(
-			{ importInfo -> for(flag in flags) importInfo.context.project.extensions.extraProperties.set("${importInfo.importId}_${flag}", true) },
-			{ importInfo -> for(flag in flags) importInfo.context.project.extensions.extraProperties.set("${importInfo.importId}_${flag}", null) }
+			{ importInfo -> for(flag in flags) importInfo.context.project.extensions.extraProperties.set("${importInfo.scriptId}_${flag}", true) },
+			{ importInfo -> for(flag in flags) importInfo.context.project.extensions.extraProperties.set("${importInfo.scriptId}_${flag}", null) }
 		)
 	}
 	@ExportGradle
@@ -217,6 +222,6 @@ object Import {
 		return if(lastImport == null)
 			ext.has(flag)
 		else
-			ext.has("${lastImport.importId}_${flag}")
+			ext.has("${lastImport.scriptId}_${flag}")
 	}
 }
