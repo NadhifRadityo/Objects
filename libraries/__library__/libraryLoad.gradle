@@ -92,9 +92,9 @@ context(this) {
 	}
 }
 
-scriptExport('get_current_loader_info', get_current_loader_info)
-scriptExport('clear', clear)
-scriptExport('source_files', source_files)
-scriptExport('load', load)
-scriptExport('available', available)
-scriptExport('run', run)
+scriptExport get_current_loader_info, being('get_current_loader_info')
+scriptExport clear, being('clear')
+scriptExport source_files, being('source_files')
+scriptExport load, being('load')
+scriptExport available, being('available')
+scriptExport run, being('run')

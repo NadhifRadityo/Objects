@@ -10,7 +10,7 @@ import java.io.File
  * [file] resolved script path.
  *
  * [id] the identifier of the import. May be referenced from
- * [ImportInfo] to identify file.
+ * [ScriptImport] to identify file.
  *
  * [context] the context when the script is loaded. `context(this) { scriptApply() }`
  *
@@ -21,26 +21,21 @@ import java.io.File
  *
  * [exports] objects exported by the script. This map will be copied to `ext`.
  *
- * [imports] all references to [ImportInfo] where the [ImportInfo.scriptId] is [id]
+ * [imports] all references to [ScriptImport] where the [ScriptImport.scriptId] is [id]
  */
 open class Script(
 	val build: IncludedBuild?,
 	val file: File,
-	val id: String,
-	context: Context?,
-	construct: (() -> Unit)?,
-	destruct: (() -> Unit)?,
-	exports: MutableMap<String, Any?>,
-	imports: MutableList<ImportInfo>,
+	val id: String
 ) {
-	var context: Context? = context
+	var context: Context? = null
 		internal set
-	var construct: (() -> Unit)? = construct
+	var construct: (() -> Unit)? = null
 		internal set
-	var destruct: (() -> Unit)? = destruct
+	var destruct: (() -> Unit)? = null
 		internal set
-	var exports: MutableMap<String, Any?> = exports
+	var exports: MutableList<ScriptExport> = ArrayList()
 		internal set
-	var imports: MutableList<ImportInfo> = imports
+	var imports: MutableList<ScriptImport> = ArrayList()
 		internal set
 }

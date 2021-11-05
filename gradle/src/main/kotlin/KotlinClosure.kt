@@ -6,7 +6,7 @@ import java.lang.reflect.Method
 import kotlin.reflect.*
 import kotlin.reflect.jvm.jvmErasure
 
-class KotlinClosure(
+open class KotlinClosure(
 	val name: String,
 	vararg _overloads: Overload
 ): Closure<Any?>(null) {
@@ -38,6 +38,28 @@ class KotlinClosure(
 		val callback: (Array<out Any?>) -> Any?
 	) {
 		val parameterCount = parameterTypes.size
+	}
+	open class IgnoreSelfOverload(
+		val selfClass: Class<*>,
+		val overload: Overload
+	) : Overload(arrayOf(selfClass, *overload.parameterTypes), {
+			overload.callback(it.copyOfRange(1, it.size))
+		}
+	) {
+		override fun toString(): String {
+			return "^$overload"
+		}
+	}
+	open class WithSelfOverload(
+		val self: Any?,
+		val overload: Overload
+	) : Overload(arrayOf(*overload.parameterTypes), {
+		overload.callback(arrayOf(self, *it))
+	}
+	) {
+		override fun toString(): String {
+			return "*$overload"
+		}
 	}
 	open class MethodOverload(
 		val owner: Any?,
@@ -318,6 +340,7 @@ class KotlinClosure(
 							data.error = "Cannot cast ${varargv.javaClass} to $componentType [vararg $j]"
 							continue@Outer
 						}
+						data.changedArgsCount++
 						val vararg = java.lang.reflect.Array.newInstance(componentType, args.size - i)
 						System.arraycopy(args, i, vararg, 0, java.lang.reflect.Array.getLength(vararg))
 						pushArg(data, i, vararg)
@@ -354,8 +377,9 @@ class KotlinClosure(
 					val first = notChangedArgs.first()
 					return Pair(first.overload, first.args!!)
 				}
-				throw IllegalStateException("Ambiguous overload calls [${args.joinToString(", ") { it.toString() }}] \n " +
-						"Matched overloads: \n${notError.joinToString("\n") { "- ${it.overload}" }}")
+				throw IllegalStateException("Ambiguous overloads call for [${args.joinToString(", ") { if(it != null) it::class.java.toString() else "NULL" }}]\n" +
+						"\t\twith values [${args.joinToString(", ") { it.toString() }}]\n" +
+						"Matched overloads: \n${notError.joinToString("\n") { "\t- ${it.overload} (Not Exact: ${it.notExactMatchCount}, Changed Args: ${it.changedArgsCount})" }}")
 			}
 			val first = notError.first()
 			return Pair(first.overload, first.args!!)

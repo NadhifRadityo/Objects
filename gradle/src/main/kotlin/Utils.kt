@@ -8,6 +8,7 @@ import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.api.invocation.Gradle
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.groovy.scripts.BasicScript
+import org.gradle.internal.scripts.GradleScript
 import org.gradle.launcher.daemon.server.scaninfo.DaemonScanInfo
 import java.io.File
 import java.lang.management.ManagementFactory
@@ -172,13 +173,18 @@ object Utils {
 			var closure = cache.pushed[id]?.second
 			if(closure == null) {
 				val names = ArrayList<String>()
-				if(annotation?.names != null) names += annotation.names
-				if(annotation != null) names += functionName
+				if(annotation != null)
+					if(annotation.names.isEmpty()) names += functionName
+					else names += annotation.names
 				names += "__INTERNAL_${qualifiedName.replace(".", "$")}_${functionName}"
 				closure = KotlinClosure(functionName)
 				cache.pushed[id] = Pair(names.toTypedArray(), closure)
 			}
-			closure.overloads += getKFunctionOverloads(arrayOf(obj), function)
+			val originalOverloads = getKFunctionOverloads(arrayOf(obj), function)
+			closure.overloads += originalOverloads
+			if(annotation == null || !annotation.includeSelf)
+				closure.overloads += originalOverloads.map { KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, it) }
+			else closure.overloads += originalOverloads.map { KotlinClosure.WithSelfOverload(null, it) }
 		}
 		for(member in kclass.memberProperties) {
 			if(!member.hasAnnotation<JvmStatic>()) continue
@@ -191,26 +197,36 @@ object Utils {
 				var closure = cache.pushed[id]?.second
 				if(closure == null) {
 					val names = ArrayList<String>()
-					if(annotation?.names != null) names += annotation.names.map { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
-					if(annotation != null) names += "get${memberName.replaceFirstChar { c -> c.uppercase() }}"
+					if(annotation != null)
+						if(annotation.names.isEmpty()) names += "get${memberName.replaceFirstChar { c -> c.uppercase() }}"
+						else names += annotation.names.map { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
 					names += "get__INTERNAL_${qualifiedName.replace(".", "$")}_${memberName}"
 					closure = KotlinClosure(memberName)
 					cache.pushed[id] = Pair(names.toTypedArray(), closure)
 				}
-				closure.overloads += KotlinClosure.KProperty1Overload(obj, member as KProperty1<T, *>)
+				val originalOverload = KotlinClosure.KProperty1Overload(obj, member as KProperty1<T, *>)
+				closure.overloads += originalOverload
+				if(annotation == null || !annotation.includeSelf)
+					closure.overloads += KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, originalOverload)
+				else closure.overloads += KotlinClosure.WithSelfOverload(null, originalOverload)
 			}
 			if(member is KMutableProperty1<*, *>) {
 				val id = "${qualifiedName}.${memberName}.set"
 				var closure = cache.pushed[id]?.second
 				if(closure == null) {
 					val names = ArrayList<String>()
-					if(annotation?.names != null) names += annotation.names.map { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
-					if(annotation != null) names += "set${memberName.replaceFirstChar { c -> c.uppercase() }}"
+					if(annotation != null)
+						if(annotation.names.isEmpty()) names += "set${memberName.replaceFirstChar { c -> c.uppercase() }}"
+						else names += annotation.names.map { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
 					names += "set__INTERNAL_${qualifiedName.replace(".", "$")}_${memberName}"
 					closure = KotlinClosure(memberName)
 					cache.pushed[id] = Pair(names.toTypedArray(), closure)
 				}
-				closure.overloads += KotlinClosure.KMutableProperty1Overload(obj, member as KMutableProperty1<T, *>)
+				val originalOverload = KotlinClosure.KMutableProperty1Overload(obj, member as KMutableProperty1<T, *>)
+				closure.overloads += originalOverload
+				if(annotation == null || !annotation.includeSelf)
+					closure.overloads += KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, originalOverload)
+				else closure.overloads += KotlinClosure.WithSelfOverload(null, originalOverload)
 			}
 		}
 		return cache

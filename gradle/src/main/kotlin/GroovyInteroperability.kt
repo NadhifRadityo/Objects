@@ -9,6 +9,7 @@ import org.codehaus.groovy.runtime.MethodClosure
 import org.codehaus.groovy.runtime.metaclass.ClosureMetaClass
 import org.codehaus.groovy.runtime.metaclass.MetaMethodIndex
 import org.gradle.api.Project
+import org.gradle.internal.reflect.NoSuchPropertyException
 import java.lang.reflect.Modifier
 import kotlin.jvm.functions.FunctionN
 
@@ -238,7 +239,7 @@ object GroovyInteroperability {
 	}
 	open class KotlinMetaMethod(
 		val name0: String,
-		val declaringClass0: Class<*>,
+		val declaringClass0: CachedClass,
 		val closure: Closure<*>
 	): MetaMethod() {
 		override fun getModifiers(): Int {
@@ -247,88 +248,245 @@ object GroovyInteroperability {
 		override fun getName(): String {
 			return name0
 		}
-		override fun getPT(): Array<Class<Any>> {
+		override fun getPT(): Array<Class<*>> {
 			return arrayOf(Any::class.java)
 		}
 		override fun getReturnType(): Class<*> {
 			return Any::class.java
 		}
-		override fun getDeclaringClass(): CachedClass? {
-			return ReflectionCache.getCachedClass(declaringClass0)
+		override fun getDeclaringClass(): CachedClass {
+			return declaringClass0
 		}
 		override fun invoke(self: Any?, args: Array<out Any?>): Any? {
-			return closure.call(*args)
+			return closure.call(self, *args)
 		}
 	}
 	@JvmStatic
-	fun setMetaMethod(metaClass: MetaClassImpl, name: String, declaringClass: Class<*>, closure: Closure<*>?) {
+	fun metaMethodSame(metaMethod: MetaMethod, name: String, declaringClass: CachedClass, parameterTypes: Array<CachedClass>): Boolean {
+		if(metaMethod.name != name) return false
+		if(!metaMethod.declaringClass.equals(declaringClass)) return false
+		val methodParameterTypes = metaMethod.parameterTypes
+		if(methodParameterTypes.size != parameterTypes.size) return false
+		val size = methodParameterTypes.size
+		for(i in 0 until size)
+			if(methodParameterTypes[i] != parameterTypes[i])
+				return false
+		return true
+	}
+	@JvmStatic
+	fun metaMethodSame(metaMethod1: MetaMethod, metaMethod2: MetaMethod): Boolean {
+		return metaMethodSame(metaMethod1, metaMethod2.name, metaMethod2.declaringClass, metaMethod2.parameterTypes)
+	}
+	@JvmStatic
+	fun setMetaMethod0(metaClass: MetaClassImpl, metaMethod: MetaMethod) {
 		val metaMethodIndex = FIELD_MetaClassImpl_metaMethodIndex.get(metaClass) as MetaMethodIndex
 		val allMethods = FIELD_MetaClassImpl_allMethods.get(metaClass) as MutableList<MetaMethod>
-		val header = metaMethodIndex.getHeader(declaringClass)
-		val oldMetaMethod = metaClass.methods.firstOrNull { it is KotlinMetaMethod &&
-				it.name0 == name && it.declaringClass0 == declaringClass }
-		if(oldMetaMethod != null && closure != null)
-			System.err.println("Redefining meta method '$name' for '$declaringClass' at '$metaClass' with `$closure`")
+		val header = metaMethodIndex.getHeader(metaMethod.declaringClass.theClass)
 
-		if(closure == null) {
-			if(true) {
-				val iterator = allMethods.iterator()
-				while(iterator.hasNext()) {
-					val elem = iterator.next()
-					val asImpl = elem as? KotlinMetaMethod
-					if(asImpl == null || asImpl.name0 != name || asImpl.declaringClass0 != declaringClass)
-						continue
-					iterator.remove()
-					break
-				}
-			}
-			if(true) {
-				val table = metaMethodIndex.table
-				val hash = MetaMethodIndex.hash(31 * declaringClass.hashCode() + name.hashCode())
-				val index = hash and (table.size - 1)
-				val size = metaMethodIndex.size()
-				var elem = table[index]
-				var prev: MetaMethodIndex.Entry? = null
-				while(elem != null) {
-					val asImpl = elem.methods as? KotlinMetaMethod
-					if(elem.hash != hash || asImpl == null || asImpl.name0 != name || asImpl.declaringClass0 != declaringClass) {
-						prev = elem
-						elem = elem.nextHashEntry
-						continue
-					}
-					if(prev == null)
-						table[index] = elem.nextHashEntry
-					else prev.nextHashEntry = elem.nextHashEntry
-					elem.nextHashEntry = null
-					FIELD_MetaMethodIndex_size.set(metaMethodIndex, size - 1)
-					break
-				}
-			}
-			if(true) {
-				var head = header.head
-				var prev: MetaMethodIndex.Entry? = null
-				while(head != null) {
-					val asImpl = head.methods as? KotlinMetaMethod
-					if(asImpl == null || asImpl.name0 != name || asImpl.declaringClass0 != declaringClass) {
-						prev = head
-						head = head.nextClassEntry
-						continue
-					}
-					if(prev == null)
-						header.head = head.nextClassEntry
-					else prev.nextClassEntry = head.nextClassEntry
-					head.nextClassEntry = null
-					break
-				}
-			}
-			if(header.head == null)
-				metaMethodIndex.methodHeaders.remove(declaringClass)
-			return
+		for(method in metaClass.methods) {
+			if(!metaMethodSame(method, metaMethod))
+				continue
+			System.err.println("Redefining meta method '${metaMethod.name}' for '${metaMethod.declaringClass}' at '$metaClass' with `$metaMethod`")
+			break
 		}
-
-		val metaMethod = KotlinMetaMethod(name, declaringClass, closure)
 		allMethods += metaMethod
 		METHOD_MetaClassImpl_addMetaMethodToIndex.invoke(metaClass, metaMethod, header)
+	}
+	@JvmStatic
+	fun deleteMetaMethod0(metaClass: MetaClassImpl, name: String, declaringClass: CachedClass, parameterTypes: Array<CachedClass>) {
+		val metaMethodIndex = FIELD_MetaClassImpl_metaMethodIndex.get(metaClass) as MetaMethodIndex
+		val allMethods = FIELD_MetaClassImpl_allMethods.get(metaClass) as MutableList<MetaMethod>
+		val header = metaMethodIndex.getHeader(declaringClass.theClass)
+
+		if(true) {
+			val iterator = allMethods.iterator()
+			while(iterator.hasNext()) {
+				val elem = iterator.next()
+				if(!metaMethodSame(elem, name, declaringClass, parameterTypes))
+					continue
+				iterator.remove()
+				break
+			}
+		}
+		if(true) {
+			val table = metaMethodIndex.table
+			val hash = MetaMethodIndex.hash(31 * declaringClass.theClass.hashCode() + name.hashCode())
+			val index = hash and (table.size - 1)
+			val size = metaMethodIndex.size()
+			var elem = table[index]
+			var prev: MetaMethodIndex.Entry? = null
+			while(elem != null) {
+				val asImpl = elem.methods as? MetaMethod
+				if(elem.hash != hash || asImpl == null || !metaMethodSame(asImpl,
+						name, declaringClass, parameterTypes)) {
+					prev = elem
+					elem = elem.nextHashEntry
+					continue
+				}
+				if(prev == null)
+					table[index] = elem.nextHashEntry
+				else prev.nextHashEntry = elem.nextHashEntry
+				elem.nextHashEntry = null
+				FIELD_MetaMethodIndex_size.set(metaMethodIndex, size - 1)
+				break
+			}
+		}
+		if(true) {
+			var head = header.head
+			var prev: MetaMethodIndex.Entry? = null
+			while(head != null) {
+				val asImpl = head.methods as? MetaMethod
+				if(asImpl == null || !metaMethodSame(asImpl, name,
+						declaringClass, parameterTypes)) {
+					prev = head
+					head = head.nextClassEntry
+					continue
+				}
+				if(prev == null)
+					header.head = head.nextClassEntry
+				else prev.nextClassEntry = head.nextClassEntry
+				head.nextClassEntry = null
+				break
+			}
+		}
+		if(header.head == null)
+			metaMethodIndex.methodHeaders.remove(declaringClass)
+	}
+	@JvmStatic
+	fun modifyMetaMethod(metaClass: MetaClassImpl, name: String, declaringClass: Class<*>, closure: Closure<*>?) {
+		val parameterTypes = arrayOf(Any::class.java)
+		val cachedDeclaringClass = ReflectionCache.getCachedClass(declaringClass)
+		val cachedParameterTypes = parameterTypes.map { ReflectionCache.getCachedClass(it) }.toTypedArray()
+		if(closure == null) {
+			deleteMetaMethod0(metaClass, name, cachedDeclaringClass, cachedParameterTypes)
+			return
+		}
+		val metaMethod = KotlinMetaMethod(name, cachedDeclaringClass, closure)
+		setMetaMethod0(metaClass, metaMethod)
+	}
+	open class KotlinPropertyMetaMethod(
+		name: String,
+		declaringClass: CachedClass,
+		val override: MetaMethod?,
+		closure: Closure<*>
+	): KotlinMetaMethod(name, declaringClass, closure)
+	@JvmStatic
+	fun overridePropertyAccessor(metaClass: MetaClassImpl, declaringClass: CachedClass, name: String, validate: (MetaMethod) -> Boolean, value: Closure<*>?) {
+		val propertyAccessors = metaClass.methods.filter(validate)
+		var firstPropertyAccessor: MetaMethod? = null
+		var superClass: CachedClass? = declaringClass
+		while(superClass != null && firstPropertyAccessor == null) {
+			firstPropertyAccessor = propertyAccessors.first { it.declaringClass == superClass }
+			if(firstPropertyAccessor == null)
+				superClass = superClass.cachedSuperClass
+		}
+
+		if(firstPropertyAccessor is KotlinPropertyMetaMethod && value == null) {
+			deleteMetaMethod0(metaClass, name, firstPropertyAccessor.declaringClass, firstPropertyAccessor.parameterTypes)
+			val override = firstPropertyAccessor.override
+			if(override != null) setMetaMethod0(metaClass, override)
+		} else if(firstPropertyAccessor !is KotlinPropertyMetaMethod && value != null) {
+			if(firstPropertyAccessor != null)
+				deleteMetaMethod0(metaClass, name, firstPropertyAccessor.declaringClass, firstPropertyAccessor.parameterTypes)
+			setMetaMethod0(metaClass, KotlinPropertyMetaMethod(name, firstPropertyAccessor?.declaringClass ?: declaringClass, firstPropertyAccessor, value))
+		}
+	}
+	@JvmStatic
+	fun overridePropertyGetter(metaClass: MetaClassImpl, declaringClass: CachedClass, getter: Closure<*>?) {
+		overridePropertyAccessor(metaClass, declaringClass, "getProperty", validate@{
+			if(it.name != "getProperty") return@validate false
+			val modifiers = it.modifiers
+			if(!Modifier.isPublic(modifiers)) return@validate false
+			val parameters = it.nativeParameterTypes
+			if(parameters.size != 1) return@validate false
+			if(parameters[0] != String::class.java) return@validate false
+			return@validate true
+		}, getter)
+	}
+	@JvmStatic
+	fun overridePropertySetter(metaClass: MetaClassImpl, declaringClass: CachedClass, setter: Closure<*>?) {
+		overridePropertyAccessor(metaClass, declaringClass, "setProperty", validate@{
+			if(it.name != "setProperty") return@validate false
+			val modifiers = it.modifiers
+			if(!Modifier.isPublic(modifiers)) return@validate false
+			val parameters = it.nativeParameterTypes
+			if(parameters.size != 2) return@validate false
+			if(parameters[0] != String::class.java) return@validate false
+			if(parameters[1] != Any::class.java) return@validate false
+			return@validate true
+		}, setter)
+	}
+	@JvmStatic
+	val VALUE_INACCESSIBLE = KotlinClosure("VALUE_INACCESSIBLE")
+	open class KotlinPropertyGetterClosure(
+		val map: MutableMap<String, Pair<Closure<*>?, Closure<*>?>>,
+		val override: MetaMethod?
+	): KotlinClosure("getProperty") {
+		init {
+			overloads += KLambdaOverload lambda@{ args ->
+				val self = args[0]
+				val name = args[1] as String
+				val value = map[name]?.first
+				if(value != null) {
+					if(value == VALUE_INACCESSIBLE)
+						throw IllegalAccessException("Getter to $name is not allowed")
+					return@lambda value.call(*args)
+				}
+				if(override == null) throw NoSuchPropertyException("No such property $name")
+				return@lambda override.invoke(self, args.copyOfRange(1, args.size))
+			}
+		}
+	}
+	open class KotlinPropertySetterClosure(
+		val map: MutableMap<String, Pair<Closure<*>?, Closure<*>?>>,
+		val override: MetaMethod?
+	): KotlinClosure("setProperty") {
+		init {
+			overloads += KLambdaOverload lambda@{ args ->
+				val self = args[0]
+				val name = args[1] as String
+				val value = map[name]?.first
+				if(value != null) {
+					if(value == VALUE_INACCESSIBLE)
+						throw IllegalAccessException("Setter to $name is not allowed")
+					return@lambda value.call(*args)
+				}
+				if(override == null) throw NoSuchPropertyException("No such property $name")
+				return@lambda override.invoke(self, args.copyOfRange(1, args.size))
+			}
+		}
+	}
+	@JvmStatic
+	fun setPropertyAccessor(metaClass: MetaClassImpl, declaringClass: CachedClass, name: String, getter: Closure<*>?, setter: Closure<*>?) {
+		var propertyGetterMetaMethod = metaClass.getMethodWithoutCaching(metaClass.theClass, "getProperty", arrayOf(String::class.java), true)
+		var propertySetterMetaMethod = metaClass.getMethodWithoutCaching(metaClass.theClass, "setProperty", arrayOf(String::class.java, Any::class.java), true)
+		var propertyGetterMetaMethodAsImpl = propertyGetterMetaMethod as? KotlinPropertyMetaMethod
+		var propertySetterMetaMethodAsImpl = propertySetterMetaMethod as? KotlinPropertyMetaMethod
+		var interceptMap = (propertyGetterMetaMethodAsImpl?.closure as? KotlinPropertyGetterClosure)?.map ?:
+				(propertySetterMetaMethodAsImpl?.closure as? KotlinPropertySetterClosure)?.map
+		if(propertyGetterMetaMethodAsImpl == null && propertySetterMetaMethodAsImpl == null && getter == null && setter == null)
+			return
+		if(interceptMap == null)
+			interceptMap = HashMap()
+		if(propertyGetterMetaMethodAsImpl == null) {
+			overridePropertyGetter(metaClass, declaringClass, KotlinPropertyGetterClosure(interceptMap, propertyGetterMetaMethod))
+			propertyGetterMetaMethod = metaClass.getMethodWithoutCaching(metaClass.theClass, "getProperty", arrayOf(String::class.java), true)
+			propertyGetterMetaMethodAsImpl = propertyGetterMetaMethod as? KotlinPropertyMetaMethod
+		}
+		if(propertySetterMetaMethodAsImpl == null) {
+			overridePropertySetter(metaClass, declaringClass, KotlinPropertySetterClosure(interceptMap, propertySetterMetaMethod))
+			propertySetterMetaMethod = metaClass.getMethodWithoutCaching(metaClass.theClass, "setProperty", arrayOf(String::class.java, Any::class.java), true)
+			propertySetterMetaMethodAsImpl = propertySetterMetaMethod as? KotlinPropertyMetaMethod
+		}
+		if(getter == null && setter == null) {
+			interceptMap.remove(name)
+			if(interceptMap.isNotEmpty())
+				return
+			overridePropertyGetter(metaClass, declaringClass, null)
+			overridePropertySetter(metaClass, declaringClass, null)
+			return
+		}
+		interceptMap[name] = Pair(getter, setter)
 	}
 	@JvmStatic
 	fun setKotlinToGroovy(that: Any?, project: Project?, names: Array<String>, value: Any?) {
@@ -337,7 +495,7 @@ object GroovyInteroperability {
 
 		for(name in names) {
 			if(metaClass != null && (value == null || value is Closure<*>))
-				setMetaMethod(metaClass, name, that.javaClass, value as Closure<*>?)
+				modifyMetaMethod(metaClass, name, that.javaClass, value as Closure<*>?)
 			ext?.set(name, value)
 		}
 	}

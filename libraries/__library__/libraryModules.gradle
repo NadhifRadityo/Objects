@@ -73,8 +73,8 @@ context(this) {
 	}
 }
 
-scriptExport('set_relative_to_dir', set_relative_to_dir)
-scriptExport('set_libraries_dir', set_libraries_dir)
-scriptExport('root_directory', root_directory)
-scriptExport('module', module)
-scriptExport('loaded_modules', loaded_modules)
+scriptExport set_relative_to_dir, being('set_relative_to_dir')
+scriptExport set_libraries_dir, being('set_libraries_dir')
+scriptExport root_directory, being('root_directory')
+scriptExport module, being('module')
+scriptExport loaded_modules, being('loaded_modules')

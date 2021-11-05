@@ -157,4 +157,30 @@ object Common {
 	fun _shortArrayOf(vararg elements: Short): ShortArray {
 		return shortArrayOf(*elements)
 	}
+
+	@ExportGradle(names=["emptyList"])
+	@JvmStatic
+	fun _emptyList(): List<Any> {
+		return emptyList()
+	}
+	@ExportGradle(names=["listOf"])
+	@JvmStatic
+	fun _listOf(vararg elements: Any): List<Any> {
+		return listOf(*elements)
+	}
+	@ExportGradle(names=["mutableListOf"])
+	@JvmStatic
+	fun _mutableListOf(vararg elements: Any): MutableList<Any> {
+		return mutableListOf(*elements)
+	}
+	@ExportGradle(names=["arrayListOf"])
+	@JvmStatic
+	fun _arrayListOf(vararg elements: Any): MutableList<Any> {
+		return arrayListOf(*elements)
+	}
+	@ExportGradle(names=["listOfNotNull"])
+	@JvmStatic
+	fun _listOfNotNull(vararg elements: Any): List<Any> {
+		return listOfNotNull(*elements)
+	}
 }
