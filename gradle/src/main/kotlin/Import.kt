@@ -1,17 +1,15 @@
+import Common.addOnBuildFinished
 import Common.groovyKotlinCaches
 import Common.lastContext
-import Common.onBuildFinished
 import Keywords.being
 import Keywords.with
 import Utils.__must_not_happen
 import Utils.attachAnyObject
 import Utils.attachObject
 import Utils.prepareGroovyKotlinCache
-import groovy.lang.Closure
 import org.gradle.api.initialization.IncludedBuild
 import java.io.File
 import java.util.*
-import kotlin.collections.HashMap
 
 object Import {
 	@JvmStatic
@@ -93,30 +91,28 @@ object Import {
 		return Pair(build, scriptFile)
 	}
 	@JvmStatic
-	fun __applyImport(script: Script, what: List<String>?, being: String?) {
+	fun __applyImport(scriptImport: ScriptImport, script: Script) {
 		val context = lastContext()
-		val interfaces = HashMap<String, (Array<out Any?>) -> Any?>(script.exports.size)
-		what?.forEach { if(script.exports.find { e -> e.being == it } == null)
+		scriptImport.what?.forEach { if(script.exports.find { e -> e.being == it } == null)
 			throw IllegalArgumentException("There's no such export '$it' from ${script.file}") }
+		val methods = HashMap<String, (Array<out Any?>) -> Any?>()
+		val getter = HashMap<String, (Array<out Any?>) -> Any?>()
+		val setter = HashMap<String, (Array<out Any?>) -> Any?>()
 		for(export in script.exports) {
-			if(what != null && !what.contains(export.being))
+			if(scriptImport.what != null && !scriptImport.what.contains(export.being))
 				continue
-			interfaces["get${export.being.replaceFirstChar { c -> c.uppercase() }}"] = {
-				export.what
-			}
-			interfaces["set${export.being.replaceFirstChar { c -> c.uppercase() }}"] = { args ->
-				TODO()
-			}
+			getter[export.being] = { args -> export.what }
+			setter[export.being] = { args -> TODO("Not priorities") }
 		}
-		val cache = prepareGroovyKotlinCache(interfaces)
-		if(being == null) {
+		val cache = prepareGroovyKotlinCache(scriptImport, methods, getter, setter)
+		if(scriptImport.being == null) {
 			attachObject(context, cache)
-		} else {
-			val dummy = GroovyInteroperability.DummyGroovyObject()
-			attachAnyObject(dummy, cache)
-			dummy.finalize()
-			context.project.extensions.extraProperties.set(being, dummy)
+			return
 		}
+		val dummy = GroovyInteroperability.DummyGroovyObject()
+		attachAnyObject(dummy, cache)
+		dummy.finalize()
+		context.project.extensions.extraProperties.set(scriptImport.being, dummy)
 	}
 
 	/**
@@ -158,7 +154,7 @@ object Import {
 		val postCheck: () -> Boolean = postCheck@{
 			if(script.context == null)
 				throw IllegalStateException("Imported script does not call scriptApply()")
-			__applyImport(script, what, being)
+			__applyImport(scriptImport, script)
 			return@postCheck script.imports.add(scriptImport)
 		}
 		val preAction: () -> Unit = preAction@{
@@ -242,7 +238,7 @@ object Import {
 	fun scriptDestruct(callback: () -> Unit) {
 		val lastImportFile = __getLastImportFile()!!
 		lastImportFile.destruct = callback
-		onBuildFinished += callback
+		addOnBuildFinished(1, callback)
 	}
 
 	@ExportGradle

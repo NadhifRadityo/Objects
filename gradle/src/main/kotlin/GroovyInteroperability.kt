@@ -476,7 +476,10 @@ object GroovyInteroperability {
 			val asMethod = !asProperty
 
 			if(metaClass != null && declaringClass != null && asProperty) {
-				val propertyName = (if(isGetterBoolean) name.substring(2) else name.substring(3)).replaceFirstChar { it.lowercase() }
+				// getTest -> test, getCONFIG -> CONFIG, get ->, getA -> a
+				val propertyName0 = if(isGetterBoolean) name.substring(2) else name.substring(3)
+				val propertyName = if(propertyName0.length <= 1) propertyName0.lowercase() else
+					if(propertyName0.uppercase() == propertyName0) propertyName0 else propertyName0.replaceFirstChar { it.lowercase() }
 				if(value == null) {
 					val metaProperty = getMetaProperty0(metaClass, propertyName, declaringClass)
 					if(metaProperty is KotlinMetaProperty) {

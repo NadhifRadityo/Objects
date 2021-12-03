@@ -6,7 +6,11 @@ import Utils.prepareGroovyKotlinCache
 import groovy.lang.Closure
 import org.gradle.api.GradleException
 import java.util.*
-import kotlin.collections.ArrayList
+
+/**
+ * Lifecycle:
+ * Init -> onBuildFinished -> Deinit
+ */
 
 object Common {
 	@JvmStatic
@@ -14,11 +18,12 @@ object Common {
 	@JvmStatic
 	private val contextStack = ThreadLocal.withInitial<LinkedList<Context>> { LinkedList() }
 	@JvmStatic
-	internal val onBuildFinished = ArrayList<() -> Unit>()
-	@JvmStatic
 	private var initContext: Context? = null
 	@JvmStatic
 	private var cache: GroovyKotlinCache<*>? = null
+
+	@JvmStatic
+	private val onBuildFinished = HashMap<Int, MutableList<() -> Unit>>()
 
 	@JvmStatic
 	fun init() {
@@ -48,10 +53,14 @@ object Common {
 		val context = initContext!!
 		val exception = GradleException("Error while running callback")
 		context(context.that) {
-			onBuildFinished.reverse()
-			for(callback in onBuildFinished)
-				try { callback() } catch(e: Throwable)
-				{ exception.addSuppressed(e) }
+			val priorities = onBuildFinished.keys.sortedDescending()
+			for(priority in priorities) {
+				val list = onBuildFinished[priority]!!
+				list.reverse()
+				for(callback in list)
+					try { callback() } catch(e: Throwable)
+					{ exception.addSuppressed(e) }
+			}
 			for(cache in groovyKotlinCaches.reversed())
 				detachObject(context, cache)
 			run {
@@ -105,6 +114,21 @@ object Common {
 		if(stack.size == 0)
 			throw IllegalStateException("context is not available")
 		return stack.last
+	}
+
+	@ExportGradle
+	@JvmStatic
+	fun addOnBuildFinished(priority: Int, callback: () -> Unit) {
+		val list = onBuildFinished.computeIfAbsent(priority) { ArrayList() }
+		list.add(callback)
+	}
+	@ExportGradle
+	@JvmStatic
+	fun removeOnBuildFinished(priority: Int, callback: () -> Unit) {
+		val list = onBuildFinished[priority] ?: return
+		list.remove(callback)
+		if(list.isEmpty())
+			onBuildFinished.remove(priority)
 	}
 
 	@ExportGradle(names=["arrayOf"])

@@ -4,6 +4,7 @@ context(this) {
 	scriptApply()
 	scriptImport from('libraryModules.gradle'), being('libraryModules')
 	scriptImport from('libraryLoad.gradle'), being('libraryLoad')
+	scriptImport listOf('CONFIG'), from('/common.gradle')
 }
 
 repositories {
@@ -12,13 +13,13 @@ repositories {
 
 dependencies {
 	compileOnly gradleApi()
-//	implementation CONFIG['LIBRARY_COMMONS_LANG']
+	implementation CONFIG['LIBRARY_COMMONS_LANG']
 	implementation 'commons-cli:commons-cli:1.4'
 	implementation 'com.google.code.gson:gson:2.8.6'
 	implementation 'org.jsoup:jsoup:1.14.1'
 
-//	testImplementation CONFIG['TESTLIBRARY_IMPLEMENTATION']
-//	testRuntimeOnly CONFIG['TESTLIBRARY_RUNTIME']
+	testImplementation CONFIG['TESTLIBRARY_IMPLEMENTATION']
+	testRuntimeOnly CONFIG['TESTLIBRARY_RUNTIME']
 }
 
 test {
