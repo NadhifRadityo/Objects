@@ -169,22 +169,49 @@ object Utils {
 			val functionName = function.name
 			val annotation = function.findAnnotation<ExportGradle>()
 
-			val id = "${qualifiedName}.${functionName}"
-			var closure = cache.pushed[id]?.second
-			if(closure == null) {
-				val names = ArrayList<String>()
+			if(annotation != null && !annotation.asProperty) {
+				val id = "${qualifiedName}.${functionName}"
+				val injected0 = cache.pushed[id]
+				if(injected0 != null && injected0 !is GroovyKotlinCache.InjectedMethod)
+					throw Error("Id $id is defined but not as an InjectedMethod")
+				var injected = injected0 as? GroovyKotlinCache.InjectedMethod
+				if(injected == null) {
+					val names = mutableSetOf("__INTERNAL_${qualifiedName.replace(".", "$")}_${functionName}")
+					val closure = KotlinClosure(functionName)
+					injected = GroovyKotlinCache.InjectedMethod(names, closure)
+					cache.pushed[id] = injected
+				}
 				if(annotation != null)
-					if(annotation.names.isEmpty()) names += functionName
-					else names += annotation.names
-				names += "__INTERNAL_${qualifiedName.replace(".", "$")}_${functionName}"
-				closure = KotlinClosure(functionName)
-				cache.pushed[id] = Pair(names.toTypedArray(), closure)
+					if(annotation.names.isEmpty()) injected.names += functionName
+					else injected.names += annotation.names
+				val originalOverloads = getKFunctionOverloads(arrayOf(obj), function)
+				injected.closure.overloads += originalOverloads
+				if(annotation == null || !annotation.includeSelf)
+					injected.closure.overloads += originalOverloads.map { KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, it) }
+				else injected.closure.overloads += originalOverloads.map { KotlinClosure.WithSelfOverload(null, it) }
+			} else {
+				val id = "${qualifiedName}.${functionName}.get"
+				val injected0 = cache.pushed[id]
+				if(injected0 != null && injected0 !is GroovyKotlinCache.InjectedMethodAsProperty)
+					throw Error("Id $id is defined but not as an InjectedMethodAsProperty")
+				var injected = injected0 as? GroovyKotlinCache.InjectedMethodAsProperty
+				if(injected == null) {
+					val names = mutableSetOf("get__INTERNAL_${qualifiedName.replace(".", "$")}_${functionName}")
+					val closure = KotlinClosure(functionName)
+					val methodClosure = KotlinClosure(functionName)
+					closure.overloads += KotlinClosure.KLambdaOverload { methodClosure }
+					injected = GroovyKotlinCache.InjectedMethodAsProperty(names, closure, methodClosure)
+					cache.pushed[id] = injected
+				}
+				if(annotation != null)
+					if(annotation.names.isEmpty()) injected.names += "get${functionName.replaceFirstChar { c -> c.uppercase() }}"
+					else injected.names += annotation.names.map { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
+				val originalOverloads = getKFunctionOverloads(arrayOf(obj), function)
+				injected.methodClosure.overloads += originalOverloads
+				if(annotation == null || !annotation.includeSelf)
+					injected.methodClosure.overloads += originalOverloads.map { KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, it) }
+				else injected.methodClosure.overloads += originalOverloads.map { KotlinClosure.WithSelfOverload(null, it) }
 			}
-			val originalOverloads = getKFunctionOverloads(arrayOf(obj), function)
-			closure.overloads += originalOverloads
-			if(annotation == null || !annotation.includeSelf)
-				closure.overloads += originalOverloads.map { KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, it) }
-			else closure.overloads += originalOverloads.map { KotlinClosure.WithSelfOverload(null, it) }
 		}
 		for(member in kclass.memberProperties) {
 			if(!member.hasAnnotation<JvmStatic>()) continue
@@ -194,52 +221,46 @@ object Utils {
 
 			if(true) {
 				val id = "${qualifiedName}.${memberName}.get"
-				var closure = cache.pushed[id]?.second
-				if(closure == null) {
-					val names = ArrayList<String>()
-					if(annotation != null)
-						if(annotation.names.isEmpty()) names += "get${memberName.replaceFirstChar { c -> c.uppercase() }}"
-						else names += annotation.names.map { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
-					names += "get__INTERNAL_${qualifiedName.replace(".", "$")}_${memberName}"
-					closure = KotlinClosure(memberName)
-					cache.pushed[id] = Pair(names.toTypedArray(), closure)
+				val injected0 = cache.pushed[id]
+				if(injected0 != null && injected0 !is GroovyKotlinCache.InjectedPropertyGetter)
+					throw Error("Id $id is defined but not as an InjectedPropertyGetter")
+				var injected = injected0 as? GroovyKotlinCache.InjectedPropertyGetter
+				if(injected == null) {
+					val names = mutableSetOf("get__INTERNAL_${qualifiedName.replace(".", "$")}_${memberName}")
+					val closure = KotlinClosure(memberName)
+					injected = GroovyKotlinCache.InjectedPropertyGetter(names, closure)
+					cache.pushed[id] = injected
 				}
+				if(annotation != null)
+					if(annotation.names.isEmpty()) injected.names += "get${memberName.replaceFirstChar { c -> c.uppercase() }}"
+					else injected.names += annotation.names.map { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
 				val originalOverload = KotlinClosure.KProperty1Overload(obj, member as KProperty1<T, *>)
-				closure.overloads += originalOverload
+				injected.closure.overloads += originalOverload
 				if(annotation == null || !annotation.includeSelf)
-					closure.overloads += KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, originalOverload)
-				else closure.overloads += KotlinClosure.WithSelfOverload(null, originalOverload)
+					injected.closure.overloads += KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, originalOverload)
+				else injected.closure.overloads += KotlinClosure.WithSelfOverload(null, originalOverload)
 			}
-			if(member is KMutableProperty1<*, *>) {
+			if(member is KMutableProperty1<*, *> && annotation != null && annotation.allowSet) {
 				val id = "${qualifiedName}.${memberName}.set"
-				var closure = cache.pushed[id]?.second
-				if(closure == null) {
-					val names = ArrayList<String>()
-					if(annotation != null)
-						if(annotation.names.isEmpty()) names += "set${memberName.replaceFirstChar { c -> c.uppercase() }}"
-						else names += annotation.names.map { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
-					names += "set__INTERNAL_${qualifiedName.replace(".", "$")}_${memberName}"
-					closure = KotlinClosure(memberName)
-					cache.pushed[id] = Pair(names.toTypedArray(), closure)
+				val injected0 = cache.pushed[id]
+				if(injected0 != null && injected0 !is GroovyKotlinCache.InjectedPropertySetter)
+					throw Error("Id $id is defined but not as an InjectedPropertySetter")
+				var injected = injected0 as? GroovyKotlinCache.InjectedPropertySetter
+				if(injected == null) {
+					val names = mutableSetOf("set__INTERNAL_${qualifiedName.replace(".", "$")}_${memberName}")
+					val closure = KotlinClosure(memberName)
+					injected = GroovyKotlinCache.InjectedPropertySetter(names, closure)
+					cache.pushed[id] = injected
 				}
+				if(annotation != null)
+					if(annotation.names.isEmpty()) injected.names += "set${memberName.replaceFirstChar { c -> c.uppercase() }}"
+					else injected.names += annotation.names.map { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
 				val originalOverload = KotlinClosure.KMutableProperty1Overload(obj, member as KMutableProperty1<T, *>)
-				closure.overloads += originalOverload
+				injected.closure.overloads += originalOverload
 				if(annotation == null || !annotation.includeSelf)
-					closure.overloads += KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, originalOverload)
-				else closure.overloads += KotlinClosure.WithSelfOverload(null, originalOverload)
+					injected.closure.overloads += KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, originalOverload)
+				else injected.closure.overloads += KotlinClosure.WithSelfOverload(null, originalOverload)
 			}
-		}
-		return cache
-	}
-	@JvmStatic
-	fun prepareGroovyKotlinCache(obj: Map<String, (Array<out Any?>) -> Any?>): GroovyKotlinCache<*> {
-		val cache = GroovyKotlinCache(obj, Any::class, Any::class.java)
-		for(entry in obj.entries) {
-			val name = entry.key
-			val lambda = entry.value
-			val closure = KotlinClosure(name)
-			closure.overloads += KotlinClosure.KLambdaOverload(lambda)
-			cache.pushed[name] = Pair(arrayOf(name), closure)
 		}
 		return cache
 	}
@@ -247,21 +268,32 @@ object Utils {
 	@ExportGradle
 	@JvmStatic
 	fun attachObject(context: Context, cache: GroovyKotlinCache<*>) {
+		val klass = context.that::class.java
+		val METHOD_BuildScript_target = klass.getMethod("getScriptTarget")
+		METHOD_BuildScript_target.isAccessible = true
+		val target = METHOD_BuildScript_target.invoke(context.that)
+		// Mostly, any property getter will use context.that
+		// As shown in BasicScript$ScriptDynamicObject.tryGetProperty
 		attachAnyObject(context.that, cache)
+		// But, the setter isn't going through the scriptObject
+		// As shown in BasicScript$ScriptDynamicObject.trySetProperty
+		// So we need to inject to script target. Call to script target
+		// is shown in CompositeDynamicObject.trySetProperty
+		attachAnyObject(target, cache)
 		attachProjectObject(context.project, cache)
 	}
 	@ExportGradle
 	@JvmStatic
 	fun attachAnyObject(that: Any, cache: GroovyKotlinCache<*>) {
 		for(pushed in cache.pushed.values)
-			setKotlinToGroovy(that, null, pushed.first, pushed.second)
+			setKotlinToGroovy(that, null, pushed.names.toTypedArray(), pushed.closure)
 		onBuildFinished += { detachAnyObject(that, cache) }
 	}
 	@ExportGradle
 	@JvmStatic
 	fun attachProjectObject(project: Project, cache: GroovyKotlinCache<*>) {
 		for(pushed in cache.pushed.values)
-			setKotlinToGroovy(null, project, pushed.first, pushed.second)
+			setKotlinToGroovy(null, project, pushed.names.toTypedArray(), pushed.closure)
 		onBuildFinished += { detachProjectObject(project, cache) }
 	}
 	@ExportGradle
@@ -274,12 +306,12 @@ object Utils {
 	@JvmStatic
 	fun detachAnyObject(that: Any, cache: GroovyKotlinCache<*>) {
 		for(pushed in cache.pushed.values)
-			setKotlinToGroovy(that, null, pushed.first, null)
+			setKotlinToGroovy(that, null, pushed.names.toTypedArray(), null)
 	}
 	@ExportGradle
 	@JvmStatic
 	fun detachProjectObject(project: Project, cache: GroovyKotlinCache<*>) {
 		for(pushed in cache.pushed.values)
-			setKotlinToGroovy(null, project, pushed.first, null)
+			setKotlinToGroovy(null, project, pushed.names.toTypedArray(), null)
 	}
 }

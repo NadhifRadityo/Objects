@@ -10,6 +10,8 @@ dependencies {
 
 }
 
-context(this) {
-    forwardTask("Library", { it.group == "library" })
-}
+forwardTask = "a"
+println forwardTask
+//context(this) {
+//    forwardTask("Library", { it.group == "library" })
+//}

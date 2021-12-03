@@ -5,10 +5,10 @@ plugins {
 
 buildDir = '../__target__/__sources__/'
 
-context(this) {
-    scriptImport listOf('module'), from('libraryModules.gradle')
-
-    module('GameLibrary - LWJGL')
-
-//    scriptImport from('library.gradle')
-}
+//context(this) {
+//    scriptImport listOf('module'), from('libraryModules.gradle')
+//
+//    module('GameLibrary - LWJGL')
+//
+////    scriptImport from('library.gradle')
+//}
