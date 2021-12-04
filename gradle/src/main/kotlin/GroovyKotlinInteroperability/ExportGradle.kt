@@ -1,3 +1,5 @@
+package GroovyKotlinInteroperability
+
 annotation class ExportGradle(
 	val names: Array<String> = [], // FIELD, METHOD
 	val allowSet: Boolean = true, // FIELD

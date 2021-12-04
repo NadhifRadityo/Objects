@@ -2,7 +2,7 @@ import java.util.stream.Stream
 
 context(this) {
 	scriptApply()
-	scriptImport listOf('CONFIG'), from('/common.gradle'), with(includeFlags('expose_exports'))
+	scriptImport listOf('CONFIG'), from('/common.gradle')
 	scriptImport from('libraryModules.gradle'), being('libraryModules'), with(includeFlags('dont_clear_last_state'))
 	scriptImport from('libraryLoad.gradle'), being('libraryLoad')
 }

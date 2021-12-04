@@ -49,7 +49,7 @@ gradle.allprojects {
 	}
 }
 
-if(!ext.has('export_functions_only')) {
+if(ext.find('export_functions_only') == null || !ext.find('export_functions_only')) {
 	rootProject.name = 'Objects'
 	extend('libraries/__library__', 'Library')
 //	extend('packages/Functional')

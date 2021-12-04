@@ -1,41 +1,45 @@
+package DynamicScripting
+
 import Common.addOnConfigFinished
 import Common.addOnConfigStarted
 import Common.groovyKotlinCaches
 import Common.initContext
 import Common.lastContext
-import Keywords.being
-import Keywords.with
-import Utils.__invalid_type
-import Utils.__must_not_happen
-import Utils.attachAnyObject
-import Utils.attachObject
-import Utils.parseProperty
-import Utils.prepareGroovyKotlinCache
+import GroovyKotlinInteroperability.ExportGradle
+import GroovyKotlinInteroperability.GroovyInteroperability.attachAnyObject
+import GroovyKotlinInteroperability.GroovyInteroperability.attachObject
+import GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyKotlinCache
+import GroovyKotlinInteroperability.GroovyKotlinCache
+import GroovyKotlinInteroperability.GroovyManipulation
+import GroovyKotlinInteroperability.parseProperty
+import Strategies.CommonUtils.purgeThreadLocal
+import Strategies.KeywordsUtils
+import Strategies.KeywordsUtils.being
+import Strategies.KeywordsUtils.with
+import Strategies.Utils.__invalid_type
+import Strategies.Utils.__must_not_happen
 import groovy.lang.Closure
 import org.gradle.api.initialization.IncludedBuild
 import java.io.File
 import java.util.*
 
-typealias ImportAction = (ScriptImport) -> Unit
-typealias ExportAction = (ScriptExport, MutableMap<String, (Array<out Any?>) -> Any?>, MutableMap<String, (Array<out Any?>) -> Any?>, MutableMap<String, (Array<out Any?>) -> Any?>) -> Unit
-
-object DynamicScripting {
-	@JvmStatic
-	private var cache: GroovyKotlinCache<*>? = null
-	@JvmStatic
-	private val scripts = HashMap<String, Script>()
-	@JvmStatic
-	private val stack = ThreadLocal.withInitial<LinkedList<ScriptImport>> { LinkedList() }
-	@JvmStatic
-	private val actions = HashMap<String, ImportAction?>()
+object Scripting {
+	@JvmStatic private var cache: GroovyKotlinCache<Scripting>? = null
+	@JvmStatic internal val scripts = HashMap<String, Script>()
+	@JvmStatic internal val stack = ThreadLocal.withInitial<LinkedList<ScriptImport>> { LinkedList() }
+	@JvmStatic internal val actions = HashMap<String, ImportAction?>()
 
 	@JvmStatic
 	fun construct() {
-		cache = prepareGroovyKotlinCache(DynamicScripting)
+		cache = prepareGroovyKotlinCache(Scripting)
 		groovyKotlinCaches += cache!!
 		addOnConfigStarted(0) {
 			for(cache in groovyKotlinCaches)
-				injectScript(cache)
+				addInjectScript(cache)
+		}
+		addOnConfigFinished(0) {
+			for(cache in groovyKotlinCaches)
+				removeInjectScript(cache)
 		}
 	}
 	@JvmStatic
@@ -43,7 +47,7 @@ object DynamicScripting {
 		groovyKotlinCaches -= cache!!
 		cache = null
 		scripts.clear()
-		Utils.purgeThreadLocal(stack)
+		purgeThreadLocal(stack)
 		actions.clear()
 	}
 
@@ -113,6 +117,15 @@ object DynamicScripting {
 		}
 		return Pair(build, scriptFile)
 	}
+
+	/**
+	 * - `scriptImport from('test.gradle')` only run script without exporting
+	 * - `scriptImport from('test.gradle'), with(includeFlags('expose_exports'))` expose all exports as global variable
+	 * - `scriptImport listOf('testMethod'), from('test.gradle')` export only `testMethod` as global variable
+	 * - `scriptImport from('test.gradle'), being('test')` export all exports wrapped in `test` global variable
+	 * - `scriptImport listOf('testMethod'), from('test.gradle'), being('test')` export only `testMethod` wrapped in `test` global variable
+	 * - `scriptImport listOf('testMethod'), from('test.gradle'), being('test'), with(includeFlags('expose_exports'))` export only `testMethod` as global variable and wrapped in `test` global variable
+	 */
 	@JvmStatic
 	fun __applyImport(scriptImport: ScriptImport, script: Script) {
 		val context = lastContext()
@@ -127,17 +140,17 @@ object DynamicScripting {
 			export.with.forEach { it(export, methods, getter, setter) }
 		}
 		val cache = prepareGroovyKotlinCache(scriptImport, methods, getter, setter)
-		if(containsFlag("expose_exports", scriptImport))
+		if((scriptImport.what != null && scriptImport.being == null) || containsFlag("expose_exports", scriptImport))
 			attachObject(context, cache)
 		if(scriptImport.being == null) return
-		val dummy = GroovyInteroperability.DummyGroovyObject()
+		val dummy = GroovyManipulation.DummyGroovyObject()
 		dummy.__start__()
 		attachAnyObject(dummy, cache)
 		dummy.__end__()
 		context.project.extensions.extraProperties.set(scriptImport.being, dummy)
 	}
 	@JvmStatic
-	fun injectScript(cache: GroovyKotlinCache<*>) {
+	fun addInjectScript(cache: GroovyKotlinCache<*>) {
 		val context = initContext!!
 		val source = File(context.project.rootDir, "std$${cache.ownerJavaClass.simpleName}")
 		val (build, scriptFile) = __getScriptFile(source)
@@ -159,13 +172,30 @@ object DynamicScripting {
 					else propertyName0.replaceFirstChar { it.lowercase() }
 				} else name
 				if(rawName.startsWith("__INTERNAL_")) continue
-				val with = ArrayList<ExportAction>()
-				if(isGetter || isGetterBoolean) with += exportGetter()
-				if(isSetter) with += exportSetter()
-				if(!isGetter && !isGetterBoolean && !isSetter) with += exportMethod()
-				script.exports += ScriptExport(script.id, value, rawName, with)
+				var export = script.exports.find { it.being == rawName }
+				if(export == null) {
+					export = ScriptExport(script.id, ArrayList<Any>(), rawName, ArrayList())
+					script.exports += export
+				}
+				(export.what as ArrayList<Any>) += value
+				if(isGetter || isGetterBoolean) export.with += { exportInfo, _, getter, _ -> getter[exportInfo.being] = { args -> value.call(*args) } }
+				if(isSetter) export.with += { exportInfo, _, _, setter -> setter[exportInfo.being] = { args -> value.call(*args) } }
+				if(!isGetter && !isGetterBoolean && !isSetter) export.with += { exportInfo, methods, _, _ -> methods[exportInfo.being] = { args -> {
+					val callback = exportInfo.what
+					if(callback is Closure<*>)
+						callback.call(*args)
+					else __invalid_type()
+				} } }
 			}
 		}
+	}
+	@JvmStatic
+	fun removeInjectScript(cache: GroovyKotlinCache<*>) {
+		val context = initContext!!
+		val source = File(context.project.rootDir, "std$${cache.ownerJavaClass.simpleName}")
+		val (_, scriptFile) = __getScriptFile(source)
+		val scriptId = getScriptId(scriptFile)
+		scripts.remove(scriptId)
 	}
 
 	/**
@@ -222,7 +252,7 @@ object DynamicScripting {
 			preAction()
 			if(preCheckResult)
 				project.apply { it.from(project.relativePath(scriptFile)) }
-			this.actions[scriptId]?.let { it(scriptImport) }
+			actions[scriptId]?.let { it(scriptImport) }
 			postAction()
 			postCheck()
 		} catch(e: Throwable) {
@@ -247,24 +277,24 @@ object DynamicScripting {
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun scriptImport(what: List<String>?, from: Keywords.From<Any>, being: Keywords.Being<String?> = being(null),
-					 with: Keywords.With<List<ImportAction>> = with(listOf())): List<ScriptExport>{
+	fun scriptImport(what: List<String>?, from: KeywordsUtils.From<Any>, being: KeywordsUtils.Being<String?> = being(null),
+					 with: KeywordsUtils.With<List<ImportAction>> = with(listOf())): List<ScriptExport>{
 		return scriptImport(what, from.user, being.user, with.user)
 	}
 	@ExportGradle
 	@JvmStatic
-	fun scriptImport(what: List<String>?, from: Keywords.From<Any>, with: Keywords.With<List<ImportAction>>): List<ScriptExport> {
+	fun scriptImport(what: List<String>?, from: KeywordsUtils.From<Any>, with: KeywordsUtils.With<List<ImportAction>>): List<ScriptExport> {
 		return scriptImport(what, from.user, null, with.user)
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun scriptImport(from: Keywords.From<Any>, being: Keywords.Being<String?> = being(null),
-					 with: Keywords.With<List<ImportAction>> = with(listOf())): List<ScriptExport> {
+	fun scriptImport(from: KeywordsUtils.From<Any>, being: KeywordsUtils.Being<String?> = being(null),
+					 with: KeywordsUtils.With<List<ImportAction>> = with(listOf())): List<ScriptExport> {
 		return scriptImport(null as List<String>?, from.user, being.user, with.user)
 	}
 	@ExportGradle
 	@JvmStatic
-	fun scriptImport(from: Keywords.From<Any>, with: Keywords.With<List<ImportAction>>): List<ScriptExport> {
+	fun scriptImport(from: KeywordsUtils.From<Any>, with: KeywordsUtils.With<List<ImportAction>>): List<ScriptExport> {
 		return scriptImport(null as List<String>?, from.user, null, with.user)
 	}
 	@ExportGradle
@@ -275,7 +305,9 @@ object DynamicScripting {
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun scriptExport(what: Any?, being: Keywords.Being<String>, with: Keywords.With<List<ExportAction>> = with(exportGetter())) {
+	fun scriptExport(what: Any?, being: KeywordsUtils.Being<String>, with: KeywordsUtils.With<List<ExportAction>> = with(
+		exportGetter()
+	)) {
 		scriptExport(what, being.user, with.user)
 	}
 	@ExportGradle

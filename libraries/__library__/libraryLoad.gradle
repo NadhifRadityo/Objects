@@ -65,7 +65,7 @@ def __default_import_action = { def info ->
 		else currentBuildHash = build.projectDir.getCanonicalPath().hashCode()
 		LoaderInfo loaderInfo = buildLoader.get(currentBuildHash)
 		if(loaderInfo == null) {
-			lwarn "New build \"${build != null ? build.name : rootProject.name}\" with hash $currentBuildHash"
+			llog "New build \"${build != null ? build.name : rootProject.name}\" with hash $currentBuildHash"
 			loaderInfo = new LoaderInfo()
 			buildLoader.put(currentBuildHash, loaderInfo)
 		}
@@ -89,7 +89,7 @@ context(this) {
 			Map.Entry<Integer, LoaderInfo> entry = iterator.next()
 			LoaderInfo loaderInfo = entry.getValue()
 			if(loaderInfo.accessed) { loaderInfo.accessed = false; continue }
-			lwarn "Removed library loader from build hash ${entry.getKey()}"
+			llog "Removed library loader from build hash ${entry.getKey()}"
 			iterator.remove()
 		}
 	}

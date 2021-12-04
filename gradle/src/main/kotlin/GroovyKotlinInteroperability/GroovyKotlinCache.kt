@@ -1,3 +1,5 @@
+package GroovyKotlinInteroperability
+
 import kotlin.reflect.KClass
 
 class GroovyKotlinCache<T : Any>(

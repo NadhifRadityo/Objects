@@ -1,5 +1,7 @@
-import GroovyInteroperability.closureToLambda
-import Utils.boxedToPrimitive
+package GroovyKotlinInteroperability
+
+import GroovyKotlinInteroperability.GroovyManipulation.closureToLambda
+import Strategies.ClassUtils.boxedToPrimitive
 import groovy.lang.Closure
 import java.lang.reflect.Field
 import java.lang.reflect.Method

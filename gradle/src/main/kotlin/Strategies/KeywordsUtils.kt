@@ -1,13 +1,16 @@
-import Common.groovyKotlinCaches
-import Utils.prepareGroovyKotlinCache
+package Strategies
 
-object Keywords {
-	@JvmStatic
-	private var cache: GroovyKotlinCache<*>? = null
+import Common.groovyKotlinCaches
+import GroovyKotlinInteroperability.ExportGradle
+import GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyKotlinCache
+import GroovyKotlinInteroperability.GroovyKotlinCache
+
+object KeywordsUtils {
+	@JvmStatic private var cache: GroovyKotlinCache<KeywordsUtils>? = null
 
 	@JvmStatic
 	fun construct() {
-		cache = prepareGroovyKotlinCache(Keywords)
+		cache = prepareGroovyKotlinCache(KeywordsUtils)
 		groovyKotlinCaches += cache!!
 	}
 	@JvmStatic

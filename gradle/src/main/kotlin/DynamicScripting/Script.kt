@@ -1,3 +1,6 @@
+package DynamicScripting
+
+import Context
 import org.gradle.api.initialization.IncludedBuild
 import java.io.File
 

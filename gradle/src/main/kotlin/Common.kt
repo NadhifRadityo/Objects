@@ -1,8 +1,13 @@
-import GroovyInteroperability.closureToLambda0
-import Utils.__must_not_happen
-import Utils.attachObject
-import Utils.detachObject
-import Utils.prepareGroovyKotlinCache
+import GroovyKotlinInteroperability.ExportGradle
+import GroovyKotlinInteroperability.GroovyInteroperability.attachObject
+import GroovyKotlinInteroperability.GroovyInteroperability.detachObject
+import GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyKotlinCache
+import GroovyKotlinInteroperability.GroovyKotlinCache
+import GroovyKotlinInteroperability.GroovyManipulation.closureToLambda0
+import Strategies.CommonUtils.purgeThreadLocal
+import Strategies.GradleUtils.asGradle
+import Strategies.GradleUtils.asProject
+import Strategies.Utils.__must_not_happen
 import groovy.lang.Closure
 import org.gradle.api.GradleException
 import java.util.*
@@ -13,20 +18,14 @@ import java.util.*
  */
 
 object Common {
-	@JvmStatic
-	internal val groovyKotlinCaches = ArrayList<GroovyKotlinCache<*>>()
-	@JvmStatic
-	private val contextStack = ThreadLocal.withInitial<LinkedList<Context>> { LinkedList() }
-	@JvmStatic
-	internal var initContext: Context? = null
+	@JvmStatic internal val groovyKotlinCaches = ArrayList<GroovyKotlinCache<*>>()
+	@JvmStatic internal val contextStack = ThreadLocal.withInitial<LinkedList<Context>> { LinkedList() }
+	@JvmStatic internal var initContext: Context? = null
 		private set
-	@JvmStatic
-	private var cache: GroovyKotlinCache<*>? = null
+	@JvmStatic private var cache: GroovyKotlinCache<Common>? = null
 
-	@JvmStatic
-	private val onConfigStarted = HashMap<Int, MutableList<() -> Unit>>()
-	@JvmStatic
-	private val onConfigFinished = HashMap<Int, MutableList<() -> Unit>>()
+	@JvmStatic internal val onConfigStarted = HashMap<Int, MutableList<() -> Unit>>()
+	@JvmStatic internal val onConfigFinished = HashMap<Int, MutableList<() -> Unit>>()
 
 	@JvmStatic
 	fun construct() {
@@ -36,18 +35,14 @@ object Common {
 		val exception = GradleException("Error while running construct")
 		initContext = context
 		context(context.that) {
-			val gradle = Utils.asGradle()
+			val gradle = asGradle()
 			gradle.buildFinished { destruct() }
 			run {
 				cache = prepareGroovyKotlinCache(Common)
 				groovyKotlinCaches += cache!!
-				GroovyInteroperability.init()
-				Keywords.construct()
-				Utils.construct()
-				Progress.construct()
-				Logger.construct()
+				GroovyKotlinInteroperability.construct()
 				DynamicScripting.construct()
-				PersistentMemory.construct()
+				Strategies.construct()
 			}
 			for(cache in groovyKotlinCaches)
 				attachObject(context, cache)
@@ -79,13 +74,9 @@ object Common {
 			for(cache in groovyKotlinCaches.reversed())
 				detachObject(context, cache)
 			run {
-				PersistentMemory.destruct()
+				GroovyKotlinInteroperability.destruct()
 				DynamicScripting.destruct()
-				Logger.destruct()
-				Progress.destruct()
-				Utils.destruct()
-				Keywords.destruct()
-				GroovyInteroperability.destruct()
+				Strategies.destruct()
 				groovyKotlinCaches -= cache!!
 				cache = null
 			}
@@ -93,7 +84,7 @@ object Common {
 		for(cache in groovyKotlinCaches)
 			System.err.println("Cache `${cache.owner.toString()}` [${cache.owner?.javaClass.toString()}] is not cleared")
 		groovyKotlinCaches.clear()
-		Utils.purgeThreadLocal(contextStack)
+		purgeThreadLocal(contextStack)
 		onConfigStarted.clear()
 		onConfigFinished.clear()
 		initContext = null
@@ -108,7 +99,7 @@ object Common {
 	@ExportGradle
 	@JvmStatic
 	fun context(that: Any, callback: () -> Any?): Any? {
-		val context = Context(that, Utils.asProject(that))
+		val context = Context(that, asProject(that))
 		val stack = contextStack.get()
 		stack.addLast(context)
 		try {
@@ -160,82 +151,5 @@ object Common {
 		list.remove(callback)
 		if(list.isEmpty())
 			onConfigFinished.remove(priority)
-	}
-
-	@ExportGradle(names=["arrayOf"])
-	@JvmStatic
-	fun _arrayOf(vararg elements: Any): Array<Any> {
-		return arrayOf(*elements)
-	}
-	@ExportGradle(names=["arrayOfNulls"])
-	@JvmStatic
-	fun _arrayOfNulls(size: Int): Array<Any?> {
-		return arrayOfNulls(size)
-	}
-	@ExportGradle(names=["booleanArrayOf"])
-	@JvmStatic
-	fun _booleanArrayOf(vararg elements: Boolean): BooleanArray {
-		return booleanArrayOf(*elements)
-	}
-	@ExportGradle(names=["byteArrayOf"])
-	@JvmStatic
-	fun _byteArrayOf(vararg elements: Byte): ByteArray {
-		return byteArrayOf(*elements)
-	}
-	@ExportGradle(names=["charArrayOf"])
-	@JvmStatic
-	fun _charArrayOf(vararg elements: Char): CharArray {
-		return charArrayOf(*elements)
-	}
-	@ExportGradle(names=["doubleArrayOf"])
-	@JvmStatic
-	fun _doubleArrayOf(vararg elements: Double): DoubleArray {
-		return doubleArrayOf(*elements)
-	}
-	@ExportGradle(names=["floatArrayOf"])
-	@JvmStatic
-	fun _floatArrayOf(vararg elements: Float): FloatArray {
-		return floatArrayOf(*elements)
-	}
-	@ExportGradle(names=["intArrayOf"])
-	@JvmStatic
-	fun _intArrayOf(vararg elements: Int): IntArray {
-		return intArrayOf(*elements)
-	}
-	@ExportGradle(names=["longArrayOf"])
-	@JvmStatic
-	fun _longArrayOf(vararg elements: Long): LongArray {
-		return longArrayOf(*elements)
-	}
-	@ExportGradle(names=["shortArrayOf"])
-	@JvmStatic
-	fun _shortArrayOf(vararg elements: Short): ShortArray {
-		return shortArrayOf(*elements)
-	}
-
-	@ExportGradle(names=["emptyList"])
-	@JvmStatic
-	fun _emptyList(): List<Any> {
-		return emptyList()
-	}
-	@ExportGradle(names=["listOf"])
-	@JvmStatic
-	fun _listOf(vararg elements: Any): List<Any> {
-		return listOf(*elements)
-	}
-	@ExportGradle(names=["mutableListOf"])
-	@JvmStatic
-	fun _mutableListOf(vararg elements: Any): MutableList<Any> {
-		return mutableListOf(*elements)
-	}
-	@ExportGradle(names=["arrayListOf"])
-	@JvmStatic
-	fun _arrayListOf(vararg elements: Any): MutableList<Any> {
-		return arrayListOf(*elements)
-	}
-	@ExportGradle(names=["listOfNotNull"])
-	@JvmStatic
-	fun _listOfNotNull(vararg elements: Any): List<Any> {
-		return listOfNotNull(*elements)
 	}
 }

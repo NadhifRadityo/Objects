@@ -1,8 +1,9 @@
+package GroovyKotlinInteroperability
+
 import Common.groovyKotlinCaches
-import Utils.__invalid_type
-import Utils.__must_not_happen
-import Utils.parseProperty
-import Utils.prepareGroovyKotlinCache
+import GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyKotlinCache
+import Strategies.Utils.__invalid_type
+import Strategies.Utils.__must_not_happen
 import groovy.lang.*
 import org.codehaus.groovy.reflection.CachedClass
 import org.codehaus.groovy.reflection.ReflectionCache.getCachedClass
@@ -13,13 +14,12 @@ import org.gradle.api.Project
 import java.lang.reflect.Modifier
 import kotlin.jvm.functions.FunctionN
 
-object GroovyInteroperability {
-	@JvmStatic
-	private var cache: GroovyKotlinCache<*>? = null
+object GroovyManipulation {
+	@JvmStatic private var cache: GroovyKotlinCache<GroovyManipulation>? = null
 
 	@JvmStatic
-	fun init() {
-		cache = prepareGroovyKotlinCache(GroovyInteroperability)
+	fun construct() {
+		cache = prepareGroovyKotlinCache(GroovyManipulation)
 		groovyKotlinCaches += cache!!
 	}
 	@JvmStatic
@@ -31,133 +31,133 @@ object GroovyInteroperability {
 	/*
 	console.log(new Array(23).fill(null).map((v, i) => `@ExportGradle
 	@JvmStatic
-	fun <${new Array(i).fill(null).map((_v, _i) => `A${_i + 1}`).join(", ")}, R> closureToLambda${i}(closure: Closure<R>): (${new Array(i).fill(null).map((_v, _i) => `A${_i + 1}`).join(", ")}) -> R {
+	fun closureToLambda${i}(closure: Closure<*>): fn${i} {
 		return { ${new Array(i).fill(null).map((_v, _i) => `a${_i + 1}`).join(", ")} -> closure.call(${new Array(i).fill(null).map((_v, _i) => `a${_i + 1}`).join(", ")}) }
 	}`).join("\n"))
 	 */
 	@ExportGradle
 	@JvmStatic
-	fun <R> closureToLambda0(closure: Closure<R>): () -> R {
-		return { -> closure.call() }
+	fun closureToLambda0(closure: Closure<*>): fn0 {
+		return {  -> closure.call() }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, R> closureToLambda1(closure: Closure<R>): (A1) -> R {
+	fun closureToLambda1(closure: Closure<*>): fn1 {
 		return { a1 -> closure.call(a1) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, R> closureToLambda2(closure: Closure<R>): (A1, A2) -> R {
+	fun closureToLambda2(closure: Closure<*>): fn2 {
 		return { a1, a2 -> closure.call(a1, a2) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, R> closureToLambda3(closure: Closure<R>): (A1, A2, A3) -> R {
+	fun closureToLambda3(closure: Closure<*>): fn3 {
 		return { a1, a2, a3 -> closure.call(a1, a2, a3) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, R> closureToLambda4(closure: Closure<R>): (A1, A2, A3, A4) -> R {
+	fun closureToLambda4(closure: Closure<*>): fn4 {
 		return { a1, a2, a3, a4 -> closure.call(a1, a2, a3, a4) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, R> closureToLambda5(closure: Closure<R>): (A1, A2, A3, A4, A5) -> R {
+	fun closureToLambda5(closure: Closure<*>): fn5 {
 		return { a1, a2, a3, a4, a5 -> closure.call(a1, a2, a3, a4, a5) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, R> closureToLambda6(closure: Closure<R>): (A1, A2, A3, A4, A5, A6) -> R {
+	fun closureToLambda6(closure: Closure<*>): fn6 {
 		return { a1, a2, a3, a4, a5, a6 -> closure.call(a1, a2, a3, a4, a5, a6) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, R> closureToLambda7(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7) -> R {
+	fun closureToLambda7(closure: Closure<*>): fn7 {
 		return { a1, a2, a3, a4, a5, a6, a7 -> closure.call(a1, a2, a3, a4, a5, a6, a7) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, A8, R> closureToLambda8(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7, A8) -> R {
+	fun closureToLambda8(closure: Closure<*>): fn8 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, A8, A9, R> closureToLambda9(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7, A8, A9) -> R {
+	fun closureToLambda9(closure: Closure<*>): fn9 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, R> closureToLambda10(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10) -> R {
+	fun closureToLambda10(closure: Closure<*>): fn10 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, R> closureToLambda11(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11) -> R {
+	fun closureToLambda11(closure: Closure<*>): fn11 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, R> closureToLambda12(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12) -> R {
+	fun closureToLambda12(closure: Closure<*>): fn12 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, R> closureToLambda13(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13) -> R {
+	fun closureToLambda13(closure: Closure<*>): fn13 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, R> closureToLambda14(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14) -> R {
+	fun closureToLambda14(closure: Closure<*>): fn14 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, R> closureToLambda15(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15) -> R {
+	fun closureToLambda15(closure: Closure<*>): fn15 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, R> closureToLambda16(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16) -> R {
+	fun closureToLambda16(closure: Closure<*>): fn16 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, R> closureToLambda17(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17) -> R {
+	fun closureToLambda17(closure: Closure<*>): fn17 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, R> closureToLambda18(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18) -> R {
+	fun closureToLambda18(closure: Closure<*>): fn18 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, R> closureToLambda19(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19) -> R {
+	fun closureToLambda19(closure: Closure<*>): fn19 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20, R> closureToLambda20(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20) -> R {
+	fun closureToLambda20(closure: Closure<*>): fn20 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20, A21, R> closureToLambda21(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20, A21) -> R {
+	fun closureToLambda21(closure: Closure<*>): fn21 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20, A21, A22, R> closureToLambda22(closure: Closure<R>): (A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15, A16, A17, A18, A19, A20, A21, A22) -> R {
+	fun closureToLambda22(closure: Closure<*>): fn22 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22) }
 	}
 	@ExportGradle
 	@JvmStatic
-	fun <R> closureToLambdaN(closure: Closure<R>, arity: Int): FunctionN<R> {
-		return object: FunctionN<R> {
+	fun closureToLambdaN(closure: Closure<*>, arity: Int): fnn {
+		return object: fnn {
 			override val arity: Int
 				get() = arity
 
-			override fun invoke(vararg args: Any?): R {
+			override fun invoke(vararg args: Any?): Any? {
 				return closure.call(*args)
 			}
 		}
@@ -165,34 +165,34 @@ object GroovyInteroperability {
 
 	@ExportGradle
 	@JvmStatic
-	fun <R> closureToLambda(closure: Closure<R>, target: Class<Function<*>>): Function<R> {
+	fun closureToLambda(closure: Closure<*>, target: Class<Function<*>>): Function<*> {
 		run {
 			/*
 			console.log(new Array(23).fill(null).map((v, i) => `if(Function${i}::class.java.isAssignableFrom(target)) return closureToLambda${i}<${new Array(i).fill(null).map((_v, _i) => `Any?`).join(", ")}, R>(closure)`).join("\n"))
 			 */
-			if(Function0::class.java.isAssignableFrom(target)) return closureToLambda0<R>(closure)
-			if(Function1::class.java.isAssignableFrom(target)) return closureToLambda1<Any?, R>(closure)
-			if(Function2::class.java.isAssignableFrom(target)) return closureToLambda2<Any?, Any?, R>(closure)
-			if(Function3::class.java.isAssignableFrom(target)) return closureToLambda3<Any?, Any?, Any?, R>(closure)
-			if(Function4::class.java.isAssignableFrom(target)) return closureToLambda4<Any?, Any?, Any?, Any?, R>(closure)
-			if(Function5::class.java.isAssignableFrom(target)) return closureToLambda5<Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function6::class.java.isAssignableFrom(target)) return closureToLambda6<Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function7::class.java.isAssignableFrom(target)) return closureToLambda7<Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function8::class.java.isAssignableFrom(target)) return closureToLambda8<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function9::class.java.isAssignableFrom(target)) return closureToLambda9<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function10::class.java.isAssignableFrom(target)) return closureToLambda10<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function11::class.java.isAssignableFrom(target)) return closureToLambda11<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function12::class.java.isAssignableFrom(target)) return closureToLambda12<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function13::class.java.isAssignableFrom(target)) return closureToLambda13<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function14::class.java.isAssignableFrom(target)) return closureToLambda14<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function15::class.java.isAssignableFrom(target)) return closureToLambda15<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function16::class.java.isAssignableFrom(target)) return closureToLambda16<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function17::class.java.isAssignableFrom(target)) return closureToLambda17<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function18::class.java.isAssignableFrom(target)) return closureToLambda18<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function19::class.java.isAssignableFrom(target)) return closureToLambda19<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function20::class.java.isAssignableFrom(target)) return closureToLambda20<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function21::class.java.isAssignableFrom(target)) return closureToLambda21<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
-			if(Function22::class.java.isAssignableFrom(target)) return closureToLambda22<Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, Any?, R>(closure)
+			if(Function0::class.java.isAssignableFrom(target)) return closureToLambda0(closure)
+			if(Function1::class.java.isAssignableFrom(target)) return closureToLambda1(closure)
+			if(Function2::class.java.isAssignableFrom(target)) return closureToLambda2(closure)
+			if(Function3::class.java.isAssignableFrom(target)) return closureToLambda3(closure)
+			if(Function4::class.java.isAssignableFrom(target)) return closureToLambda4(closure)
+			if(Function5::class.java.isAssignableFrom(target)) return closureToLambda5(closure)
+			if(Function6::class.java.isAssignableFrom(target)) return closureToLambda6(closure)
+			if(Function7::class.java.isAssignableFrom(target)) return closureToLambda7(closure)
+			if(Function8::class.java.isAssignableFrom(target)) return closureToLambda8(closure)
+			if(Function9::class.java.isAssignableFrom(target)) return closureToLambda9(closure)
+			if(Function10::class.java.isAssignableFrom(target)) return closureToLambda10(closure)
+			if(Function11::class.java.isAssignableFrom(target)) return closureToLambda11(closure)
+			if(Function12::class.java.isAssignableFrom(target)) return closureToLambda12(closure)
+			if(Function13::class.java.isAssignableFrom(target)) return closureToLambda13(closure)
+			if(Function14::class.java.isAssignableFrom(target)) return closureToLambda14(closure)
+			if(Function15::class.java.isAssignableFrom(target)) return closureToLambda15(closure)
+			if(Function16::class.java.isAssignableFrom(target)) return closureToLambda16(closure)
+			if(Function17::class.java.isAssignableFrom(target)) return closureToLambda17(closure)
+			if(Function18::class.java.isAssignableFrom(target)) return closureToLambda18(closure)
+			if(Function19::class.java.isAssignableFrom(target)) return closureToLambda19(closure)
+			if(Function20::class.java.isAssignableFrom(target)) return closureToLambda20(closure)
+			if(Function21::class.java.isAssignableFrom(target)) return closureToLambda21(closure)
+			if(Function22::class.java.isAssignableFrom(target)) return closureToLambda22(closure)
 			if(FunctionN::class.java.isAssignableFrom(target)) {
 				val arity = when(val metaClass = closure.metaClass) {
 					is ClosureMetaClass -> metaClass.methods.filter { it.name == "doCall" }
@@ -373,7 +373,8 @@ object GroovyInteroperability {
 			while(elem != null) {
 				val asImpl = elem.methods as? MetaMethod
 				if(elem.hash != hash || asImpl == null || !metaMethodSame(asImpl,
-						name, declaringClass, parameterTypes)) {
+						name, declaringClass, parameterTypes)
+				) {
 					prev = elem
 					elem = elem.nextHashEntry
 					continue
@@ -392,7 +393,8 @@ object GroovyInteroperability {
 			while(head != null) {
 				val asImpl = head.methods as? MetaMethod
 				if(asImpl == null || !metaMethodSame(asImpl, name,
-						declaringClass, parameterTypes)) {
+						declaringClass, parameterTypes)
+				) {
 					prev = head
 					head = head.nextClassEntry
 					continue
@@ -428,7 +430,8 @@ object GroovyInteroperability {
 			while(elem != null) {
 				val asImpl = elem.methods as? MetaMethod
 				if(elem.hash != hash || asImpl == null || !metaMethodSame(asImpl,
-						name, declaringClass, parameterTypes)) {
+						name, declaringClass, parameterTypes)
+				) {
 					elem = elem.nextHashEntry
 					continue
 				}
@@ -442,7 +445,8 @@ object GroovyInteroperability {
 			while(head != null) {
 				val asImpl = head.methods as? MetaMethod
 				if(asImpl == null || !metaMethodSame(asImpl, name,
-						declaringClass, parameterTypes)) {
+						declaringClass, parameterTypes)
+				) {
 					head = head.nextClassEntry
 					continue
 				}
@@ -508,7 +512,7 @@ object GroovyInteroperability {
 			}
 			if(metaClass != null && declaringClass != null && asMethod) {
 				val methodName = name
-				val parameterTypes = arrayOf(/* KotlinClosure */getCachedClass(Array<Any>::class.java))
+				val parameterTypes = arrayOf(/* GroovyKotlinInteroperability.KotlinClosure */getCachedClass(Array<Any>::class.java))
 				if(value == null) {
 					deleteMetaMethod0(metaClass, methodName, declaringClass, parameterTypes)
 				}
@@ -516,7 +520,7 @@ object GroovyInteroperability {
 					var metaMethod = getMetaMethod0(metaClass, methodName, declaringClass, parameterTypes) as? KotlinMetaMethod
 					if(metaMethod == null) {
 						val modifiers = Modifier.PUBLIC or Modifier.STATIC or Modifier.FINAL
-						metaMethod = KotlinMetaMethod(modifiers, methodName, declaringClass, parameterTypes, /* KotlinClosure */Any::class.java, null)
+						metaMethod = KotlinMetaMethod(modifiers, methodName, declaringClass, parameterTypes, /* GroovyKotlinInteroperability.KotlinClosure */Any::class.java, null)
 						setMetaMethod0(metaClass, metaMethod)
 					}
 					metaMethod.callback = { self, args -> value.call(self, args) }

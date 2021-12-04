@@ -1,3 +1,7 @@
+package DynamicScripting
+
+import Context
+
 /**
  * Store from where the script is imported from.
  *

@@ -1,3 +1,5 @@
+package DynamicScripting
+
 open class ScriptExport(
 	val scriptId: String,
 	var what: Any?,

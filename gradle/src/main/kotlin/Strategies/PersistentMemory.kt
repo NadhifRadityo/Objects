@@ -1,10 +1,16 @@
+package Strategies
+
+import Common.addOnConfigStarted
 import Common.groovyKotlinCaches
-import DynamicScripting.__getLastImportScript
-import Utils.__must_not_happen
-import Utils.attachAnyObject
-import Utils.checksumJava
-import Utils.fileBytes
-import Utils.prepareGroovyKotlinCache
+import DynamicScripting.Scripting.__getLastImportScript
+import GroovyKotlinInteroperability.ExportGradle
+import GroovyKotlinInteroperability.GroovyInteroperability.attachAnyObject
+import GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyKotlinCache
+import GroovyKotlinInteroperability.GroovyKotlinCache
+import GroovyKotlinInteroperability.GroovyManipulation
+import Strategies.CommonUtils.bytesToHexString
+import Strategies.HashUtils.checksumJavaNative
+import Strategies.Utils.__must_not_happen
 
 object PersistentMemory {
 	@JvmStatic
@@ -16,25 +22,29 @@ object PersistentMemory {
 	fun construct() {
 		cache = prepareGroovyKotlinCache(PersistentMemory)
 		groovyKotlinCaches += cache!!
-		val deletes = memories.entries.filter { it.value.invalidate?.invoke() == true }.map { it.key }
-		for(delete in deletes) memories.remove(delete)
-		for(memory in memories.values) {
-			memory.cache = prepareGroovyKotlinCache(memory)
-			memory.__start__()
-			attachAnyObject(memory, memory.cache!!)
-			memory.__end__()
+		addOnConfigStarted(0) {
+			val deletes = memories.entries.filter { it.value.invalidate?.invoke() == true }.map { it.key }
+			for(delete in deletes) memories.remove(delete)
+			for(memory in memories.values) {
+				memory.cache = prepareGroovyKotlinCache(memory)
+				memory.__start__()
+				attachAnyObject(memory, memory.cache!!)
+				memory.__end__()
+			}
+		}
+		addOnConfigStarted(0) {
+			val deletes = memories.entries.filter { it.value.invalidate?.invoke() == true }.map { it.key }
+			for(delete in deletes) memories.remove(delete)
+			for(memory in memories.values) {
+				memory.__clear__()
+				memory.cache = null
+			}
 		}
 	}
 	@JvmStatic
 	fun destruct() {
 		groovyKotlinCaches -= cache!!
 		cache = null
-		val deletes = memories.entries.filter { it.value.invalidate?.invoke() == true }.map { it.key }
-		for(delete in deletes) memories.remove(delete)
-		for(memory in memories.values) {
-			memory.__clear__()
-			memory.cache = null
-		}
 	}
 
 	@ExportGradle
@@ -59,9 +69,9 @@ object PersistentMemory {
 		val memory = persistentMemory(scriptFile.canonicalPath)
 		// Need to check if the source have been changed. Any changes
 		// to file hash might make the object structure changed
-		val scriptFileLastHash = checksumJava("MD5", fileBytes(scriptFile))
+		val scriptFileLastHash = bytesToHexString(checksumJavaNative(scriptFile, "MD5"))
 		memory.invalidate = {
-			val currentHash = checksumJava("MD5", fileBytes(scriptFile))
+			val currentHash = bytesToHexString(checksumJavaNative(scriptFile, "MD5"))
 			currentHash != scriptFileLastHash
 		}
 		return memory
@@ -69,7 +79,7 @@ object PersistentMemory {
 
 	open class Memory(
 		val id: String
-	): GroovyInteroperability.DummyGroovyObject() {
+	): GroovyManipulation.DummyGroovyObject() {
 		val data = HashMap<String, Any?>()
 		var invalidate: (() -> Boolean)? = null
 			internal set
