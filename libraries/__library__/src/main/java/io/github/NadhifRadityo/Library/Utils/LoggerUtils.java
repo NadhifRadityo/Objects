@@ -8,15 +8,16 @@ import static io.github.NadhifRadityo.Library.LibraryEntry.getProject;
 import static io.github.NadhifRadityo.Library.Utils.ExceptionUtils.throwableToString;
 
 public class LoggerUtils {
-	public static void logger_create(Object identifier, Object... args) {
-		Closure<Void> logger_create = (Closure<Void>) getProject().findProperty("ext_common$logger_create");
-		logger_create.call(identifier, args);
+	public static void logger_create(Object... args) {
+		Closure<Void> logger_create = (Closure<Void>) getProject().findProperty("__INTERNAL_Logger_loggerCreate");
+		assert logger_create != null;
+		logger_create.call(args);
 	}
 	public static void loggerCreate(Object identifier, String loggerCategory) {
-		logger_create(identifier, loggerCategory);
+		logger_create(identifier, loggerCategory != null ? loggerCategory : "");
 	}
 	public static void loggerCreate(Object identifier, Class<?> loggerCategory) {
-		logger_create(identifier, loggerCategory);
+		logger_create(identifier, loggerCategory != null ? loggerCategory : LoggerUtils.class);
 	}
 	public static void loggerCreate(Object identifier, String loggerCategory, LogLevel logLevel) {
 		logger_create(identifier, loggerCategory, logLevel);
@@ -37,26 +38,28 @@ public class LoggerUtils {
 		logger_create(null, loggerCategory, logLevel);
 	}
 
-	public static void logger_destroy(Object identifier) {
-		Closure<Void> logger_destroy = (Closure<Void>) getProject().findProperty("ext_common$logger_destroy");
-		logger_destroy.call(identifier);
+	public static void logger_destroy(Object... args) {
+		Closure<Void> logger_destroy = (Closure<Void>) getProject().findProperty("__INTERNAL_Logger_loggerDestroy");
+		assert logger_destroy != null;
+		logger_destroy.call(args);
 	}
 	public static void loggerDestroy(Object identifier) {
 		logger_destroy(identifier);
 	}
 	public static void loggerDestroy() {
-		logger_destroy(null);
+		logger_destroy((Object) null);
 	}
 
-	public static StyledTextOutput logger_instance(Object identifier) {
-		Closure<StyledTextOutput> logger_instance = (Closure<StyledTextOutput>) getProject().findProperty("ext_common$logger_instance");
-		return logger_instance.call(identifier);
+	public static StyledTextOutput logger_instance(Object... args) {
+		Closure<StyledTextOutput> logger_instance = (Closure<StyledTextOutput>) getProject().findProperty("__INTERNAL_Logger_loggerInstance");
+		assert logger_instance != null;
+		return logger_instance.call(args);
 	}
 	public static StyledTextOutput loggerInstance(Object identifier) {
 		return logger_instance(identifier);
 	}
 	public static StyledTextOutput loggerInstance() {
-		return logger_instance(null);
+		return logger_instance((Object) null);
 	}
 
 	public static boolean disableDebugPrint = false;
@@ -69,7 +72,7 @@ public class LoggerUtils {
 		}
 	}
 	public static void println_impl(String text) {
-		Closure<Void> println_impl = (Closure<Void>) getProject().findProperty("ext_common$logger_println_impl");
+		Closure<Void> println_impl = (Closure<Void>) getProject().findProperty("__INTERNAL_Logger___println_impl");
 		if(println_impl == null) { System.out.println(text); return; }
 		println_impl.call(text);
 	}

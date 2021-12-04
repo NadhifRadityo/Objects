@@ -3,7 +3,7 @@ plugins {
 }
 
 Common.context(this) {
-    Common.init()
+    Common.construct()
 }
 
 dependencies {

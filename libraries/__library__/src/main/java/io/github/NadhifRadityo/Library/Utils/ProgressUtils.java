@@ -12,15 +12,16 @@ import static io.github.NadhifRadityo.Library.LibraryEntry.getProject;
 import static io.github.NadhifRadityo.Library.Utils.UnsafeUtils.unsafe;
 
 public class ProgressUtils {
-	public static void progress_create(Object identifier, Object... args) {
-		Closure<Void> progress_create = (Closure<Void>) getProject().findProperty("ext_common$progress_create");
-		progress_create.call(identifier, args);
+	public static void progress_create(Object... args) {
+		Closure<Void> progress_create = (Closure<Void>) getProject().findProperty("__INTERNAL_Progress_progressCreate");
+		assert progress_create != null;
+		progress_create.call(args);
 	}
 	public static void progressCreate(Object identifier, String loggerCategory) {
-		progress_create(identifier, loggerCategory);
+		progress_create(identifier, loggerCategory != null ? loggerCategory : "");
 	}
 	public static void progressCreate(Object identifier, Class<?> loggerCategory) {
-		progress_create(identifier, loggerCategory);
+		progress_create(identifier, loggerCategory != null ? loggerCategory : ProgressUtils.class);
 	}
 	public static void progressCreate(Object identifier, Class<?> loggerCategory, BuildOperationDescriptor buildOperationDescriptor) {
 		progress_create(identifier, loggerCategory, buildOperationDescriptor);
@@ -41,31 +42,34 @@ public class ProgressUtils {
 		progress_create(null, loggerCategory, parent);
 	}
 
-	public static void progress_destroy(Object identifier) {
-		Closure<Void> progress_destroy = (Closure<Void>) getProject().findProperty("ext_common$progress_destroy");
-		progress_destroy.call(identifier);
+	public static void progress_destroy(Object... args) {
+		Closure<Void> progress_destroy = (Closure<Void>) getProject().findProperty("__INTERNAL_Progress_progressDestroy");
+		assert progress_destroy != null;
+		progress_destroy.call(args);
 	}
 	public static void progressDestroy(Object identifier) {
 		progress_destroy(identifier);
 	}
 	public static void progressDestroy() {
-		progress_destroy(null);
+		progress_destroy((Object) null);
 	}
 
-	public static ProgressLogger progress_instance(Object identifier) {
-		Closure<ProgressLogger> progress_instance = (Closure<ProgressLogger>) getProject().findProperty("ext_common$progress_instance");
-		return progress_instance.call(identifier);
+	public static ProgressLogger progress_instance(Object... args) {
+		Closure<ProgressLogger> progress_instance = (Closure<ProgressLogger>) getProject().findProperty("__INTERNAL_Progress_progressInstance");
+		assert progress_instance != null;
+		return progress_instance.call(args);
 	}
 	public static ProgressLogger progressInstance(Object identifier) {
 		return progress_instance(identifier);
 	}
 	public static ProgressLogger progressInstance() {
-		return progress_instance(null);
+		return progress_instance((Object) null);
 	}
 
-	public static void progress_start(Object identifier, Object... args) {
-		Closure<Void> progress_start = (Closure<Void>) getProject().findProperty("ext_common$progress_start");
-		progress_start.call(identifier, args);
+	public static void progress_start(Object... args) {
+		Closure<Void> progress_start = (Closure<Void>) getProject().findProperty("__INTERNAL_Progress_pstart");
+		assert progress_start != null;
+		progress_start.call(args);
 	}
 	public static void progressStart(Object identifier, String description, String status) {
 		progress_start(identifier, description, status);
@@ -83,12 +87,13 @@ public class ProgressUtils {
 		progress_start(null, status);
 	}
 	public static void progressStart() {
-		progress_start(null);
+		progress_start((Object) null);
 	}
 
-	public static void progress_do(Object identifier, Object... args) {
-		Closure<Void> progress_do = (Closure<Void>) getProject().findProperty("ext_common$progress_do");
-		progress_do.call(identifier, args);
+	public static void progress_do(Object... args) {
+		Closure<Void> progress_do = (Closure<Void>) getProject().findProperty("__INTERNAL_Progress_pdo");
+		assert progress_do != null;
+		progress_do.call(args);
 	}
 	public static void progressDo(Object identifier, String status) {
 		progress_do(identifier, status);
@@ -103,9 +108,10 @@ public class ProgressUtils {
 		progress_do(null, status, failing);
 	}
 
-	public static void progress_end(Object identifier, Object... args) {
-		Closure<Void> progress_end = (Closure<Void>) getProject().findProperty("ext_common$progress_end");
-		progress_end.call(identifier, args);
+	public static void progress_end(Object... args) {
+		Closure<Void> progress_end = (Closure<Void>) getProject().findProperty("__INTERNAL_Progress_pend");
+		assert progress_end != null;
+		progress_end.call(args);
 	}
 	public static void progressEnd(Object identifier) {
 		progress_end(identifier);
@@ -114,7 +120,7 @@ public class ProgressUtils {
 		progress_end(identifier, status, failed);
 	}
 	public static void progressEnd() {
-		progress_end(null);
+		progress_end((Object) null);
 	}
 	public static void progressEnd(String status, boolean failed) {
 		progress_end(null, status, failed);

@@ -11,7 +11,7 @@ import org.gradle.api.initialization.IncludedBuild
 import java.io.File
 import java.util.*
 
-object Import {
+object DynamicScripting {
 	@JvmStatic
 	private var cache: GroovyKotlinCache<*>? = null
 	@JvmStatic
@@ -22,12 +22,12 @@ object Import {
 	private val actions = HashMap<String, ((ScriptImport) -> Unit)?>()
 
 	@JvmStatic
-	fun init() {
-		cache = prepareGroovyKotlinCache(Import)
+	fun construct() {
+		cache = prepareGroovyKotlinCache(DynamicScripting)
 		groovyKotlinCaches += cache!!
 	}
 	@JvmStatic
-	fun deinit() {
+	fun destruct() {
 		groovyKotlinCaches -= cache!!
 		cache = null
 		scripts.clear()
@@ -53,7 +53,7 @@ object Import {
 	}
 	@ExportGradle
 	@JvmStatic
-	fun __getLastImportFile(): Script? {
+	fun __getLastImportScript(): Script? {
 		val lastImport = __getLastImport()
 		return if(lastImport != null) scripts[lastImport.scriptId] else null
 	}
@@ -61,7 +61,7 @@ object Import {
 	@JvmStatic
 	fun __getScriptFile(scriptObj: Any): Pair<IncludedBuild?, File> {
 		val project = lastContext().project
-		val lastImportFile = __getLastImportFile()
+		val lastImportScript = __getLastImportScript()
 		val build: IncludedBuild?
 		val scriptFile: File
 
@@ -71,8 +71,8 @@ object Import {
 			val path = scriptObj.substring(split + 1)
 			build = project.gradle.includedBuild(buildName)
 			scriptFile = File(build.projectDir, path)
-		} else if(lastImportFile?.build != null) {
-			build = lastImportFile.build
+		} else if(lastImportScript?.build != null) {
+			build = lastImportScript.build
 			scriptFile = if(scriptObj is String && scriptObj.startsWith('/'))
 				File(build.projectDir, scriptObj)
 			else if(scriptObj is String)
@@ -110,8 +110,9 @@ object Import {
 			return
 		}
 		val dummy = GroovyInteroperability.DummyGroovyObject()
+		dummy.__start__()
 		attachAnyObject(dummy, cache)
-		dummy.finalize()
+		dummy.__end__()
 		context.project.extensions.extraProperties.set(scriptImport.being, dummy)
 	}
 
@@ -209,8 +210,8 @@ object Import {
 	@ExportGradle
 	@JvmStatic @JvmOverloads
 	fun scriptExport(what: Any?, being: String, with: List<(ScriptExport) -> Unit> = listOf()) {
-		val lastImportFile = __getLastImportFile()!!
-		lastImportFile.exports += ScriptExport(lastImportFile.id, what, being, ArrayList(with))
+		val lastImportScript = __getLastImportScript()!!
+		lastImportScript.exports += ScriptExport(lastImportScript.id, what, being, ArrayList(with))
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
@@ -220,24 +221,24 @@ object Import {
 	@ExportGradle
 	@JvmStatic
 	fun scriptApply() {
-		val lastImportFile = __getLastImportFile()!!
+		val lastImportScript = __getLastImportScript()!!
 		val context = lastContext()
-		lastImportFile.context = context
+		lastImportScript.context = context
 		for(cache in groovyKotlinCaches)
 			attachObject(context, cache)
 	}
 	@ExportGradle
 	@JvmStatic
 	fun scriptConstruct(callback: () -> Unit) {
-		val lastImportFile = __getLastImportFile()!!
-		lastImportFile.construct = callback
+		val lastImportScript = __getLastImportScript()!!
+		lastImportScript.construct = callback
 		callback()
 	}
 	@ExportGradle
 	@JvmStatic
 	fun scriptDestruct(callback: () -> Unit) {
-		val lastImportFile = __getLastImportFile()!!
-		lastImportFile.destruct = callback
+		val lastImportScript = __getLastImportScript()!!
+		lastImportScript.destruct = callback
 		addOnBuildFinished(1, callback)
 	}
 
@@ -258,8 +259,8 @@ object Import {
 
 	@ExportGradle
 	@JvmStatic
-	fun includeFlags(vararg flags: String): Array<(ScriptImport) -> Unit> {
-		return arrayOf(
+	fun includeFlags(vararg flags: String): List<(ScriptImport) -> Unit> {
+		return listOf(
 			{ importInfo -> for(flag in flags) importInfo.context.project.extensions.extraProperties.set("${importInfo.scriptId}_${flag}", true) },
 			{ importInfo -> for(flag in flags) importInfo.context.project.extensions.extraProperties.set("${importInfo.scriptId}_${flag}", null) }
 		)

@@ -15,14 +15,14 @@ object Logger {
 	private var instances: MutableMap<Int, StyledTextOutput>? = null
 
 	@JvmStatic
-	fun init() {
+	fun construct() {
 		cache = prepareGroovyKotlinCache(Logger)
 		groovyKotlinCaches += cache!!
 		factory = Utils.asService(StyledTextOutputFactory::class.java)
 		instances = HashMap()
 	}
 	@JvmStatic
-	fun deinit() {
+	fun destruct() {
 		groovyKotlinCaches -= cache!!
 		cache = null
 		factory = null

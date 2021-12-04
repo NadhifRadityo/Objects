@@ -9,7 +9,7 @@ import java.util.*
 
 /**
  * Lifecycle:
- * Init -> onBuildFinished -> Deinit
+ * Construct -> onBuildFinished -> Deconstruct
  */
 
 object Common {
@@ -26,30 +26,31 @@ object Common {
 	private val onBuildFinished = HashMap<Int, MutableList<() -> Unit>>()
 
 	@JvmStatic
-	fun init() {
+	fun construct() {
 		if(initContext != null)
 			throw IllegalStateException("Init must be called once")
 		val context = lastContext()
 		initContext = context
 		context(context.that) {
 			val gradle = Utils.asGradle()
-			gradle.buildFinished { deinit() }
+			gradle.buildFinished { destruct() }
 			run {
 				cache = prepareGroovyKotlinCache(Common)
 				groovyKotlinCaches += cache!!
 				GroovyInteroperability.init()
-				Keywords.init()
-				Utils.init()
-				Progress.init()
-				Logger.init()
-				Import.init()
+				Keywords.construct()
+				Utils.construct()
+				Progress.construct()
+				Logger.construct()
+				DynamicScripting.construct()
+				PersistentMemory.construct()
 			}
 			for(cache in groovyKotlinCaches)
 				attachObject(context, cache)
 		}
 	}
 	@JvmStatic
-	fun deinit() {
+	fun destruct() {
 		val context = initContext!!
 		val exception = GradleException("Error while running callback")
 		context(context.that) {
@@ -64,12 +65,13 @@ object Common {
 			for(cache in groovyKotlinCaches.reversed())
 				detachObject(context, cache)
 			run {
-				Import.deinit()
-				Logger.deinit()
-				Progress.deinit()
-				Utils.deinit()
-				Keywords.deinit()
-				GroovyInteroperability.deinit()
+				PersistentMemory.destruct()
+				DynamicScripting.destruct()
+				Logger.destruct()
+				Progress.destruct()
+				Utils.destruct()
+				Keywords.destruct()
+				GroovyInteroperability.destruct()
 				groovyKotlinCaches -= cache!!
 				cache = null
 			}
@@ -90,12 +92,12 @@ object Common {
 
 	@ExportGradle
 	@JvmStatic
-	fun context(that: Any, callback: () -> Unit) {
+	fun context(that: Any, callback: () -> Any?): Any? {
 		val context = Context(that, Utils.asProject(that))
 		val stack = contextStack.get()
 		stack.addLast(context)
 		try {
-			callback()
+			return callback()
 		} finally {
 			val last = stack.removeLast()
 			if(context != last)
@@ -104,8 +106,8 @@ object Common {
 	}
 	@ExportGradle
 	@JvmStatic
-	fun context(that: Any, callback: Closure<Unit>) {
-		context(that, closureToLambda0(callback))
+	fun context(that: Any, callback: Closure<Any?>): Any? {
+		return context(that, closureToLambda0(callback))
 	}
 	@ExportGradle
 	@JvmStatic

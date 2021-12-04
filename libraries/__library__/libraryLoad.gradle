@@ -3,7 +3,8 @@ import org.gradle.api.internal.project.DefaultProject
 import java.lang.reflect.Method
 import java.util.stream.Stream
 
-Map<Integer, LoaderInfo> buildLoader = new HashMap<>()
+def memory
+Map<Integer, LoaderInfo> buildLoader
 Integer currentBuildHash
 
 class LoaderInfo {
@@ -76,6 +77,8 @@ context(this) {
 	scriptApply()
 	scriptConstruct {
 		addImportAction(buildscript.sourceFile, __default_import_action)
+		memory = persistentMemory()
+		buildLoader = memory.getOrCompute('buildLoader') { new HashMap() }
 	}
 	scriptDestruct {
 		removeImportAction(buildscript.sourceFile)

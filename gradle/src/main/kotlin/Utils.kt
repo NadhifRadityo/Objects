@@ -1,5 +1,7 @@
 import Common.addOnBuildFinished
+import Common.context
 import Common.groovyKotlinCaches
+import Common.lastContext
 import GroovyInteroperability.setKotlinToGroovy
 import KotlinClosure.Companion.getKFunctionOverloads
 import org.gradle.api.Project
@@ -10,29 +12,30 @@ import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.groovy.scripts.BasicScript
 import org.gradle.internal.scripts.GradleScript
 import org.gradle.launcher.daemon.server.scaninfo.DaemonScanInfo
-import java.io.File
+import java.io.*
 import java.lang.management.ManagementFactory
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.nio.file.Paths
+import java.security.MessageDigest
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.findAnnotation
 import kotlin.reflect.full.functions
-import kotlin.reflect.full.hasAnnotation
 import kotlin.reflect.full.memberProperties
+
 
 object Utils {
 	@JvmStatic
 	private var cache: GroovyKotlinCache<*>? = null
 
 	@JvmStatic
-	fun init() {
+	fun construct() {
 		cache = prepareGroovyKotlinCache(Utils)
 		groovyKotlinCaches += cache!!
 	}
 	@JvmStatic
-	fun deinit() {
+	fun destruct() {
 		groovyKotlinCaches -= cache!!
 		cache = null
 	}
@@ -147,6 +150,75 @@ object Utils {
 		} catch(ignored: Throwable) { } }
 	}
 
+	// IO things
+	@ExportGradle
+	@JvmStatic
+	fun copyStream(inputStream: InputStream, outputStream: OutputStream) {
+		val buffer = ByteArray(8192)
+		var length = 0L
+		var read = 0
+		while(!Thread.currentThread().isInterrupted && inputStream.read(buffer, 0, buffer.size).also { read = it } != -1) {
+			outputStream.write(buffer, 0, read)
+			length += read.toLong()
+		}
+		if(Thread.currentThread().isInterrupted) throw InterruptedIOException()
+	}
+	@ExportGradle
+	@JvmStatic
+	fun fileBytes(file: File): ByteArray {
+		FileInputStream(file).use { inputStream ->
+			val outputStream = ByteArrayOutputStream()
+			return try {
+				copyStream(inputStream, outputStream)
+				outputStream.close()
+				outputStream.toByteArray()
+			} finally {
+				outputStream.reset()
+			}
+		}
+	}
+	@ExportGradle
+	@JvmStatic
+	fun checksumJava(digest: String, bytes: ByteArray): String {
+		val messageDigest = MessageDigest.getInstance(digest)
+		messageDigest.update(bytes, 0, bytes.size)
+		val digestResult = messageDigest.digest()
+		val builder = StringBuilder()
+		for(byte in digestResult)
+			builder.append(((byte.toInt() and 0xff) + 0x100).toString(16).substring(1))
+		return builder.toString()
+	}
+
+	// Function manipulation
+	@ExportGradle
+	@JvmStatic
+	fun lash(that: Any, closure: KotlinClosure, vararg prependArgs: Any?): KotlinClosure {
+		val result = KotlinClosure("lash $closure")
+		result.overloads += KotlinClosure.KLambdaOverload lambda@{ args ->
+			val finalArgs = arrayOf(prependArgs) + args
+			return@lambda context(that) lambda1@{ return@lambda1 closure.call(*finalArgs) }
+		}
+		return result
+	}
+	@ExportGradle
+	@JvmStatic
+	fun lash(closure: KotlinClosure): KotlinClosure {
+		return lash(lastContext().that, closure)
+	}
+	@ExportGradle
+	@JvmStatic
+	fun bind(self: Any?, closure: KotlinClosure, vararg prependArgs: Any?): KotlinClosure {
+		val result = KotlinClosure("bind $closure")
+		result.overloads += KotlinClosure.KLambdaOverload lambda@{ args ->
+			val finalArgs = arrayOfNulls<Any?>(1 + prependArgs.size + args.size)
+			finalArgs[0] = self
+			System.arraycopy(prependArgs, 0, finalArgs, 1, prependArgs.size)
+			System.arraycopy(args, 0, finalArgs, prependArgs.size, args.size)
+			return@lambda closure.call(*finalArgs)
+		}
+		return result
+	}
+
 	@ExportGradle
 	@JvmStatic
 	val boxedToPrimitive = mapOf(
@@ -164,7 +236,6 @@ object Utils {
 		val jclass = obj::class.java
 		val cache = GroovyKotlinCache(obj, kclass, jclass)
 		for(function in kclass.functions) {
-			if(!function.hasAnnotation<JvmStatic>()) continue
 			val qualifiedName = kclass.qualifiedName!!
 			val functionName = function.name
 			val annotation = function.findAnnotation<ExportGradle>()
@@ -186,9 +257,12 @@ object Utils {
 					else injected.names += annotation.names
 				val originalOverloads = getKFunctionOverloads(arrayOf(obj), function)
 				injected.closure.overloads += originalOverloads
-				if(annotation == null || !annotation.includeSelf)
-					injected.closure.overloads += originalOverloads.map { KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, it) }
-				else injected.closure.overloads += originalOverloads.map { KotlinClosure.WithSelfOverload(null, it) }
+				if(annotation != null) {
+					if(annotation.additionalOverloads == 1)
+						injected.closure.overloads += originalOverloads.map { KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, it) }
+					if(annotation.additionalOverloads == 2)
+						injected.closure.overloads += originalOverloads.map { KotlinClosure.WithSelfOverload(null, it) }
+				}
 			} else {
 				val id = "${qualifiedName}.${functionName}.get"
 				val injected0 = cache.pushed[id]
@@ -208,13 +282,15 @@ object Utils {
 					else injected.names += annotation.names.map { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
 				val originalOverloads = getKFunctionOverloads(arrayOf(obj), function)
 				injected.methodClosure.overloads += originalOverloads
-				if(annotation == null || !annotation.includeSelf)
-					injected.methodClosure.overloads += originalOverloads.map { KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, it) }
-				else injected.methodClosure.overloads += originalOverloads.map { KotlinClosure.WithSelfOverload(null, it) }
+				if(annotation != null) {
+					if(annotation.additionalOverloads == 1)
+						injected.closure.overloads += originalOverloads.map { KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, it) }
+					if(annotation.additionalOverloads == 2)
+						injected.closure.overloads += originalOverloads.map { KotlinClosure.WithSelfOverload(null, it) }
+				}
 			}
 		}
 		for(member in kclass.memberProperties) {
-			if(!member.hasAnnotation<JvmStatic>()) continue
 			val qualifiedName = kclass.qualifiedName!!
 			val memberName = member.name
 			val annotation = member.findAnnotation<ExportGradle>()
@@ -236,9 +312,12 @@ object Utils {
 					else injected.names += annotation.names.map { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
 				val originalOverload = KotlinClosure.KProperty1Overload(obj, member as KProperty1<T, *>)
 				injected.closure.overloads += originalOverload
-				if(annotation == null || !annotation.includeSelf)
-					injected.closure.overloads += KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, originalOverload)
-				else injected.closure.overloads += KotlinClosure.WithSelfOverload(null, originalOverload)
+				if(annotation != null) {
+					if(annotation.additionalOverloads == 1)
+						injected.closure.overloads += KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, originalOverload)
+					if(annotation.additionalOverloads == 2)
+						injected.closure.overloads += KotlinClosure.WithSelfOverload(null, originalOverload)
+				}
 			}
 			if(member is KMutableProperty1<*, *> && annotation != null && annotation.allowSet) {
 				val id = "${qualifiedName}.${memberName}.set"
@@ -257,9 +336,12 @@ object Utils {
 					else injected.names += annotation.names.map { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
 				val originalOverload = KotlinClosure.KMutableProperty1Overload(obj, member as KMutableProperty1<T, *>)
 				injected.closure.overloads += originalOverload
-				if(annotation == null || !annotation.includeSelf)
-					injected.closure.overloads += KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, originalOverload)
-				else injected.closure.overloads += KotlinClosure.WithSelfOverload(null, originalOverload)
+				if(annotation != null) {
+					if(annotation.additionalOverloads == 1)
+						injected.closure.overloads += KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, originalOverload)
+					if(annotation.additionalOverloads == 2)
+						injected.closure.overloads += KotlinClosure.WithSelfOverload(null, originalOverload)
+				}
 			}
 		}
 		return cache

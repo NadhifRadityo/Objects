@@ -22,7 +22,7 @@ object GroovyInteroperability {
 		groovyKotlinCaches += cache!!
 	}
 	@JvmStatic
-	fun deinit() {
+	fun destruct() {
 		groovyKotlinCaches -= cache!!
 		cache = null
 	}
@@ -232,11 +232,14 @@ object GroovyInteroperability {
 	}
 
 	open class DummyGroovyObject : GroovyObjectSupport() {
-		init {
+		fun __start__() {
 			metaClass = MetaClassImpl(DummyGroovyObject::class.java)
 		}
-		fun finalize() {
+		fun __end__() {
 			METHOD_MetaClassImpl_reinitialize.invoke(metaClass)
+		}
+		fun __clear__() {
+			metaClass = null
 		}
 	}
 	open class KotlinMetaProperty(

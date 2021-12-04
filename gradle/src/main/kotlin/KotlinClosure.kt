@@ -53,7 +53,7 @@ open class KotlinClosure(
 	open class WithSelfOverload(
 		val self: Any?,
 		val overload: Overload
-	) : Overload(arrayOf(*overload.parameterTypes), {
+	) : Overload(overload.parameterTypes.copyOfRange(1, overload.parameterTypes.size), {
 		overload.callback(arrayOf(self, *it))
 	}
 	) {
@@ -195,7 +195,8 @@ open class KotlinClosure(
 			for(i in (parameters.size - 1) downTo 0) {
 				val parameter = parameters[i]
 				if(parameter.kind == KParameter.Kind.INSTANCE) continue
-				if(!parameter.isOptional) continue
+				// Optional parameters in the middle is a bit confusing
+				if(!parameter.isOptional) break
 				lastOptionalParameters -= parameter
 				result += KFunctionOverload(owners, function, lastOptionalParameters.toTypedArray())
 			}

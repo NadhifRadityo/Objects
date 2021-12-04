@@ -13,14 +13,14 @@ object Progress {
 	private var instances: MutableMap<Int, ProgressLogger>? = null
 
 	@JvmStatic
-	fun init() {
+	fun construct() {
 		cache = prepareGroovyKotlinCache(Progress)
 		groovyKotlinCaches += cache!!
 		factory = Utils.asService(ProgressLoggerFactory::class.java)
 		instances = HashMap()
 	}
 	@JvmStatic
-	fun deinit() {
+	fun destruct() {
 		groovyKotlinCaches -= cache!!
 		cache = null
 		factory = null

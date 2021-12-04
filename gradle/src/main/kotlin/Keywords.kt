@@ -6,12 +6,12 @@ object Keywords {
 	private var cache: GroovyKotlinCache<*>? = null
 
 	@JvmStatic
-	fun init() {
+	fun construct() {
 		cache = prepareGroovyKotlinCache(Keywords)
 		groovyKotlinCaches += cache!!
 	}
 	@JvmStatic
-	fun deinit() {
+	fun destruct() {
 		groovyKotlinCaches -= cache!!
 		cache = null
 	}
