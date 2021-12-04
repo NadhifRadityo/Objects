@@ -1,6 +1,7 @@
 import Common.groovyKotlinCaches
 import Utils.__invalid_type
 import Utils.__must_not_happen
+import Utils.parseProperty
 import Utils.prepareGroovyKotlinCache
 import groovy.lang.*
 import org.codehaus.groovy.reflection.CachedClass
@@ -472,9 +473,7 @@ object GroovyInteroperability {
 		val ext = project?.extensions?.extraProperties
 
 		for(name in names) {
-			val isGetter = name.startsWith("get") && (!name[3].isLetter() || name[3].isUpperCase())
-			val isGetterBoolean = name.startsWith("is") && (!name[2].isLetter() || name[2].isUpperCase())
-			val isSetter = name.startsWith("set") && (!name[3].isLetter() || name[3].isUpperCase())
+			val (isGetter, isGetterBoolean, isSetter) = parseProperty(name)
 			val asProperty = isGetter || isGetterBoolean || isSetter
 			val asMethod = !asProperty
 

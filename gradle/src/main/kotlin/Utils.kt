@@ -1,4 +1,4 @@
-import Common.addOnBuildFinished
+import Common.addOnConfigFinished
 import Common.context
 import Common.groovyKotlinCaches
 import Common.lastContext
@@ -149,6 +149,13 @@ object Utils {
 			`FIELD_ThreadLocal$ThreadLocalMap_remove`.invoke(threadLocals, threadLocal)
 		} catch(ignored: Throwable) { } }
 	}
+	@JvmStatic
+	fun parseProperty(name: String): Triple<Boolean, Boolean, Boolean> {
+		val isGetter = name.startsWith("get") && (!name[3].isLetter() || name[3].isUpperCase())
+		val isGetterBoolean = name.startsWith("is") && (!name[2].isLetter() || name[2].isUpperCase())
+		val isSetter = name.startsWith("set") && (!name[3].isLetter() || name[3].isUpperCase())
+		return Triple(isGetter, isGetterBoolean, isSetter)
+	}
 
 	// IO things
 	@ExportGradle
@@ -193,9 +200,11 @@ object Utils {
 	@ExportGradle
 	@JvmStatic
 	fun lash(that: Any, closure: KotlinClosure, vararg prependArgs: Any?): KotlinClosure {
-		val result = KotlinClosure("lash $closure")
+		val result = KotlinClosure("lash ${closure.name}")
 		result.overloads += KotlinClosure.KLambdaOverload lambda@{ args ->
-			val finalArgs = arrayOf(prependArgs) + args
+			val finalArgs = arrayOfNulls<Any?>(prependArgs.size + args.size)
+			System.arraycopy(prependArgs, 0, finalArgs, 0, prependArgs.size)
+			System.arraycopy(args, 0, finalArgs, prependArgs.size, args.size)
 			return@lambda context(that) lambda1@{ return@lambda1 closure.call(*finalArgs) }
 		}
 		return result
@@ -208,12 +217,12 @@ object Utils {
 	@ExportGradle
 	@JvmStatic
 	fun bind(self: Any?, closure: KotlinClosure, vararg prependArgs: Any?): KotlinClosure {
-		val result = KotlinClosure("bind $closure")
+		val result = KotlinClosure("bind ${closure.name}")
 		result.overloads += KotlinClosure.KLambdaOverload lambda@{ args ->
 			val finalArgs = arrayOfNulls<Any?>(1 + prependArgs.size + args.size)
 			finalArgs[0] = self
 			System.arraycopy(prependArgs, 0, finalArgs, 1, prependArgs.size)
-			System.arraycopy(args, 0, finalArgs, prependArgs.size, args.size)
+			System.arraycopy(args, 0, finalArgs, prependArgs.size + 1, args.size)
 			return@lambda closure.call(*finalArgs)
 		}
 		return result
@@ -373,7 +382,7 @@ object Utils {
 			val callback = entry.value
 			val injected0 = cache.pushed[id]
 			if(injected0 != null && injected0 !is GroovyKotlinCache.InjectedPropertyGetter)
-				throw Error("Id $id is defined but not as an InjectedMethod")
+				throw Error("Id $id is defined but not as an InjectedPropertyGetter")
 			var injected = injected0 as? GroovyKotlinCache.InjectedPropertyGetter
 			if(injected == null) {
 				val names = mutableSetOf("get__INTERNAL_${entry.key}")
@@ -390,7 +399,7 @@ object Utils {
 			val callback = entry.value
 			val injected0 = cache.pushed[id]
 			if(injected0 != null && injected0 !is GroovyKotlinCache.InjectedPropertySetter)
-				throw Error("Id $id is defined but not as an InjectedMethod")
+				throw Error("Id $id is defined but not as an InjectedPropertySetter")
 			var injected = injected0 as? GroovyKotlinCache.InjectedPropertySetter
 			if(injected == null) {
 				val names = mutableSetOf("set__INTERNAL_${entry.key}")
@@ -427,14 +436,14 @@ object Utils {
 	fun attachAnyObject(that: Any, cache: GroovyKotlinCache<*>) {
 		for(pushed in cache.pushed.values)
 			setKotlinToGroovy(that, null, pushed.names.toTypedArray(), pushed.closure)
-		addOnBuildFinished(0) { detachAnyObject(that, cache) }
+		addOnConfigFinished(0) { detachAnyObject(that, cache) }
 	}
 	@ExportGradle
 	@JvmStatic
 	fun attachProjectObject(project: Project, cache: GroovyKotlinCache<*>) {
 		for(pushed in cache.pushed.values)
 			setKotlinToGroovy(null, project, pushed.names.toTypedArray(), pushed.closure)
-		addOnBuildFinished(0) { detachProjectObject(project, cache) }
+		addOnConfigFinished(0) { detachProjectObject(project, cache) }
 	}
 	@ExportGradle
 	@JvmStatic

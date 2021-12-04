@@ -1,6 +1,6 @@
 open class ScriptExport(
 	val scriptId: String,
-	val what: Any?,
+	var what: Any?,
 	val being: String,
-	val with: MutableList<(ScriptExport) -> Unit>
+	val with: MutableList<ExportAction>
 )

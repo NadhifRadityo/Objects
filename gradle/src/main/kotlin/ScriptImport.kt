@@ -12,5 +12,5 @@ data class ScriptImport(
 	val scriptId: String,
 	val what: List<String>?,
 	val being: String?,
-	val with: MutableList<(ScriptImport) -> Unit>
+	val with: MutableList<ImportAction>
 )
