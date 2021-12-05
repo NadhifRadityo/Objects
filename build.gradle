@@ -5,6 +5,7 @@ import java.lang.reflect.TypeVariable
 import java.lang.reflect.WildcardType
 import java.util.stream.Collectors
 import java.util.stream.Stream
+import Gradle.Common
 
 plugins {
     id 'java'
@@ -28,8 +29,8 @@ context(this) {
     scriptImport from('std$Scripting'), being('scripting')
     scriptImport from('std$ClassUtils'), being('classutils')
     scriptImport from('std$KotlinClosureUtils'), being('kclosure')
-    Object initContext = common.__INTERNAL_Common_initContext
-    HashMap scripts = scripting.__INTERNAL_DynamicScripting$Scripting_scripts
+    Object initContext = common.__INTERNAL_Gradle$Common_initContext
+    HashMap scripts = scripting.__INTERNAL_Gradle$DynamicScripting$Scripting_scripts
     def importIfNotExist = { from, being ->
         try {
             def variable = that."${being.user}"
