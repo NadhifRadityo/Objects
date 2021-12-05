@@ -211,18 +211,12 @@ object GroovyManipulation {
 		throw __must_not_happen()
 	}
 
-	@JvmStatic
-	val FIELD_MetaClassImpl_metaMethodIndex = MetaClassImpl::class.java.getDeclaredField("metaMethodIndex")
-	@JvmStatic
-	val FIELD_MetaClassImpl_classPropertyIndex = MetaClassImpl::class.java.getDeclaredField("classPropertyIndex")
-	@JvmStatic
-	val FIELD_MetaClassImpl_allMethods = MetaClassImpl::class.java.getDeclaredField("allMethods")
-	@JvmStatic
-	val METHOD_MetaClassImpl_addMetaMethodToIndex = MetaClassImpl::class.java.getDeclaredMethod("addMetaMethodToIndex", MetaMethod::class.java, MetaMethodIndex.Header::class.java)
-	@JvmStatic
-	val METHOD_MetaClassImpl_reinitialize = MetaClassImpl::class.java.getDeclaredMethod("reinitialize")
-	@JvmStatic
-	val FIELD_MetaMethodIndex_size = MetaMethodIndex::class.java.getDeclaredField("size")
+	@JvmStatic val FIELD_MetaClassImpl_metaMethodIndex = MetaClassImpl::class.java.getDeclaredField("metaMethodIndex")
+	@JvmStatic val FIELD_MetaClassImpl_classPropertyIndex = MetaClassImpl::class.java.getDeclaredField("classPropertyIndex")
+	@JvmStatic val FIELD_MetaClassImpl_allMethods = MetaClassImpl::class.java.getDeclaredField("allMethods")
+	@JvmStatic val METHOD_MetaClassImpl_addMetaMethodToIndex = MetaClassImpl::class.java.getDeclaredMethod("addMetaMethodToIndex", MetaMethod::class.java, MetaMethodIndex.Header::class.java)
+	@JvmStatic val METHOD_MetaClassImpl_reinitialize = MetaClassImpl::class.java.getDeclaredMethod("reinitialize")
+	@JvmStatic val FIELD_MetaMethodIndex_size = MetaMethodIndex::class.java.getDeclaredField("size")
 	init {
 		FIELD_MetaClassImpl_metaMethodIndex.isAccessible = true
 		FIELD_MetaClassImpl_classPropertyIndex.isAccessible = true
@@ -500,7 +494,7 @@ object GroovyManipulation {
 				if(value is KotlinClosure) {
 					var metaProperty = getMetaProperty0(metaClass, propertyName, declaringClass) as? KotlinMetaProperty
 					if(metaProperty == null) {
-						val modifiers = Modifier.PUBLIC or Modifier.STATIC or Modifier.FINAL
+						val modifiers = Modifier.PUBLIC or Modifier.STATIC
 						metaProperty = KotlinMetaProperty(modifiers, propertyName, Any::class.java, null, null)
 						setMetaProperty0(metaClass, metaProperty, declaringClass)
 					}
@@ -519,7 +513,7 @@ object GroovyManipulation {
 				if(value is KotlinClosure) {
 					var metaMethod = getMetaMethod0(metaClass, methodName, declaringClass, parameterTypes) as? KotlinMetaMethod
 					if(metaMethod == null) {
-						val modifiers = Modifier.PUBLIC or Modifier.STATIC or Modifier.FINAL
+						val modifiers = Modifier.PUBLIC or Modifier.STATIC
 						metaMethod = KotlinMetaMethod(modifiers, methodName, declaringClass, parameterTypes, /* GroovyKotlinInteroperability.KotlinClosure */Any::class.java, null)
 						setMetaMethod0(metaClass, metaMethod)
 					}

@@ -8,6 +8,8 @@ import GroovyKotlinInteroperability.GroovyKotlinCache
 import Strategies.ExceptionUtils.exception
 import Strategies.RuntimeUtils.JAVA_DETECTION_VERSION
 import Strategies.UnsafeUtils.unsafe
+import groovy.lang.MetaClass
+import org.codehaus.groovy.runtime.InvokerHelper.getMetaClass
 import java.io.File
 import java.lang.reflect.Field
 import java.lang.reflect.Modifier
@@ -17,15 +19,27 @@ import java.nio.charset.StandardCharsets
 object ClassUtils {
 	@JvmStatic private var cache: GroovyKotlinCache<ClassUtils>? = null
 	@ExportGradle @JvmStatic
-	val boxedToPrimitive = mapOf(
-		Int::class.javaObjectType to Int::class.javaPrimitiveType,
-		Long::class.javaObjectType to Long::class.javaPrimitiveType,
-		Short::class.javaObjectType to Short::class.javaPrimitiveType,
-		Float::class.javaObjectType to Float::class.javaPrimitiveType,
-		Double::class.javaObjectType to Double::class.javaPrimitiveType,
-		Char::class.javaObjectType to Char::class.javaPrimitiveType,
-		Byte::class.javaObjectType to Byte::class.javaPrimitiveType,
-		Boolean::class.javaObjectType to Boolean::class.javaPrimitiveType)
+	val boxedToPrimitive = mapOf<Class<*>, Class<*>>(
+		Void::class.javaObjectType to Void::class.javaPrimitiveType!!,
+		Int::class.javaObjectType to Int::class.javaPrimitiveType!!,
+		Long::class.javaObjectType to Long::class.javaPrimitiveType!!,
+		Short::class.javaObjectType to Short::class.javaPrimitiveType!!,
+		Float::class.javaObjectType to Float::class.javaPrimitiveType!!,
+		Double::class.javaObjectType to Double::class.javaPrimitiveType!!,
+		Char::class.javaObjectType to Char::class.javaPrimitiveType!!,
+		Byte::class.javaObjectType to Byte::class.javaPrimitiveType!!,
+		Boolean::class.javaObjectType to Boolean::class.javaPrimitiveType!!)
+	@ExportGradle @JvmStatic
+	val primitiveToBoxed = mapOf<Class<*>, Class<*>>(
+		Void::class.javaPrimitiveType!! to Void::class.javaObjectType,
+		Int::class.javaPrimitiveType!! to Int::class.javaObjectType,
+		Long::class.javaPrimitiveType!! to Long::class.javaObjectType,
+		Short::class.javaPrimitiveType!! to Short::class.javaObjectType,
+		Float::class.javaPrimitiveType!! to Float::class.javaObjectType,
+		Double::class.javaPrimitiveType!! to Double::class.javaObjectType,
+		Char::class.javaPrimitiveType!! to Char::class.javaObjectType,
+		Byte::class.javaPrimitiveType!! to Byte::class.javaObjectType,
+		Boolean::class.javaPrimitiveType!! to Boolean::class.javaObjectType)
 
 	@JvmStatic
 	fun construct() {
@@ -38,19 +52,14 @@ object ClassUtils {
 		cache = null
 	}
 
-	@ExportGradle
-	@JvmStatic
-	fun <T> classForName(classname: String?): Class<out T>? {
-		return try { Class.forName(classname) as Class<out T> }
-			catch(e: Exception) { exception(e); null }
-	}
-
-	@ExportGradle
-	@JvmStatic
-	@Throws(ClassNotFoundException::class)
-	fun <T> classForName0(classname: String?): Class<out T> {
-		return Class.forName(classname) as Class<out T>
-	}
+	@ExportGradle @JvmStatic
+	fun <T> classForName(classname: String?): Class<out T>? { return try { Class.forName(classname) as Class<out T> } catch(e: Exception) { exception(e); null } }
+	@ExportGradle @JvmStatic @Throws(ClassNotFoundException::class)
+	fun <T> classForName0(classname: String?): Class<out T> { return Class.forName(classname) as Class<out T> }
+	@ExportGradle @JvmStatic
+	fun metaClassFor(clazz: Class<*>): MetaClass { return getMetaClass(clazz) }
+	@ExportGradle @JvmStatic
+	fun metaClassFor(obj: Any): MetaClass { return getMetaClass(obj) }
 
 	@ExportGradle
 	@JvmStatic

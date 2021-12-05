@@ -1,68 +1,83 @@
 import java.util.stream.Stream
 
 context(this) {
-	scriptApply()
 	scriptImport listOf('CONFIG'), from('/common.gradle')
 	scriptImport from('libraryModules.gradle'), being('libraryModules'), with(includeFlags('dont_clear_last_state'))
-	scriptImport from('libraryLoad.gradle'), being('libraryLoad')
+	scriptImport from('libraryLoad.gradle'), being('libraryLoad'), with(includeFlags('export_functions_only'))
 }
 
-repositories {
-	mavenCentral()
-}
-
-dependencies {
-	compileOnly gradleApi()
-	implementation CONFIG['LIBRARY_COMMONS_LANG']
-	implementation 'commons-cli:commons-cli:1.4'
-	implementation 'com.google.code.gson:gson:2.8.6'
-	implementation 'org.jsoup:jsoup:1.14.1'
-
-	testImplementation CONFIG['TESTLIBRARY_IMPLEMENTATION']
-	testRuntimeOnly CONFIG['TESTLIBRARY_RUNTIME']
-}
-
-test {
-	useJUnitPlatform()
-}
-
-// This part requires Gradle Daemon to cache the ClassLoader.
-// If the Daemon is single use, then this has no information
-// about the cached ClassLoader. And forcefully, have to load
-// latest compilation no matter what.
-def daemonProbablyUnstable = context(this) { return lash(isDaemonProbablyUnstable) }
-if(daemonProbablyUnstable() && libraryLoad.source_files().length > 0)
-	libraryLoad.load()
-if(libraryLoad.available())
-	libraryLoad.run(libraryModules.root_directory(), libraryModules.loaded_modules())
-task libraryLoad {
-	String[] depends = new String[] { 'compileKotlin', 'compileJava', 'processResources', 'classes' }
-	def anyChanged = { -> Stream.of(depends).map({ tasks.getByName(it) }).filter({
-		!it.state.upToDate && !it.state.skipped && !it.state.noSource }).count() > 0 }
-
-	group = 'library'
-	description = 'Load library scripts to daemon cache.'
-	for(def depend : depends) dependsOn depend
-	onlyIf {
-		libraryLoad.source_files().length > 0
+def project_init = {
+	delegate.repositories {
+		mavenCentral()
 	}
-	doFirst {
-		if(daemonProbablyUnstable() || anyChanged())
+	delegate.dependencies {
+		compileOnly gradleApi()
+		implementation CONFIG['LIBRARY_COMMONS_LANG']
+		implementation 'commons-cli:commons-cli:1.4'
+		implementation 'com.google.code.gson:gson:2.8.6'
+		implementation 'org.jsoup:jsoup:1.14.1'
+		implementation 'io.github.NadhifRadityo.Objects:gradle:LATEST'
+
+		testImplementation CONFIG['TESTLIBRARY_IMPLEMENTATION']
+		testRuntimeOnly CONFIG['TESTLIBRARY_RUNTIME']
+	}
+	delegate.test {
+		useJUnitPlatform()
+	}
+
+	// This part requires Gradle Daemon to cache the ClassLoader.
+	// If the Daemon is single use, then this has no information
+	// about the cached ClassLoader. And forcefully, have to load
+	// latest compilation no matter what.
+	def daemonProbablyUnstable = lash(delegate, isDaemonProbablyUnstable)
+	if(daemonProbablyUnstable() && libraryLoad.source_files().length > 0)
+		libraryLoad.load()
+	if(libraryLoad.available())
+		libraryLoad.run(libraryModules.root_directory(), libraryModules.loaded_modules())
+	delegate.task('libraryLoad') {
+		String[] depends = new String[] { 'compileKotlin', 'compileJava', 'processResources', 'classes' }
+		def anyChanged = { -> Stream.of(depends).map({ delegate.tasks.getByName(it) }).filter({
+			!it.state.upToDate && !it.state.skipped && !it.state.noSource }).count() > 0 }
+		group = 'library'
+		description = 'Load library scripts to daemon cache.'
+		for(def depend : depends) dependsOn depend
+		onlyIf {
+			libraryLoad.source_files().length > 0
+		}
+		doFirst {
+			if(daemonProbablyUnstable() || anyChanged())
+				libraryLoad.clear()
+		}
+		doLast {
+			if(daemonProbablyUnstable()) return
+			if(!libraryLoad.available() || anyChanged())
+				libraryLoad.load()
+		}
+	}
+	delegate.task('libraryUnload') {
+		group = 'library'
+		description = 'Unload library scripts from daemon cache.'
+		onlyIf {
+			!daemonProbablyUnstable()
+		}
+		doLast {
 			libraryLoad.clear()
-	}
-	doLast {
-		if(daemonProbablyUnstable()) return
-		if(!libraryLoad.available() || anyChanged())
-			libraryLoad.load()
+		}
 	}
 }
-task libraryUnload {
-	group = 'library'
-	description = 'Unload library scripts from daemon cache.'
-	onlyIf {
-		!daemonProbablyUnstable()
+def __default_import_action = { def info ->
+	Project project = info.context.project
+	project_init.delegate = project
+	try { project_init() }
+	finally { project_init.delegate = null }
+}
+
+context(this) {
+	scriptApply()
+	scriptConstruct {
+		addImportAction(buildscript.sourceFile, __default_import_action)
 	}
-	doLast {
-		libraryLoad.clear()
+	scriptDestruct {
+		removeImportAction(buildscript.sourceFile)
 	}
 }

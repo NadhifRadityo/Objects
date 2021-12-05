@@ -5,6 +5,7 @@ import DynamicScripting.Scripting.removeInjectScript
 import GroovyKotlinInteroperability.ExportGradle
 import GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyKotlinCache
 import GroovyKotlinInteroperability.GroovyKotlinCache
+import GroovyKotlinInteroperability.KotlinClosure
 import Strategies.ClassUtils.classForName
 import Strategies.ExceptionUtils.exception
 import Strategies.LoggerUtils.ldebug
@@ -13,6 +14,7 @@ import Strategies.ProgressUtils.progress
 import Strategies.ProgressUtils.progress_id
 import Strategies.RuntimeUtils.JAVA_DETECTION_VERSION
 import Strategies.RuntimeUtils.vmArguments
+import groovy.lang.Closure
 import java.lang.reflect.Method
 
 object JavascriptUtils {
@@ -37,19 +39,9 @@ object JavascriptUtils {
         javascriptGraalVM = (lambda@{
             if(CLASS_GRAALVM_Context == null) return@lambda null
             if(CLASS_GRAALVM_Value == null) return@lambda null
-            val METHOD_GRAALVM_Context_create = CLASS_GRAALVM_Context.getMethod(
-                "create",
-                Array<String>::class.java
-            )
-            val METHOD_GRAALVM_Context_eval = CLASS_GRAALVM_Context.getMethod(
-                "eval",
-                String::class.java,
-                CharSequence::class.java
-            )
-            val METHOD_GRAALVM_Value_execute = CLASS_GRAALVM_Value.getMethod(
-                "execute",
-                Array<Any>::class.java
-            )
+            val METHOD_GRAALVM_Context_create = CLASS_GRAALVM_Context.getMethod("create", Array<String>::class.java)
+            val METHOD_GRAALVM_Context_eval = CLASS_GRAALVM_Context.getMethod("eval", String::class.java, CharSequence::class.java)
+            val METHOD_GRAALVM_Value_execute = CLASS_GRAALVM_Value.getMethod("execute", Array<Any>::class.java)
             val convertToJavaType: MutableMap<Method, Method> = HashMap()
             val methods = CLASS_GRAALVM_Value.methods
             for(method in methods) {
@@ -68,9 +60,9 @@ object JavascriptUtils {
                     val function = METHOD_GRAALVM_Context_eval.invoke(context, "js", source)
                     val result = METHOD_GRAALVM_Value_execute.invoke(function, args as Any)
                     for((key, value) in convertToJavaType) {
-                        try { if(!(key.invoke(value) as Boolean)) continue }
+                        try { if(!(key.invoke(result) as Boolean)) continue }
                             catch(e: Exception) { exception(e); continue }
-                        return@lambda2 value.invoke(value)
+                        return@lambda2 value.invoke(result)
                     }
                     lwarn("GraalVM object not found! value=$result")
                     return@lambda2 result
@@ -129,5 +121,12 @@ object JavascriptUtils {
     @JvmStatic
     fun <T> runJavascriptAsCallback(source: String): (Array<Any?>) -> T? {
         return { args: Array<Any?> -> runJavascript(source, *args) as T? }
+    }
+    @ExportGradle
+    @JvmStatic
+    fun <T> runJavascriptAsClosure(source: String): Closure<T?> {
+        val result = KotlinClosure("js ($source)")
+        result.overloads += KotlinClosure.KLambdaOverload { args -> runJavascript(source, *args) }
+        return result as Closure<T?>
     }
 }

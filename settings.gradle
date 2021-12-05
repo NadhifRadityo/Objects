@@ -1,3 +1,5 @@
+import java.nio.file.Paths
+
 class GLOBAL {
 	protected static final Map<String, Boolean> extendedProjects = new HashMap<>()
 }
@@ -12,7 +14,7 @@ def extend = { String projectPath, String projectName = null ->
 	GLOBAL.extendedProjects.put(id, false)
 	include id
 }
-def apply = { ->
+def apply = { that ->
 	println "Configure for project '${rootProject.name}'"
 	rootProject.children.each { project ->
 		String projectName = project.name
@@ -28,6 +30,9 @@ def apply = { ->
 		assert project.projectDir.isDirectory()
 		assert project.buildFile.isFile()
 	}
+	def gradleBuildPath = Paths.get(new File(buildscript.sourceFile.parentFile, "/gradle").getCanonicalPath())
+	def currentModulePath = Paths.get(that.buildscript.sourceFile.parentFile.getCanonicalPath())
+	includeBuild currentModulePath.relativize(gradleBuildPath).toFile().getPath()
 }
 def extended_projects = { ->
 	return Collections.unmodifiableMap(GLOBAL.extendedProjects)
@@ -40,7 +45,6 @@ ext {
 	gradle.ext.set('settings_extended_projects', extended_projects)
 }
 
-includeBuild 'gradle'
 gradle.allprojects {
 	it.buildscript {
 		dependencies {
@@ -53,5 +57,5 @@ if(ext.find('export_functions_only') == null || !ext.find('export_functions_only
 	rootProject.name = 'Objects'
 	extend('libraries/__library__', 'Library')
 //	extend('packages/Functional')
-	apply()
+	apply(this)
 }

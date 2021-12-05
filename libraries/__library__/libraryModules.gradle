@@ -9,6 +9,13 @@ Map<String, File> loadedModules = new HashMap<>()
 File relativeToDir
 File librariesDir
 
+def applySourceSets = { sourcePath ->
+	delegate.sourceSets {
+		main.java { srcDir "$sourcePath/java" }
+		main.kotlin { srcDir "$sourcePath/kotlin" }
+		main.resources { srcDir "$sourcePath/resources" }
+	}
+}
 def set_relative_to_dir = { File relativeToDir0 ->
 	relativeToDir = relativeToDir0
 	if(relativeToDir == buildscript.sourceFile.parentFile) return
@@ -44,11 +51,7 @@ def module = { String path ->
 	linfo "Imported library module '$path'"
 	loadedModules.put(moduleIdentifier, modulePath)
 	String sourcePath = fileRelative(relativeToDir, modulePath).getPath()
-	sourceSets {
-		main.java { srcDir "$sourcePath/java" }
-		main.kotlin { srcDir "$sourcePath/kotlin" }
-		main.resources { srcDir "$sourcePath/resources" }
-	}
+	applySourceSets(sourcePath)
 }
 def loaded_modules = { ->
 	return Collections.unmodifiableMap(loadedModules)
@@ -58,10 +61,13 @@ def __default_import_action = { def info ->
 		loadedModules.clear()
 		relativeToDir = null
 		librariesDir = null
+		applySourceSets.delegate = null
 	}
 	if(!containsFlag('export_functions_only') && !containsFlag('dont_clear_last_state')) {
-		set_relative_to_dir(buildscript.sourceFile.parentFile as File)
-		set_libraries_dir(buildscript.sourceFile.parentFile.parentFile as File)
+		Project project = info.context.project
+		set_relative_to_dir(project.buildscript.sourceFile.parentFile as File)
+		set_libraries_dir(project.buildscript.sourceFile.parentFile.parentFile as File)
+		applySourceSets.delegate = project
 	}
 }
 
@@ -69,11 +75,14 @@ context(this) {
 	scriptApply()
 	scriptConstruct {
 		addImportAction(buildscript.sourceFile, __default_import_action)
+		applySourceSets.delegate = null
 	}
 	scriptDestruct {
 		removeImportAction(buildscript.sourceFile)
+		loadedModules.clear()
 		relativeToDir = null
 		librariesDir = null
+		applySourceSets.delegate = null
 	}
 }
 

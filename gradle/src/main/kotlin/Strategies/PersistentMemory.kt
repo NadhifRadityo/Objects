@@ -13,10 +13,8 @@ import Strategies.HashUtils.checksumJavaNative
 import Strategies.Utils.__must_not_happen
 
 object PersistentMemory {
-	@JvmStatic
-	private var cache: GroovyKotlinCache<*>? = null
-	@JvmStatic
-	private val memories = HashMap<String, Memory>()
+	@JvmStatic private var cache: GroovyKotlinCache<PersistentMemory>? = null
+	@JvmStatic private val memories = HashMap<String, Memory>()
 
 	@JvmStatic
 	fun construct() {

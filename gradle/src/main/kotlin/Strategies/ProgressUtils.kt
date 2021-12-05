@@ -6,6 +6,7 @@ import GroovyKotlinInteroperability.GroovyInteroperability
 import GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyKotlinCache
 import GroovyKotlinInteroperability.GroovyKotlinCache
 import GroovyKotlinInteroperability.GroovyManipulation
+import Strategies.ClassUtils.classForName0
 import Strategies.GradleUtils.asService
 import Strategies.UnsafeUtils.unsafe
 import org.gradle.internal.logging.progress.ProgressLogger
@@ -14,12 +15,9 @@ import org.gradle.internal.operations.BuildOperationDescriptor
 import java.util.*
 
 object ProgressUtils {
-	@JvmStatic
-	private var cache: GroovyKotlinCache<*>? = null
-	@JvmStatic
-	private var factory: ProgressLoggerFactory? = null
-	@JvmStatic
-	private var instances: MutableMap<Int, ProgressLogger>? = null
+	@JvmStatic private var cache: GroovyKotlinCache<ProgressUtils>? = null
+	@JvmStatic private var factory: ProgressLoggerFactory? = null
+	@JvmStatic private var instances: MutableMap<Int, ProgressLogger>? = null
 
 	@JvmStatic
 	fun construct() {
@@ -141,7 +139,7 @@ object ProgressUtils {
 	@JvmStatic internal val AFIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_state: Long
 	@JvmStatic internal val AFIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_totalProgress: Long
 	init {
-		val CLASS_DefaultProgressLoggerFactory_ProgressLoggerImpl = Class.forName("org.gradle.internal.logging.progress.DefaultProgressLoggerFactory\$ProgressLoggerImpl")
+		val CLASS_DefaultProgressLoggerFactory_ProgressLoggerImpl = classForName0<Any>("org.gradle.internal.logging.progress.DefaultProgressLoggerFactory\$ProgressLoggerImpl")
 		val FIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_progressOperationId = CLASS_DefaultProgressLoggerFactory_ProgressLoggerImpl.getDeclaredField("progressOperationId")
 		val FIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_category = CLASS_DefaultProgressLoggerFactory_ProgressLoggerImpl.getDeclaredField("category")
 		val FIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_listener = CLASS_DefaultProgressLoggerFactory_ProgressLoggerImpl.getDeclaredField("listener")

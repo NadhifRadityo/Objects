@@ -11,12 +11,9 @@ import org.gradle.internal.logging.text.StyledTextOutput
 import org.gradle.internal.logging.text.StyledTextOutputFactory
 
 object LoggerUtils {
-	@JvmStatic
-	private var cache: GroovyKotlinCache<*>? = null
-	@JvmStatic
-	private var factory: StyledTextOutputFactory? = null
-	@JvmStatic
-	private var instances: MutableMap<Int, StyledTextOutput>? = null
+	@JvmStatic private var cache: GroovyKotlinCache<LoggerUtils>? = null
+	@JvmStatic private var factory: StyledTextOutputFactory? = null
+	@JvmStatic private var instances: MutableMap<Int, StyledTextOutput>? = null
 
 	@JvmStatic
 	fun construct() {

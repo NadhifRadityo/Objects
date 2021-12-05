@@ -171,7 +171,7 @@ object Scripting {
 					else if(propertyName0.uppercase() == propertyName0) propertyName0
 					else propertyName0.replaceFirstChar { it.lowercase() }
 				} else name
-				if(rawName.startsWith("__INTERNAL_")) continue
+//				if(rawName.startsWith("__INTERNAL_")) continue
 				var export = script.exports.find { it.being == rawName }
 				if(export == null) {
 					export = ScriptExport(script.id, ArrayList<Any>(), rawName, ArrayList())

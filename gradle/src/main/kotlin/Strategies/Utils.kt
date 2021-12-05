@@ -5,8 +5,7 @@ import GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyKotlinCa
 import GroovyKotlinInteroperability.GroovyKotlinCache
 
 object Utils {
-	@JvmStatic
-	private var cache: GroovyKotlinCache<*>? = null
+	@JvmStatic private var cache: GroovyKotlinCache<Utils>? = null
 
 	@JvmStatic
 	fun construct() {

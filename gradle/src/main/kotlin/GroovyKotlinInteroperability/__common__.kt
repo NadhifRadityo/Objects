@@ -5,8 +5,10 @@ import kotlin.jvm.functions.FunctionN
 fun construct() {
 	GroovyManipulation.construct()
 	GroovyInteroperability.construct()
+	KotlinClosure.construct()
 }
 fun destruct() {
+	KotlinClosure.destruct()
 	GroovyInteroperability.destruct()
 	GroovyManipulation.destruct()
 }

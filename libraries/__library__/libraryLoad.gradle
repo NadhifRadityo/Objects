@@ -58,14 +58,12 @@ def run = { File rootDirectory, Map<String, File> modules ->
 	}
 }
 def __default_import_action = { def info ->
-	currentBuildHash = null
 	if(!containsFlag('export_functions_only')) {
-		IncludedBuild build = getScript(info).build
-		if(build == null) currentBuildHash = rootDir.getCanonicalPath().hashCode()
-		else currentBuildHash = build.projectDir.getCanonicalPath().hashCode()
+		Project project = info.context.project.rootProject
+		currentBuildHash = project.rootDir.hashCode()
 		LoaderInfo loaderInfo = buildLoader.get(currentBuildHash)
 		if(loaderInfo == null) {
-			llog "New build \"${build != null ? build.name : rootProject.name}\" with hash $currentBuildHash"
+			llog "New build \"${project.name}\" at path \"${project.rootDir}\" with hash $currentBuildHash"
 			loaderInfo = new LoaderInfo()
 			buildLoader.put(currentBuildHash, loaderInfo)
 		}
@@ -79,11 +77,10 @@ context(this) {
 		addImportAction(buildscript.sourceFile, __default_import_action)
 		memory = persistentMemory()
 		buildLoader = memory.getOrCompute('buildLoader') { new HashMap() }
+		currentBuildHash = null
 	}
 	scriptDestruct {
 		removeImportAction(buildscript.sourceFile)
-		currentBuildHash = null
-
 		Iterator<Map.Entry<Integer, LoaderInfo>> iterator = buildLoader.entrySet().iterator()
 		while(iterator.hasNext()) {
 			Map.Entry<Integer, LoaderInfo> entry = iterator.next()
@@ -92,6 +89,9 @@ context(this) {
 			llog "Removed library loader from build hash ${entry.getKey()}"
 			iterator.remove()
 		}
+		memory = null
+		buildLoader = null
+		currentBuildHash = null
 	}
 }
 

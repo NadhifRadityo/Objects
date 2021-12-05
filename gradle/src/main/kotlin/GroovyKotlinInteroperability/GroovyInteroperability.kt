@@ -3,8 +3,8 @@ package GroovyKotlinInteroperability
 import Common.addOnConfigFinished
 import Common.groovyKotlinCaches
 import Context
+import GroovyKotlinInteroperability.GroovyManipulation.setKotlinToGroovy
 import org.gradle.api.Project
-import org.gradle.internal.scripts.GradleScript
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.KProperty1
 import kotlin.reflect.full.findAnnotation
@@ -52,13 +52,10 @@ object GroovyInteroperability {
 					else injected.names += annotation.names
 				val originalOverloads = KotlinClosure.getKFunctionOverloads(arrayOf(obj), function)
 				injected.closure.overloads += originalOverloads
-				if(annotation != null) {
-					if(annotation.additionalOverloads == 1)
-						injected.closure.overloads += originalOverloads.map { KotlinClosure.IgnoreSelfOverload(
-							GradleScript::class.java, it) }
-					if(annotation.additionalOverloads == 2)
-						injected.closure.overloads += originalOverloads.map { KotlinClosure.WithSelfOverload(null, it) }
-				}
+				if(annotation == null || annotation.additionalOverloads == 1)
+					injected.closure.overloads += originalOverloads.map { KotlinClosure.IgnoreSelfOverload(Any::class.java, it) }
+				if(annotation != null && annotation.additionalOverloads == 2)
+					injected.closure.overloads += originalOverloads.map { KotlinClosure.WithSelfOverload(null, it) }
 			} else {
 				val id = "${qualifiedName}.${functionName}.get"
 				val injected0 = cache.pushed[id]
@@ -78,13 +75,10 @@ object GroovyInteroperability {
 					else injected.names += annotation.names.map { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
 				val originalOverloads = KotlinClosure.getKFunctionOverloads(arrayOf(obj), function)
 				injected.methodClosure.overloads += originalOverloads
-				if(annotation != null) {
-					if(annotation.additionalOverloads == 1)
-						injected.closure.overloads += originalOverloads.map { KotlinClosure.IgnoreSelfOverload(
-							GradleScript::class.java, it) }
-					if(annotation.additionalOverloads == 2)
-						injected.closure.overloads += originalOverloads.map { KotlinClosure.WithSelfOverload(null, it) }
-				}
+				if(annotation == null || annotation.additionalOverloads == 1)
+					injected.methodClosure.overloads += originalOverloads.map { KotlinClosure.IgnoreSelfOverload(Any::class.java, it) }
+				if(annotation != null && annotation.additionalOverloads == 2)
+					injected.methodClosure.overloads += originalOverloads.map { KotlinClosure.WithSelfOverload(null, it) }
 			}
 		}
 		for(member in kclass.memberProperties) {
@@ -109,12 +103,10 @@ object GroovyInteroperability {
 					else injected.names += annotation.names.map { i -> "get${i.replaceFirstChar { c -> c.uppercase() }}" }
 				val originalOverload = KotlinClosure.KProperty1Overload(obj, member as KProperty1<T, *>)
 				injected.closure.overloads += originalOverload
-				if(annotation != null) {
-					if(annotation.additionalOverloads == 1)
-						injected.closure.overloads += KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, originalOverload)
-					if(annotation.additionalOverloads == 2)
-						injected.closure.overloads += KotlinClosure.WithSelfOverload(null, originalOverload)
-				}
+				if(annotation == null || annotation.additionalOverloads == 1)
+					injected.closure.overloads += KotlinClosure.IgnoreSelfOverload(Any::class.java, originalOverload)
+				if(annotation != null && annotation.additionalOverloads == 2)
+					injected.closure.overloads += KotlinClosure.WithSelfOverload(null, originalOverload)
 			}
 			if(member is KMutableProperty1<*, *> && annotation != null && annotation.allowSet) {
 				val id = "${qualifiedName}.${memberName}.set"
@@ -133,12 +125,10 @@ object GroovyInteroperability {
 					else injected.names += annotation.names.map { i -> "set${i.replaceFirstChar { c -> c.uppercase() }}" }
 				val originalOverload = KotlinClosure.KMutableProperty1Overload(obj, member as KMutableProperty1<T, *>)
 				injected.closure.overloads += originalOverload
-				if(annotation != null) {
-					if(annotation.additionalOverloads == 1)
-						injected.closure.overloads += KotlinClosure.IgnoreSelfOverload(GradleScript::class.java, originalOverload)
-					if(annotation.additionalOverloads == 2)
-						injected.closure.overloads += KotlinClosure.WithSelfOverload(null, originalOverload)
-				}
+				if(annotation == null || annotation.additionalOverloads == 1)
+					injected.closure.overloads += KotlinClosure.IgnoreSelfOverload(Any::class.java, originalOverload)
+				if(annotation != null && annotation.additionalOverloads == 2)
+					injected.closure.overloads += KotlinClosure.WithSelfOverload(null, originalOverload)
 			}
 		}
 		return cache
@@ -156,7 +146,7 @@ object GroovyInteroperability {
 				throw Error("Id $id is defined but not as an InjectedMethod")
 			var injected = injected0 as? GroovyKotlinCache.InjectedMethod
 			if(injected == null) {
-				val names = mutableSetOf("__INTERNAL_${entry.key}")
+				val names = mutableSetOf(entry.key)
 				val closure = KotlinClosure(id)
 				injected = GroovyKotlinCache.InjectedMethod(names, closure)
 				cache.pushed[id] = injected
@@ -173,7 +163,7 @@ object GroovyInteroperability {
 				throw Error("Id $id is defined but not as an InjectedPropertyGetter")
 			var injected = injected0 as? GroovyKotlinCache.InjectedPropertyGetter
 			if(injected == null) {
-				val names = mutableSetOf("get__INTERNAL_${entry.key}")
+				val names = mutableSetOf("get${entry.key.replaceFirstChar { c -> c.uppercase() }}")
 				val closure = KotlinClosure(id)
 				injected = GroovyKotlinCache.InjectedPropertyGetter(names, closure)
 				cache.pushed[id] = injected
@@ -190,7 +180,7 @@ object GroovyInteroperability {
 				throw Error("Id $id is defined but not as an InjectedPropertySetter")
 			var injected = injected0 as? GroovyKotlinCache.InjectedPropertySetter
 			if(injected == null) {
-				val names = mutableSetOf("set__INTERNAL_${entry.key}")
+				val names = mutableSetOf("set${entry.key.replaceFirstChar { c -> c.uppercase() }}")
 				val closure = KotlinClosure(id)
 				injected = GroovyKotlinCache.InjectedPropertySetter(names, closure)
 				cache.pushed[id] = injected
@@ -223,14 +213,14 @@ object GroovyInteroperability {
 	@JvmStatic
 	fun attachAnyObject(that: Any, cache: GroovyKotlinCache<*>) {
 		for(pushed in cache.pushed.values)
-			GroovyManipulation.setKotlinToGroovy(that, null, pushed.names.toTypedArray(), pushed.closure)
+			setKotlinToGroovy(that, null, pushed.names.toTypedArray(), pushed.closure)
 		addOnConfigFinished(0) { detachAnyObject(that, cache) }
 	}
 	@ExportGradle
 	@JvmStatic
 	fun attachProjectObject(project: Project, cache: GroovyKotlinCache<*>) {
 		for(pushed in cache.pushed.values)
-			GroovyManipulation.setKotlinToGroovy(null, project, pushed.names.toTypedArray(), pushed.closure)
+			setKotlinToGroovy(null, project, pushed.names.toTypedArray(), pushed.closure)
 		addOnConfigFinished(0) { detachProjectObject(project, cache) }
 	}
 	@ExportGradle
@@ -243,12 +233,12 @@ object GroovyInteroperability {
 	@JvmStatic
 	fun detachAnyObject(that: Any, cache: GroovyKotlinCache<*>) {
 		for(pushed in cache.pushed.values)
-			GroovyManipulation.setKotlinToGroovy(that, null, pushed.names.toTypedArray(), null)
+			setKotlinToGroovy(that, null, pushed.names.toTypedArray(), null)
 	}
 	@ExportGradle
 	@JvmStatic
 	fun detachProjectObject(project: Project, cache: GroovyKotlinCache<*>) {
 		for(pushed in cache.pushed.values)
-			GroovyManipulation.setKotlinToGroovy(null, project, pushed.names.toTypedArray(), null)
+			setKotlinToGroovy(null, project, pushed.names.toTypedArray(), null)
 	}
 }
