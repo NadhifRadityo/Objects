@@ -26,4 +26,8 @@ object Utils {
 	internal fun __must_not_happen(): Throwable {
 		throw Error("Must not happen")
 	}
+	@JvmStatic
+	internal fun <T> __unimplemented(): T {
+		throw Error("Unimplemented")
+	}
 }

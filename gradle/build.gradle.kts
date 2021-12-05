@@ -11,11 +11,11 @@ repositories {
 }
 
 dependencies {
-	implementation("org.apache.commons:commons-lang3:3.12.0")
-	implementation("com.google.code.gson:gson:2.8.9")
-
 	compileOnly(gradleApi())
 	compileOnly(gradleKotlinDsl())
 	compileOnly(localGroovy())
 	testCompileOnly(gradleTestKit())
+
+	implementation("org.apache.commons:commons-lang3:3.12.0")
+	implementation("com.google.code.gson:gson:2.8.9")
 }

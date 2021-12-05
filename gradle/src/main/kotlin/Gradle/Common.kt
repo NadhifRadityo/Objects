@@ -15,7 +15,7 @@ import org.gradle.api.GradleException
 import java.util.*
 
 /**
- * Lifecycle:
+ * Lifecycle (on every build):
  * Construct -> onConfigStarted -> onConfigFinished -> Deconstruct
  */
 
@@ -33,12 +33,15 @@ object Common {
 	fun construct() {
 		if(initContext != null)
 			throw IllegalStateException("Init must be called once")
+		println("CONSTRUCT")
 		val context = lastContext()
 		val exception = GradleException("Error while running construct")
+		val unfinishedProjects = mutableListOf<String>()
 		initContext = context
 		context(context.that) {
 			val gradle = asGradle()
-			gradle.buildFinished { destruct() }
+			gradle.allprojects { if(!it.state.executed) unfinishedProjects += it.path }
+			gradle.afterProject { unfinishedProjects -= it.path; if(unfinishedProjects.isEmpty()) destruct() }
 			run {
 				cache = prepareGroovyKotlinCache(Common)
 				groovyKotlinCaches += cache!!
@@ -63,6 +66,7 @@ object Common {
 	@JvmStatic
 	fun destruct() {
 		val context = initContext!!
+		println("DESTRUCT")
 		val exception = GradleException("Error while running destruct")
 		context(context.that) {
 			val priorities = onConfigFinished.keys.sortedDescending()
@@ -100,7 +104,7 @@ object Common {
 
 	@ExportGradle
 	@JvmStatic
-	fun context(that: Any, callback: () -> Any?): Any? {
+	fun <T> context(that: Any, callback: () -> T): T {
 		val context = Context(that, asProject(that))
 		val stack = contextStack.get()
 		stack.addLast(context)
@@ -114,8 +118,8 @@ object Common {
 	}
 	@ExportGradle
 	@JvmStatic
-	fun context(that: Any, callback: Closure<Any?>): Any? {
-		return context(that, closureToLambda0(callback))
+	fun <T> context(that: Any, callback: Closure<T>): T {
+		return context(that, closureToLambda0(callback)) as T
 	}
 	@ExportGradle
 	@JvmStatic

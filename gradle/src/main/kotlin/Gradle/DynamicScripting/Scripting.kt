@@ -5,13 +5,16 @@ import Gradle.Common.addOnConfigStarted
 import Gradle.Common.groovyKotlinCaches
 import Gradle.Common.initContext
 import Gradle.Common.lastContext
+import Gradle.Context
 import Gradle.GroovyKotlinInteroperability.ExportGradle
 import Gradle.GroovyKotlinInteroperability.GroovyInteroperability.attachAnyObject
 import Gradle.GroovyKotlinInteroperability.GroovyInteroperability.attachObject
 import Gradle.GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyKotlinCache
 import Gradle.GroovyKotlinInteroperability.GroovyKotlinCache
+import Gradle.GroovyKotlinInteroperability.KotlinClosure
 import Gradle.GroovyKotlinInteroperability.parseProperty
 import Gradle.Strategies.CommonUtils.purgeThreadLocal
+import Gradle.Strategies.GradleUtils.asBuildProject
 import Gradle.Strategies.KeywordsUtils
 import Gradle.Strategies.KeywordsUtils.being
 import Gradle.Strategies.KeywordsUtils.with
@@ -20,6 +23,7 @@ import Gradle.Strategies.Utils.__invalid_type
 import Gradle.Strategies.Utils.__must_not_happen
 import groovy.lang.Closure
 import org.gradle.api.initialization.IncludedBuild
+import org.gradle.api.internal.file.BaseDirFileResolver
 import java.io.File
 import java.util.*
 
@@ -28,6 +32,8 @@ object Scripting {
 	@JvmStatic internal val scripts = HashMap<String, Script>()
 	@JvmStatic internal val stack = ThreadLocal.withInitial<LinkedList<ScriptImport>> { LinkedList() }
 	@JvmStatic internal val actions = HashMap<String, ImportAction?>()
+	@JvmStatic internal val builds = ArrayList<IncludedBuild>()
+	@JvmStatic internal val injectScripts = ArrayList<GroovyKotlinCache<*>>()
 
 	@JvmStatic
 	fun construct() {
@@ -69,8 +75,7 @@ object Scripting {
 	@ExportGradle
 	@JvmStatic
 	fun getScriptId(file: File): String {
-		val split = file.name.lastIndexOf('.')
-		return if(split == -1) file.name else file.name.substring(0, split)
+		return file.canonicalPath
 	}
 	@ExportGradle
 	@JvmStatic
@@ -86,8 +91,16 @@ object Scripting {
 	}
 
 	@JvmStatic
+	fun __checkBuild(build: IncludedBuild?) {
+		if(build == null || builds.contains(build)) return
+		val context = Context(build, asBuildProject(build))
+		for(injectScript in injectScripts)
+			__addInjectScript(context, injectScript)
+		builds += build
+	}
+	@JvmStatic
 	fun __getScriptFile(scriptObj: Any): Pair<IncludedBuild?, File> {
-		val project = lastContext().project
+		val context = lastContext()
 		val lastImportScript = __getLastImportScript()
 		val build: IncludedBuild?
 		val scriptFile: File
@@ -96,25 +109,20 @@ object Scripting {
 			val split = scriptObj.indexOf(':')
 			val buildName = scriptObj.substring(0, split)
 			val path = scriptObj.substring(split + 1)
-			build = project.gradle.includedBuild(buildName)
+			build = context.project.gradle.includedBuild(buildName)
 			scriptFile = File(build.projectDir, path)
-		} else if(lastImportScript?.build != null) {
+		} else if(lastImportScript != null) {
 			build = lastImportScript.build
-			scriptFile = if(scriptObj is String && scriptObj.startsWith('/'))
-				File(build.projectDir, scriptObj)
-			else if(scriptObj is String)
-				File(project.buildscript.sourceFile!!.parentFile, scriptObj)
-			else if(scriptObj is File)
-				scriptObj
-			else
-				throw IllegalArgumentException("Unsupported argument type")
+			scriptFile = if(scriptObj is String && scriptObj.startsWith('/')) File(if(build != null) build.projectDir else context.project.rootDir, scriptObj)
+				else BaseDirFileResolver(lastImportScript.file.parentFile).resolve(scriptObj)
 		} else if(scriptObj is String && scriptObj.startsWith('/')) {
 			build = null
-			scriptFile = File(project.rootDir, scriptObj)
+			scriptFile = File(context.project.rootDir, scriptObj)
 		} else {
 			build = null
-			scriptFile = project.file(scriptObj)
+			scriptFile = (context.that as org.gradle.api.Script).file(scriptObj)
 		}
+		__checkBuild(build)
 		return Pair(build, scriptFile)
 	}
 
@@ -151,8 +159,7 @@ object Scripting {
 			context.project.extensions.extraProperties.set(scriptImport.being, imported)
 	}
 	@JvmStatic
-	fun addInjectScript(cache: GroovyKotlinCache<*>) {
-		val context = initContext!!
+	fun __addInjectScript(context: Context, cache: GroovyKotlinCache<*>) {
 		val source = File(context.project.rootDir, "std$${cache.ownerJavaClass.simpleName}")
 		val (build, scriptFile) = __getScriptFile(source)
 		val scriptId = getScriptId(scriptFile)
@@ -191,12 +198,22 @@ object Scripting {
 		}
 	}
 	@JvmStatic
-	fun removeInjectScript(cache: GroovyKotlinCache<*>) {
-		val context = initContext!!
+	fun __removeInjectScript(context: Context, cache: GroovyKotlinCache<*>) {
 		val source = File(context.project.rootDir, "std$${cache.ownerJavaClass.simpleName}")
 		val (_, scriptFile) = __getScriptFile(source)
 		val scriptId = getScriptId(scriptFile)
 		scripts.remove(scriptId)
+	}
+
+	@JvmStatic
+	fun addInjectScript(cache: GroovyKotlinCache<*>) {
+		injectScripts += cache
+		__addInjectScript(initContext!!, cache)
+	}
+	@JvmStatic
+	fun removeInjectScript(cache: GroovyKotlinCache<*>) {
+		__removeInjectScript(initContext!!, cache)
+		injectScripts -= cache
 	}
 
 	/**
@@ -387,5 +404,24 @@ object Scripting {
 	@JvmStatic
 	fun exportSetter(): List<ExportAction> {
 		return listOf { exportInfo, _, _, setter -> setter[exportInfo.being] = { args -> exportInfo.what = args[0] } }
+	}
+
+	@ExportGradle
+	@JvmStatic
+	fun withCurrentImport(): Closure<*> {
+		val lastImport = __getLastImport()!!
+		val result = KotlinClosure("scriptState (${lastImport.id})")
+		result.overloads += KotlinClosure.KLambdaOverload { args ->
+			val stack = stack.get()
+			stack.addLast(lastImport)
+			try {
+				(args[0] as Closure<*>).call()
+			} finally {
+				val lastStack = stack.removeLast()
+				if(lastImport != lastStack)
+					__must_not_happen()
+			}
+		}
+		return result
 	}
 }

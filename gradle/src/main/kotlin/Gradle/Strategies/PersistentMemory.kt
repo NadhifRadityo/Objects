@@ -2,7 +2,7 @@ package Gradle.Strategies
 
 import Gradle.Common.addOnConfigStarted
 import Gradle.Common.groovyKotlinCaches
-import Gradle.DynamicScripting.Scripting.__getLastImportScript
+import Gradle.Common.lastContext
 import Gradle.GroovyKotlinInteroperability.ExportGradle
 import Gradle.GroovyKotlinInteroperability.GroovyInteroperability.attachAnyObject
 import Gradle.GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyKotlinCache
@@ -10,7 +10,6 @@ import Gradle.GroovyKotlinInteroperability.GroovyKotlinCache
 import Gradle.GroovyKotlinInteroperability.GroovyManipulation
 import Gradle.Strategies.CommonUtils.bytesToHexString
 import Gradle.Strategies.HashUtils.checksumJavaNative
-import Gradle.Strategies.Utils.__must_not_happen
 
 object PersistentMemory {
 	@JvmStatic private var cache: GroovyKotlinCache<PersistentMemory>? = null
@@ -62,8 +61,7 @@ object PersistentMemory {
 	@ExportGradle
 	@JvmStatic
 	fun persistentMemory(): Memory {
-		val lastImportScript = __getLastImportScript() ?: throw __must_not_happen()
-		val scriptFile = lastImportScript.file
+		val scriptFile = (lastContext().that as org.gradle.api.Script).buildscript.sourceFile!!
 		val memory = persistentMemory(scriptFile.canonicalPath)
 		// Need to check if the source have been changed. Any changes
 		// to file hash might make the object structure changed

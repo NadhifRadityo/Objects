@@ -119,12 +119,7 @@ object JavascriptUtils {
 
     @ExportGradle
     @JvmStatic
-    fun <T> runJavascriptAsCallback(source: String): (Array<Any?>) -> T? {
-        return { args: Array<Any?> -> runJavascript(source, *args) as T? }
-    }
-    @ExportGradle
-    @JvmStatic
-    fun <T> runJavascriptAsClosure(source: String): Closure<T?> {
+    fun <T> runJavascriptAsCallback(source: String): Closure<T?> {
         val result = KotlinClosure("js ($source)")
         result.overloads += KotlinClosure.KLambdaOverload { args -> runJavascript(source, *args) }
         return result as Closure<T?>
