@@ -37,8 +37,6 @@ open class Script(
 		internal set
 	var destruct: (() -> Unit)? = null
 		internal set
-	var exports: MutableList<ScriptExport> = ArrayList()
-		internal set
-	var imports: MutableList<ScriptImport> = ArrayList()
-		internal set
+	val exports: MutableList<ScriptExport> = ArrayList()
+	val imports: MutableList<ScriptImport> = ArrayList()
 }

@@ -4,6 +4,7 @@ import Gradle.Common.addOnConfigFinished
 import Gradle.Common.groovyKotlinCaches
 import Gradle.Context
 import Gradle.GroovyKotlinInteroperability.GroovyManipulation.setKotlinToGroovy
+import groovy.lang.GroovyObject
 import org.gradle.api.Project
 import kotlin.reflect.KMutableProperty1
 import kotlin.reflect.KProperty1
@@ -195,18 +196,20 @@ object GroovyInteroperability {
 	@ExportGradle
 	@JvmStatic
 	fun attachObject(context: Context, cache: GroovyKotlinCache<*>) {
-		val klass = context.that::class.java
-		val METHOD_BuildScript_target = klass.getMethod("getScriptTarget")
-		METHOD_BuildScript_target.isAccessible = true
-		val target = METHOD_BuildScript_target.invoke(context.that)
 		// Mostly, any property getter will use context.that
 		// As shown in BasicScript$ScriptDynamicObject.tryGetProperty
 		attachAnyObject(context.that, cache)
-		// But, the setter isn't going through the scriptObject
-		// As shown in BasicScript$ScriptDynamicObject.trySetProperty
-		// So we need to inject to script target. Call to script target
-		// is shown in CompositeDynamicObject.trySetProperty
-		attachAnyObject(target, cache)
+		if(context.that is GroovyObject) {
+			val klass = context.that::class.java
+			val METHOD_BuildScript_target = klass.getMethod("getScriptTarget")
+			METHOD_BuildScript_target.isAccessible = true
+			val target = METHOD_BuildScript_target.invoke(context.that)
+			// But, the setter isn't going through the scriptObject
+			// As shown in BasicScript$ScriptDynamicObject.trySetProperty
+			// So we need to inject to script target. Call to script target
+			// is shown in CompositeDynamicObject.trySetProperty
+			attachAnyObject(target, cache)
+		}
 		attachProjectObject(context.project, cache)
 	}
 	@ExportGradle

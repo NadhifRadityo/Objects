@@ -5,12 +5,16 @@ import Gradle.Common.groovyKotlinCaches
 import Gradle.GroovyKotlinInteroperability.ExportGradle
 import Gradle.GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyKotlinCache
 import Gradle.GroovyKotlinInteroperability.GroovyKotlinCache
+import Gradle.Strategies.Utils.__invalid_type
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.internal.project.ProjectInternal
 import org.gradle.api.invocation.Gradle
 import org.gradle.api.plugins.ExtraPropertiesExtension
 import org.gradle.groovy.scripts.BasicScript
+import org.gradle.kotlin.dsl.KotlinScript
+import org.gradle.kotlin.dsl.support.DefaultKotlinScript
+import org.gradle.kotlin.dsl.support.KotlinScriptHost
 import org.gradle.launcher.daemon.server.scaninfo.DaemonScanInfo
 import java.lang.management.ManagementFactory
 
@@ -36,7 +40,8 @@ object GradleUtils {
 		if(project is Project) return project
 		if(project is String) return Common.lastContext().project.project(project)
 		if(project is BasicScript) return (project.scriptTarget as ProjectInternal)
-		throw Utils.__invalid_type()
+		if(project is DefaultKotlinScript) return kotlinScriptHostTarget(project)
+		throw __invalid_type()
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
@@ -48,7 +53,7 @@ object GradleUtils {
 	fun asTask(task: Any, project: Any? = null): Task {
 		if(task is Task) return task
 		if(task is String) return asProject(project).tasks.getByName(task)
-		throw Utils.__invalid_type()
+		throw __invalid_type()
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
@@ -108,5 +113,13 @@ object GradleUtils {
 	@JvmStatic @JvmOverloads
 	fun isDaemonProbablyUnstable(project: Any? = null): Boolean {
 		return isSingleUseDaemon(project) || isRunningOnDebug()
+	}
+
+	// Kotlin DSL
+	fun <T : Any> kotlinScriptHostTarget(script: DefaultKotlinScript): T {
+		val FIELD_UNKNOWN_host = script.javaClass.superclass.getDeclaredField("host")
+		if(!KotlinScriptHost::class.java.isAssignableFrom(FIELD_UNKNOWN_host.type)) throw __invalid_type()
+		FIELD_UNKNOWN_host.isAccessible = true
+		return (FIELD_UNKNOWN_host.get(script) as KotlinScriptHost<T>).target
 	}
 }

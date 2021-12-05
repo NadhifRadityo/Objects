@@ -64,7 +64,10 @@ def __default_import_action = { def info ->
 		applySourceSets.delegate = null
 	}
 	if(!containsFlag('export_functions_only') && !containsFlag('dont_clear_last_state')) {
+		def that = info.context.that
 		Project project = info.context.project
+		try { context(that) { scriptImport from('libraryUtilsGenerate.gradle') } }
+		catch(Throwable ignored) { }
 		set_relative_to_dir(project.buildscript.sourceFile.parentFile as File)
 		set_libraries_dir(project.buildscript.sourceFile.parentFile.parentFile as File)
 		applySourceSets.delegate = project

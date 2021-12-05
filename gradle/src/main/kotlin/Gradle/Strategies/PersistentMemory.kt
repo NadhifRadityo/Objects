@@ -76,7 +76,7 @@ object PersistentMemory {
 	}
 
 	open class Memory(
-		val id: String
+		@ExportGradle val id: String
 	): GroovyManipulation.DummyGroovyObject() {
 		val data = HashMap<String, Any?>()
 		var invalidate: (() -> Boolean)? = null

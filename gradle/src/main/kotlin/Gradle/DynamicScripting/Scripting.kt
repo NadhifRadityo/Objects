@@ -10,12 +10,12 @@ import Gradle.GroovyKotlinInteroperability.GroovyInteroperability.attachAnyObjec
 import Gradle.GroovyKotlinInteroperability.GroovyInteroperability.attachObject
 import Gradle.GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyKotlinCache
 import Gradle.GroovyKotlinInteroperability.GroovyKotlinCache
-import Gradle.GroovyKotlinInteroperability.GroovyManipulation
 import Gradle.GroovyKotlinInteroperability.parseProperty
 import Gradle.Strategies.CommonUtils.purgeThreadLocal
 import Gradle.Strategies.KeywordsUtils
 import Gradle.Strategies.KeywordsUtils.being
 import Gradle.Strategies.KeywordsUtils.with
+import Gradle.Strategies.StringUtils.randomString
 import Gradle.Strategies.Utils.__invalid_type
 import Gradle.Strategies.Utils.__must_not_happen
 import groovy.lang.Closure
@@ -139,15 +139,16 @@ object Scripting {
 				continue
 			export.with.forEach { it(export, methods, getter, setter) }
 		}
-		val cache = prepareGroovyKotlinCache(scriptImport, methods, getter, setter)
+		val imported = Imported(script.id, scriptImport.id)
+		scriptImport.imported = imported
+		imported.cache = prepareGroovyKotlinCache(scriptImport, methods, getter, setter)
+		imported.__start__()
+		attachAnyObject(imported, imported.cache!!)
+		imported.__end__()
 		if((scriptImport.what != null && scriptImport.being == null) || containsFlag("expose_exports", scriptImport))
-			attachObject(context, cache)
-		if(scriptImport.being == null) return
-		val dummy = GroovyManipulation.DummyGroovyObject()
-		dummy.__start__()
-		attachAnyObject(dummy, cache)
-		dummy.__end__()
-		context.project.extensions.extraProperties.set(scriptImport.being, dummy)
+			attachObject(context, imported.cache!!)
+		if(scriptImport.being != null)
+			context.project.extensions.extraProperties.set(scriptImport.being, imported)
 	}
 	@JvmStatic
 	fun addInjectScript(cache: GroovyKotlinCache<*>) {
@@ -211,7 +212,7 @@ object Scripting {
 	 */
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun scriptImport(what: List<String>?, from: Any, being: String? = null, with: List<ImportAction> = listOf()): List<ScriptExport> {
+	fun scriptImport(what: List<String>?, from: Any, being: String? = null, with: List<ImportAction> = listOf()): Imported {
 		val context = lastContext()
 		val project = context.project
 		val stack = stack.get()
@@ -219,7 +220,8 @@ object Scripting {
 		val (build, scriptFile) = __getScriptFile(from)
 		val scriptId = getScriptId(scriptFile)
 		val script = scripts.computeIfAbsent(scriptId) { Script(build, scriptFile, scriptId) }
-		val scriptImport = ScriptImport(context, scriptId, what, being, ArrayList(with))
+		val scriptImportId = "$scriptId#${randomString()}"
+		val scriptImport = ScriptImport(scriptImportId, context, scriptId, what, being, ArrayList(with))
 		if(script.file.canonicalPath != scriptFile.path)
 			throw IllegalStateException("Duplicate gradle script id \"$scriptId\", another " +
 					"import is from \"${script.file.canonicalPath}\"")
@@ -263,38 +265,38 @@ object Scripting {
 			if(scriptImport != lastStack)
 				__must_not_happen()
 		}
-		return Collections.unmodifiableList(script.exports)
+		return scriptImport.imported!!
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun scriptImport(from: Any, being: String? = null, with: List<ImportAction> = listOf()): List<ScriptExport> {
+	fun scriptImport(from: Any, being: String? = null, with: List<ImportAction> = listOf()): Imported {
 		return scriptImport(null as List<String>?, from, being, with)
 	}
 	@ExportGradle
 	@JvmStatic
-	fun scriptImport(from: Any, with: List<ImportAction>): List<ScriptExport> {
+	fun scriptImport(from: Any, with: List<ImportAction>): Imported {
 		return scriptImport(null as List<String>?, from, null, with)
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
 	fun scriptImport(what: List<String>?, from: KeywordsUtils.From<Any>, being: KeywordsUtils.Being<String?> = being(null),
-					 with: KeywordsUtils.With<List<ImportAction>> = with(listOf())): List<ScriptExport>{
+					 with: KeywordsUtils.With<List<ImportAction>> = with(listOf())): Imported {
 		return scriptImport(what, from.user, being.user, with.user)
 	}
 	@ExportGradle
 	@JvmStatic
-	fun scriptImport(what: List<String>?, from: KeywordsUtils.From<Any>, with: KeywordsUtils.With<List<ImportAction>>): List<ScriptExport> {
+	fun scriptImport(what: List<String>?, from: KeywordsUtils.From<Any>, with: KeywordsUtils.With<List<ImportAction>>): Imported {
 		return scriptImport(what, from.user, null, with.user)
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
 	fun scriptImport(from: KeywordsUtils.From<Any>, being: KeywordsUtils.Being<String?> = being(null),
-					 with: KeywordsUtils.With<List<ImportAction>> = with(listOf())): List<ScriptExport> {
+					 with: KeywordsUtils.With<List<ImportAction>> = with(listOf())): Imported {
 		return scriptImport(null as List<String>?, from.user, being.user, with.user)
 	}
 	@ExportGradle
 	@JvmStatic
-	fun scriptImport(from: KeywordsUtils.From<Any>, with: KeywordsUtils.With<List<ImportAction>>): List<ScriptExport> {
+	fun scriptImport(from: KeywordsUtils.From<Any>, with: KeywordsUtils.With<List<ImportAction>>): Imported {
 		return scriptImport(null as List<String>?, from.user, null, with.user)
 	}
 	@ExportGradle
@@ -305,9 +307,7 @@ object Scripting {
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun scriptExport(what: Any?, being: KeywordsUtils.Being<String>, with: KeywordsUtils.With<List<ExportAction>> = with(
-		exportGetter()
-	)) {
+	fun scriptExport(what: Any?, being: KeywordsUtils.Being<String>, with: KeywordsUtils.With<List<ExportAction>> = with(exportGetter())) {
 		scriptExport(what, being.user, with.user)
 	}
 	@ExportGradle

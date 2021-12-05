@@ -9,6 +9,12 @@ import java.util.*
 
 object StringUtils {
 	@JvmStatic private var cache: GroovyKotlinCache<StringUtils>? = null
+	@ExportGradle const val ALPHABETS_UPPER = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	@ExportGradle const val ALPHABETS_LOWER = "abcdefghijklmnopqrstuvwxyz"
+	@ExportGradle const val DIGITS = "0123456789"
+	@ExportGradle const val ALPHANUMERIC = ALPHABETS_UPPER + ALPHABETS_LOWER + DIGITS;
+	@ExportGradle const val ASCII_SYMBOLS = " !\"#\$%&'()*+,-./:;<=>?@[\\]^_`{|}~"
+	@ExportGradle const val ASCII_CHARACTERS = ALPHANUMERIC + ASCII_SYMBOLS
 
 	@JvmStatic
 	fun construct() {
@@ -76,9 +82,8 @@ object StringUtils {
 			.replace("\"", "\\\"")
 	}
 
-	@ExportGradle
-	@JvmStatic
-	fun mostSafeString(string: String): String {
-		return string.lowercase(Locale.getDefault()).replace("[^A-Za-z0-9]".toRegex(), "_")
-	}
+	@ExportGradle @JvmStatic
+	fun mostSafeString(string: String): String { return string.lowercase(Locale.getDefault()).replace("[^A-Za-z0-9]".toRegex(), "_") }
+	@ExportGradle @JvmStatic @JvmOverloads
+	fun randomString(length: Int = 8, charset: CharArray = ALPHANUMERIC.toCharArray()): String { return (0 until length).map { charset.random() }.joinToString("") }
 }
