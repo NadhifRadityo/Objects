@@ -12,6 +12,7 @@ context(this) {
 	scriptImport from('/std$ClassUtils'), being('classutils')
 }
 
+def currentContext = bind(null, context, this)
 def parseGenericString
 def parseClassArrayString
 def parseWildcardString
@@ -62,10 +63,10 @@ def importIfNotExist = { from, being ->
 	return that."${being.user}"
 }
 def generate_utils = {
-	Object initContext = common.__INTERNAL_Gradle$Common_initContext
+	Object currentSession = common.__INTERNAL_Gradle$Common_currentSession
 	HashMap scripts = scripting.__INTERNAL_Gradle$DynamicScripting$Scripting_scripts
 
-	Stream.of(scripts.values().toArray()).filter { it.context == initContext }.forEach { script ->
+	Stream.of(scripts.values().toArray()).filter { it.context == currentSession.context }.forEach { script ->
 		List<String> methods = mutableListOf()
 		Set<String> imports = mutableSetOf()
 		Stream.of(script.exports.toArray()).forEach { export ->
@@ -139,7 +140,7 @@ def project_init = {
 		group = 'library'
 		description = 'Print out generated utils from runtime.'
 		doLast {
-			addOnConfigFinished(1) {
+			currentContext {
 				generate_utils()
 			}
 		}

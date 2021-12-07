@@ -3,7 +3,7 @@ package Gradle.DynamicScripting
 import Gradle.Common.addOnConfigFinished
 import Gradle.Common.addOnConfigStarted
 import Gradle.Common.groovyKotlinCaches
-import Gradle.Common.initContext
+import Gradle.Common.currentSession
 import Gradle.Common.lastContext
 import Gradle.Context
 import Gradle.GroovyKotlinInteroperability.ExportGradle
@@ -208,11 +208,11 @@ object Scripting {
 	@JvmStatic
 	fun addInjectScript(cache: GroovyKotlinCache<*>) {
 		injectScripts += cache
-		__addInjectScript(initContext!!, cache)
+		__addInjectScript(currentSession!!.context, cache)
 	}
 	@JvmStatic
 	fun removeInjectScript(cache: GroovyKotlinCache<*>) {
-		__removeInjectScript(initContext!!, cache)
+		__removeInjectScript(currentSession!!.context, cache)
 		injectScripts -= cache
 	}
 

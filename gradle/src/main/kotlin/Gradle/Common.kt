@@ -22,7 +22,7 @@ import java.util.*
 object Common {
 	@JvmStatic internal val groovyKotlinCaches = ArrayList<GroovyKotlinCache<*>>()
 	@JvmStatic internal val contextStack = ThreadLocal.withInitial<LinkedList<Context>> { LinkedList() }
-	@JvmStatic internal var initContext: Context? = null
+	@JvmStatic internal var currentSession: Session? = null
 		private set
 	@JvmStatic private var cache: GroovyKotlinCache<Common>? = null
 
@@ -31,17 +31,32 @@ object Common {
 
 	@JvmStatic
 	fun construct() {
-		if(initContext != null)
-			throw IllegalStateException("Init must be called once")
-		println("CONSTRUCT")
+		if(currentSession != null)
+			throw IllegalStateException("Construct must be called once")
+		println("CONSTRCUT")
 		val context = lastContext()
+		val gradle = asGradle(context.project)
+		val session = Session(context, gradle.parent?.includedBuilds?.firstOrNull {
+			it.projectDir.canonicalPath == context.project.rootProject.projectDir.canonicalPath })
+		currentSession = session
 		val exception = GradleException("Error while running construct")
-		val unfinishedProjects = mutableListOf<String>()
-		initContext = context
 		context(context.that) {
 			val gradle = asGradle()
-			gradle.allprojects { if(!it.state.executed) unfinishedProjects += it.path }
-			gradle.afterProject { unfinishedProjects -= it.path; if(unfinishedProjects.isEmpty()) destruct() }
+			if(session.build == null) {
+				val unfinishedTasks = mutableListOf<String>()
+				gradle.taskGraph.whenReady {
+					unfinishedTasks += gradle.taskGraph.allTasks.filter { it.project.rootProject == context.project }.map { it.path }
+					if(unfinishedTasks.isEmpty()) destruct()
+				}
+				gradle.taskGraph.afterTask {
+					unfinishedTasks -= it.path
+					if(unfinishedTasks.isEmpty()) destruct()
+				}
+			} else {
+				val unfinishedProjects = mutableListOf<String>()
+				gradle.allprojects { if(!it.state.executed) unfinishedProjects += it.path }
+				gradle.afterProject { unfinishedProjects -= it.path; if(unfinishedProjects.isEmpty()) destruct() }
+			}
 			run {
 				cache = prepareGroovyKotlinCache(Common)
 				groovyKotlinCaches += cache!!
@@ -65,8 +80,11 @@ object Common {
 	}
 	@JvmStatic
 	fun destruct() {
-		val context = initContext!!
-		println("DESTRUCT")
+		println("DESTRCUT")
+		val session = currentSession
+		if(session == null)
+			throw IllegalStateException("Construct wasn't being called")
+		val context = session.context
 		val exception = GradleException("Error while running destruct")
 		context(context.that) {
 			val priorities = onConfigFinished.keys.sortedDescending()
@@ -93,7 +111,7 @@ object Common {
 		purgeThreadLocal(contextStack)
 		onConfigStarted.clear()
 		onConfigFinished.clear()
-		initContext = null
+		currentSession = null
 		if(exception.suppressed.isNotEmpty())
 			throw exception
 	}
