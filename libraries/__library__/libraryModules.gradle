@@ -9,7 +9,7 @@ Map<String, File> loadedModules = new HashMap<>()
 File relativeToDir
 File librariesDir
 
-def applySourceSets = { sourcePath ->
+def applySourceSets = { String sourcePath ->
 	delegate.sourceSets {
 		main.java { srcDir "$sourcePath/java" }
 		main.kotlin { srcDir "$sourcePath/kotlin" }

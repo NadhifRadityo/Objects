@@ -1,50 +1,84 @@
 package io.github.NadhifRadityo.Library.Utils;
 
+import groovy.lang.Closure;
+import groovy.lang.GroovyObject;
+import groovy.lang.MetaClass;
 import java.io.File;
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-
-import static io.github.NadhifRadityo.Library.Utils.ExceptionUtils.exception;
-import static io.github.NadhifRadityo.Library.Utils.RuntimeUtils.JAVA_DETECTION_VERSION;
-import static io.github.NadhifRadityo.Library.Utils.UnsafeUtils.unsafe;
+import java.util.Map;
+import static io.github.NadhifRadityo.Library.LibraryEntry.getContext;
 
 public class ClassUtils {
-
+	public static <T> Class<? extends T> __INTERNAL_Gradle$Strategies$ClassUtils_classForName0(String classname) {
+		return ((Closure<Class<? extends T>>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ClassUtils_classForName0")).call(classname);
+	}
+	public static <T> Class<? extends T> classForName0(String classname) {
+		return ((Closure<Class<? extends T>>) ((GroovyObject) getContext().getThat()).getProperty("classForName0")).call(classname);
+	}
+	public static File __INTERNAL_Gradle$Strategies$ClassUtils_currentClassFile() {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ClassUtils_currentClassFile")).call();
+	}
+	public static File __INTERNAL_Gradle$Strategies$ClassUtils_currentClassFile(Class<?> clazz) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ClassUtils_currentClassFile")).call(clazz);
+	}
+	public static File currentClassFile() {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("currentClassFile")).call();
+	}
+	public static File currentClassFile(Class<?> clazz) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("currentClassFile")).call(clazz);
+	}
+	public static void __INTERNAL_Gradle$Strategies$ClassUtils_overrideFinal(Object obj, Field field, Object newValue) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ClassUtils_overrideFinal")).call(obj, field, newValue);
+	}
+	public static void overrideFinal(Object obj, Field field, Object newValue) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("overrideFinal")).call(obj, field, newValue);
+	}
+	public static int __INTERNAL_Gradle$Strategies$ClassUtils_hashCode() {
+		return ((Closure<Integer>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ClassUtils_hashCode")).call();
+	}
+	public static void __INTERNAL_Gradle$Strategies$ClassUtils_construct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ClassUtils_construct")).call();
+	}
+	public static String __INTERNAL_Gradle$Strategies$ClassUtils_toString() {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ClassUtils_toString")).call();
+	}
+	public static <T> Class<? extends T> __INTERNAL_Gradle$Strategies$ClassUtils_classForName(String classname) {
+		return ((Closure<Class<? extends T>>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ClassUtils_classForName")).call(classname);
+	}
 	public static <T> Class<? extends T> classForName(String classname) {
-		try { return (Class<? extends T>) Class.forName(classname); } catch(Exception e) { exception(e); return null; }
+		return ((Closure<Class<? extends T>>) ((GroovyObject) getContext().getThat()).getProperty("classForName")).call(classname);
 	}
-	public static <T> Class<? extends T> classForName0(String classname) throws ClassNotFoundException {
-		return (Class<? extends T>) Class.forName(classname);
+	public static Map<Class<?>, Class<?>> get__INTERNAL_Gradle$Strategies$ClassUtils_primitiveToBoxed() {
+		return (Map<Class<?>, Class<?>>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ClassUtils_primitiveToBoxed");
 	}
-	public static void setFinal(Object object, Field field, Object newValue) {
-		boolean useUnsafe = JAVA_DETECTION_VERSION > 12;
-		Throwable exception = null;
-		try { if(!useUnsafe) {
-			Field modifiersField = Field.class.getDeclaredField("modifiers");
-			modifiersField.setAccessible(true);
-			modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-			field.setAccessible(true);
-			field.set(object, newValue);
-		} } catch(Throwable e) { exception = exception(e); }
-		if(!useUnsafe && exception == null) return;
-		try {
-			Object fieldObject = object != null ? object : unsafe.staticFieldBase(field);
-			long fieldOffset = object != null ? unsafe.objectFieldOffset(field) : unsafe.staticFieldOffset(field);
-			unsafe.putObject(fieldObject, fieldOffset, newValue);
-		} catch(Throwable e1) {
-			if(exception != null) e1.addSuppressed(exception);
-			throw new Error(exception(e1));
-		}
+	public static Map<Class<?>, Class<?>> getPrimitiveToBoxed() {
+		return (Map<Class<?>, Class<?>>) ((GroovyObject) getContext().getThat()).getProperty("primitiveToBoxed");
 	}
-
-	public static File getCurrentClassFile(Class<?> clazz) throws Exception {
-		File result = new File(URLDecoder.decode(clazz.getProtectionDomain().getCodeSource().getLocation().getPath(), StandardCharsets.UTF_8.name()));
-		if(result.isDirectory()) result = new File(result, clazz.getSimpleName() + ".class"); return result;
+	public static Map<Class<?>, Class<?>> get__INTERNAL_Gradle$Strategies$ClassUtils_boxedToPrimitive() {
+		return (Map<Class<?>, Class<?>>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ClassUtils_boxedToPrimitive");
 	}
-	public static File getCurrentClassFile() throws Exception {
-		Class<?> currentClass = classForName(Thread.currentThread().getStackTrace()[2].getClassName());
-		return currentClass == null ? null : getCurrentClassFile(currentClass);
+	public static Map<Class<?>, Class<?>> getBoxedToPrimitive() {
+		return (Map<Class<?>, Class<?>>) ((GroovyObject) getContext().getThat()).getProperty("boxedToPrimitive");
+	}
+	public static MetaClass __INTERNAL_Gradle$Strategies$ClassUtils_metaClassFor(Class<?> clazz) {
+		return ((Closure<MetaClass>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ClassUtils_metaClassFor")).call(clazz);
+	}
+	public static MetaClass __INTERNAL_Gradle$Strategies$ClassUtils_metaClassFor(Object obj) {
+		return ((Closure<MetaClass>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ClassUtils_metaClassFor")).call(obj);
+	}
+	public static MetaClass metaClassFor(Class<?> clazz) {
+		return ((Closure<MetaClass>) ((GroovyObject) getContext().getThat()).getProperty("metaClassFor")).call(clazz);
+	}
+	public static MetaClass metaClassFor(Object obj) {
+		return ((Closure<MetaClass>) ((GroovyObject) getContext().getThat()).getProperty("metaClassFor")).call(obj);
+	}
+	public static Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.ClassUtils> get__INTERNAL_Gradle$Strategies$ClassUtils_cache() {
+		return (Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.ClassUtils>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ClassUtils_cache");
+	}
+	public static boolean __INTERNAL_Gradle$Strategies$ClassUtils_equals(Object other) {
+		return ((Closure<Boolean>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ClassUtils_equals")).call(other);
+	}
+	public static void __INTERNAL_Gradle$Strategies$ClassUtils_destruct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ClassUtils_destruct")).call();
 	}
 }

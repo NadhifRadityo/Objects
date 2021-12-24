@@ -1,49 +1,78 @@
 package io.github.NadhifRadityo.Library.Utils;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.IOException;
+import groovy.lang.Closure;
+import groovy.lang.GroovyObject;
 import java.io.InputStream;
-import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.function.Consumer;
-
-import static io.github.NadhifRadityo.Library.Utils.CommonUtils.newStreamProgress;
-import static io.github.NadhifRadityo.Library.Utils.UnsafeUtils.getTempByteArray;
-import static io.github.NadhifRadityo.Library.Utils.UnsafeUtils.getTempInputBuffer;
-import static io.github.NadhifRadityo.Library.Utils.UnsafeUtils.getTempOutputBuffer;
+import static io.github.NadhifRadityo.Library.LibraryEntry.getContext;
 
 public class StreamUtils {
-	public static final int COPY_CACHE_SIZE = 65536;
-
-	@groovy.transform.ThreadInterrupt
-	public static void copy(InputStream inputStream, OutputStream outputStream, Consumer<Long> progress) throws IOException {
-		byte[] buffer = getTempByteArray(COPY_CACHE_SIZE);
-		if(progress != null) progress.accept(-1L);
-		long length = 0; int read;
-		while(!Thread.currentThread().isInterrupted() &&
-				(read = inputStream.read(buffer, 0, buffer.length)) != -1) {
-			outputStream.write(buffer, 0, read); length += read;
-			if(progress != null) progress.accept(length);
-		}
-		if(progress != null) progress.accept(-2L);
-		if(Thread.currentThread().isInterrupted())
-			throw new InterruptedIOException();
+	public static void __INTERNAL_Gradle$Strategies$StreamUtils_construct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$StreamUtils_construct")).call();
 	}
-	public static byte[] getBytes(InputStream inputStream) throws IOException {
-		ByteArrayOutputStream outputStream = getTempOutputBuffer();
-		long totalSize = inputStream instanceof FileInputStream ? ((FileInputStream) inputStream).getChannel().size() : 0;
-		Consumer<Long> progress = totalSize >= 1000 * 1000 * 10 ? newStreamProgress(totalSize) : null;
-		try { copy(inputStream, outputStream, progress); outputStream.close(); return outputStream.toByteArray(); } finally { outputStream.reset(); }
+	public static int __INTERNAL_Gradle$Strategies$StreamUtils_hashCode() {
+		return ((Closure<Integer>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$StreamUtils_hashCode")).call();
 	}
-	public static void writeBytes(byte[] input, int off, int len, OutputStream outputStream) throws IOException {
-		ByteArrayInputStream inputStream = getTempInputBuffer(input, off, len);
-		Consumer<Long> progress = len >= 1000 * 1000 * 10 ? newStreamProgress(len) : null;
-		try { copy(inputStream, outputStream, progress); inputStream.close(); } finally { inputStream.reset(); }
+	public static int get__INTERNAL_Gradle$Strategies$StreamUtils_COPY_CACHE_SIZE() {
+		return (Integer) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$StreamUtils_COPY_CACHE_SIZE");
 	}
-
-	public static String getString(InputStream inputStream, Charset charset) throws IOException { return new String(getBytes(inputStream), charset); }
-	public static void writeString(String string, OutputStream outputStream, Charset charset) throws IOException { byte[] bytes = string.getBytes(charset); writeBytes(bytes, 0, bytes.length, outputStream); }
+	public static int getCOPY_CACHE_SIZE() {
+		return (Integer) ((GroovyObject) getContext().getThat()).getProperty("COPY_CACHE_SIZE");
+	}
+	public static void __INTERNAL_Gradle$Strategies$StreamUtils_copyStream(InputStream inputStream, OutputStream outputStream, Consumer<Long> progress) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$StreamUtils_copyStream")).call(inputStream, outputStream, progress);
+	}
+	public static void copyStream(InputStream inputStream, OutputStream outputStream, Consumer<Long> progress) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("copyStream")).call(inputStream, outputStream, progress);
+	}
+	public static String __INTERNAL_Gradle$Strategies$StreamUtils_toString() {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$StreamUtils_toString")).call();
+	}
+	public static void __INTERNAL_Gradle$Strategies$StreamUtils_destruct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$StreamUtils_destruct")).call();
+	}
+	public static byte[] __INTERNAL_Gradle$Strategies$StreamUtils_streamBytes(InputStream inputStream) {
+		return ((Closure<byte[]>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$StreamUtils_streamBytes")).call(inputStream);
+	}
+	public static byte[] streamBytes(InputStream inputStream) {
+		return ((Closure<byte[]>) ((GroovyObject) getContext().getThat()).getProperty("streamBytes")).call(inputStream);
+	}
+	public static String __INTERNAL_Gradle$Strategies$StreamUtils_streamString(InputStream inputStream, Charset charset) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$StreamUtils_streamString")).call(inputStream, charset);
+	}
+	public static String __INTERNAL_Gradle$Strategies$StreamUtils_streamString(InputStream inputStream) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$StreamUtils_streamString")).call(inputStream);
+	}
+	public static String streamString(InputStream inputStream, Charset charset) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("streamString")).call(inputStream, charset);
+	}
+	public static String streamString(InputStream inputStream) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("streamString")).call(inputStream);
+	}
+	public static boolean __INTERNAL_Gradle$Strategies$StreamUtils_equals(Object other) {
+		return ((Closure<Boolean>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$StreamUtils_equals")).call(other);
+	}
+	public static void __INTERNAL_Gradle$Strategies$StreamUtils_writeString(String string, OutputStream outputStream, Charset charset) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$StreamUtils_writeString")).call(string, outputStream, charset);
+	}
+	public static void __INTERNAL_Gradle$Strategies$StreamUtils_writeString(String string, OutputStream outputStream) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$StreamUtils_writeString")).call(string, outputStream);
+	}
+	public static void writeString(String string, OutputStream outputStream, Charset charset) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("writeString")).call(string, outputStream, charset);
+	}
+	public static void writeString(String string, OutputStream outputStream) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("writeString")).call(string, outputStream);
+	}
+	public static void __INTERNAL_Gradle$Strategies$StreamUtils_writeBytes(byte[] input, int off, int len, OutputStream outputStream) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$StreamUtils_writeBytes")).call(input, off, len, outputStream);
+	}
+	public static void writeBytes(byte[] input, int off, int len, OutputStream outputStream) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("writeBytes")).call(input, off, len, outputStream);
+	}
+	public static Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.StreamUtils> get__INTERNAL_Gradle$Strategies$StreamUtils_cache() {
+		return (Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.StreamUtils>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$StreamUtils_cache");
+	}
 }

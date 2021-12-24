@@ -123,4 +123,9 @@ object JavascriptUtils {
         result.overloads += KotlinClosure.KLambdaOverload { args -> runJavascript(source, *args) }
         return result as Closure<T?>
     }
+    @ExportGradle
+    @JvmStatic
+    fun <T> runJavascriptAsCallbackF(source: String): (Array<out Any?>) -> Any? {
+        return { args -> runJavascript(source, *args) }
+    }
 }

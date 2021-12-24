@@ -376,11 +376,11 @@ object Scripting {
 	}
 	@ExportGradle
 	@JvmStatic @JvmOverloads
-	fun containsFlag(flag: String, import: ScriptImport? = __getLastImport()): Boolean {
-		val context = import?.context ?: lastContext()
+	fun containsFlag(flag: String, scriptImport: ScriptImport? = __getLastImport()): Boolean {
+		val context = scriptImport?.context ?: lastContext()
 		val ext = context.project.extensions.extraProperties
-		return if(import == null) ext.has(flag)
-		else ext.has("${import.scriptId}_${flag}")
+		return if(scriptImport == null) ext.has(flag)
+		else ext.has("${scriptImport.scriptId}_${flag}")
 	}
 
 	@ExportGradle

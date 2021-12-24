@@ -1,66 +1,46 @@
 package io.github.NadhifRadityo.Library.Utils;
 
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.xml.sax.InputSource;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
+import groovy.lang.Closure;
+import groovy.lang.GroovyObject;
 import java.io.File;
-import java.io.InputStream;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-
-import static io.github.NadhifRadityo.Library.Utils.FileUtils.getFileString;
-import static io.github.NadhifRadityo.Library.Utils.FileUtils.mkfile;
-import static io.github.NadhifRadityo.Library.Utils.FileUtils.writeFileString;
-import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.info;
-import static io.github.NadhifRadityo.Library.Utils.StreamUtils.getString;
+import org.w3c.dom.Document;
+import static io.github.NadhifRadityo.Library.LibraryEntry.getContext;
 
 public class XMLUtils {
-
-	public static Document newXMLDocument(Object object) throws Exception {
-		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-		DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
-		if(object instanceof InputStream) object = getString((InputStream) object, StandardCharsets.UTF_8);
-		else if(object instanceof File) object = getFileString((File) object, StandardCharsets.UTF_8);
-		else if(object != null) throw new IllegalArgumentException();
-		return object != null ? documentBuilder.parse(new InputSource(new StringReader((String) object))) : documentBuilder.newDocument();
+	public static Document __INTERNAL_Gradle$Strategies$XMLUtils_newXMLDocument(Object obj0) {
+		return ((Closure<Document>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$XMLUtils_newXMLDocument")).call(obj0);
 	}
-	public static String XMLToString(Object object) throws Exception {
-		TransformerFactory transformerFactory = TransformerFactory.newInstance();
-		Transformer transformer = transformerFactory.newTransformer();
-
-		DOMSource source;
-		if(object instanceof Document) {
-			transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-			transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", Integer.toString(2));
-			source = new DOMSource(((Document) object).getDocumentElement());
-		} else if(object instanceof Element) {
-			transformer.setOutputProperty(OutputKeys.METHOD, "xml");
-			transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-			transformer.setOutputProperty("omit-xml-declaration", "yes");
-			transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", Integer.toString(2));
-			source = new DOMSource((Element) object);
-		} else throw new IllegalArgumentException();
-
-		StringWriter stringWriter = new StringWriter();
-		StreamResult streamResult = new StreamResult(stringWriter);
-		transformer.transform(source, streamResult);
-		return stringWriter.toString();
+	public static Document newXMLDocument(Object obj0) {
+		return ((Closure<Document>) ((GroovyObject) getContext().getThat()).getProperty("newXMLDocument")).call(obj0);
 	}
-	public static String createXMLFile(Object object, File target) throws Exception {
-		String stringOut = XMLToString(object);
-		mkfile(target);
-		writeFileString(target, stringOut, StandardCharsets.UTF_8);
-		info("Configurations written to: %s", target.getPath());
-		return stringOut;
+	public static boolean __INTERNAL_Gradle$Strategies$XMLUtils_equals(Object other) {
+		return ((Closure<Boolean>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$XMLUtils_equals")).call(other);
+	}
+	public static String __INTERNAL_Gradle$Strategies$XMLUtils_toString() {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$XMLUtils_toString")).call();
+	}
+	public static int __INTERNAL_Gradle$Strategies$XMLUtils_hashCode() {
+		return ((Closure<Integer>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$XMLUtils_hashCode")).call();
+	}
+	public static void __INTERNAL_Gradle$Strategies$XMLUtils_construct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$XMLUtils_construct")).call();
+	}
+	public static String __INTERNAL_Gradle$Strategies$XMLUtils_createXMLFile(Object obj, File target) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$XMLUtils_createXMLFile")).call(obj, target);
+	}
+	public static String createXMLFile(Object obj, File target) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("createXMLFile")).call(obj, target);
+	}
+	public static void __INTERNAL_Gradle$Strategies$XMLUtils_destruct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$XMLUtils_destruct")).call();
+	}
+	public static String __INTERNAL_Gradle$Strategies$XMLUtils_XMLToString(Object obj) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$XMLUtils_XMLToString")).call(obj);
+	}
+	public static String xMLToString(Object obj) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("xMLToString")).call(obj);
+	}
+	public static Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.XMLUtils> get__INTERNAL_Gradle$Strategies$XMLUtils_cache() {
+		return (Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.XMLUtils>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$XMLUtils_cache");
 	}
 }

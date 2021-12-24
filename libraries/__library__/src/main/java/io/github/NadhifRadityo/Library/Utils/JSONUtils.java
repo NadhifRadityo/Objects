@@ -1,41 +1,65 @@
 package io.github.NadhifRadityo.Library.Utils;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.stream.JsonWriter;
-
+import groovy.lang.Closure;
+import groovy.lang.GroovyObject;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
-
-import static io.github.NadhifRadityo.Library.Utils.FileUtils.getFileString;
-import static io.github.NadhifRadityo.Library.Utils.FileUtils.mkfile;
-import static io.github.NadhifRadityo.Library.Utils.FileUtils.writeFileString;
-import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.info;
+import static io.github.NadhifRadityo.Library.LibraryEntry.getContext;
 
 public class JSONUtils {
-
-	public static <T> T toJson(Reader reader, Class<T> clazz) { return new Gson().fromJson(reader, clazz); }
-	public static <T> T toJson(InputStream stream, Class<T> clazz) { return new Gson().fromJson(new InputStreamReader(stream), clazz); }
-	public static <T> T toJson(String string, Class<T> clazz) { return new Gson().fromJson(string, clazz); }
-	public static <T> T toJson(File file, Class<T> clazz) throws IOException { return new Gson().fromJson(getFileString(file), clazz); }
-	public static <T> String JSONToString(T object) throws IOException {
-		try(StringWriter stringWriter = new StringWriter(); JsonWriter jsonWriter = new JsonWriter(stringWriter)) {
-			jsonWriter.setIndent("\t");
-			new GsonBuilder().disableHtmlEscaping().create()
-					.toJson(object, object.getClass(), jsonWriter);
-			return stringWriter.toString();
-		}
+	public static <T> String __INTERNAL_Gradle$Strategies$JSONUtils_createJSONFile(T obj, File target) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_createJSONFile")).call(obj, target);
 	}
-	public static <T> String createJSONFile(T object, File target) throws Exception {
-		String stringOut = JSONToString(object);
-		mkfile(target);
-		writeFileString(target, stringOut, StandardCharsets.UTF_8);
-		info("Configurations written to: %s", target.getPath());
-		return stringOut;
+	public static <T> String createJSONFile(T obj, File target) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("createJSONFile")).call(obj, target);
+	}
+	public static boolean __INTERNAL_Gradle$Strategies$JSONUtils_equals(Object other) {
+		return ((Closure<Boolean>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_equals")).call(other);
+	}
+	public static int __INTERNAL_Gradle$Strategies$JSONUtils_hashCode() {
+		return ((Closure<Integer>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_hashCode")).call();
+	}
+	public static Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.JSONUtils> get__INTERNAL_Gradle$Strategies$JSONUtils_cache() {
+		return (Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.JSONUtils>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_cache");
+	}
+	public static <T> String __INTERNAL_Gradle$Strategies$JSONUtils_JSONToString(T obj) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_JSONToString")).call(obj);
+	}
+	public static <T> String jSONToString(T obj) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("jSONToString")).call(obj);
+	}
+	public static <T> T __INTERNAL_Gradle$Strategies$JSONUtils_toJson(File file, Class<T> clazz) {
+		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_toJson")).call(file, clazz);
+	}
+	public static <T> T __INTERNAL_Gradle$Strategies$JSONUtils_toJson(InputStream stream, Class<T> clazz) {
+		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_toJson")).call(stream, clazz);
+	}
+	public static <T> T __INTERNAL_Gradle$Strategies$JSONUtils_toJson(Reader reader, Class<T> clazz) {
+		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_toJson")).call(reader, clazz);
+	}
+	public static <T> T __INTERNAL_Gradle$Strategies$JSONUtils_toJson(String string, Class<T> clazz) {
+		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_toJson")).call(string, clazz);
+	}
+	public static <T> T toJson(File file, Class<T> clazz) {
+		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("toJson")).call(file, clazz);
+	}
+	public static <T> T toJson(InputStream stream, Class<T> clazz) {
+		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("toJson")).call(stream, clazz);
+	}
+	public static <T> T toJson(Reader reader, Class<T> clazz) {
+		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("toJson")).call(reader, clazz);
+	}
+	public static <T> T toJson(String string, Class<T> clazz) {
+		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("toJson")).call(string, clazz);
+	}
+	public static String __INTERNAL_Gradle$Strategies$JSONUtils_toString() {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_toString")).call();
+	}
+	public static void __INTERNAL_Gradle$Strategies$JSONUtils_construct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_construct")).call();
+	}
+	public static void __INTERNAL_Gradle$Strategies$JSONUtils_destruct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_destruct")).call();
 	}
 }

@@ -9,7 +9,9 @@ import java.util.stream.Stream
 context(this) {
 	scriptImport from('/std$Common'), being('common')
 	scriptImport from('/std$Scripting'), being('scripting')
-	scriptImport from('/std$ClassUtils'), being('classutils')
+	scriptImport from('/std$ClassUtils'), being('classUtils')
+	scriptImport from('/std$LoggerUtils'), with(includeFlags('expose_exports'))
+	scriptImport from('/std$FileUtils'), with(includeFlags('expose_exports'))
 }
 
 def currentContext = bind(null, context, this)
@@ -27,9 +29,19 @@ parseGenericString = { Type type, Set<String> imports, Map<String, String> gener
 	throw new Error("Invalid type: $type of class ${type.class}")
 }
 parseClassArrayString = { Class<?> type, Set<String> imports, Map<String, String> generics = null, boolean allowPrimitive ->
-	if(type.isArray()) return parseGenericString(type.componentType, imports, generics, true) + "[]"
-	else if(type.isPrimitive() && !allowPrimitive) return classutils.primitiveToBoxed.get(type).simpleName
-	else { if(!type.isPrimitive() && !type.package.name.startsWith("java.lang")) imports.add(type.canonicalName); return type.simpleName }
+	if(type.isPrimitive())
+		return allowPrimitive ? type.simpleName : classUtils.primitiveToBoxed.get(type).simpleName
+	if(type.isArray())
+		return parseGenericString(type.componentType, imports, generics, true) + "[]"
+	if(type.declaringClass != null)
+		return parseGenericString(type.declaringClass, imports, generics, false) + "." + type.simpleName
+	if(type.simpleName == "Gradle")
+		return type.canonicalName
+	if(type.package.name.startsWith("Gradle"))
+		return type.canonicalName
+	if(!type.package.name.equals("java.lang"))
+		imports.add(type.canonicalName)
+	return type.simpleName
 }
 parseWildcardString = { WildcardType type, Set<String> imports, Map<String, String> generics ->
 	Type[] lowerBounds = type.lowerBounds
@@ -53,7 +65,12 @@ parseTypeVariableString = { TypeVariable type, Set<String> imports, Map<String, 
 parseGenericArrayString = { GenericArrayType type, Set<String> imports, Map<String, String> generics ->
 	return parseGenericString(type.genericComponentType, imports, generics, true) + "[]"
 }
-def importIfNotExist = { from, being ->
+def convertToVaragsIfPossible = { String input, def param, def funOverload ->
+	if(param.index < funOverload.parameterTypes.length) return input
+	if(!input.endsWith("[]")) return input
+	return input.substring(0, input.length() - "[]".length()) + "..."
+}
+def importIfNotExist = { def from, def being ->
 	def that = lastContext().that
 	try {
 		def variable = that."${being.user}"
@@ -62,88 +79,127 @@ def importIfNotExist = { from, being ->
 	scriptImport from, being
 	return that."${being.user}"
 }
-def generate_utils = {
-	Object currentSession = common.__INTERNAL_Gradle$Common_currentSession
-	HashMap scripts = scripting.__INTERNAL_Gradle$DynamicScripting$Scripting_scripts
+def generate_script = { def script ->
+	List<String> methods = mutableListOf()
+	Set<String> imports = new TreeSet()
+	imports += 'groovy.lang.Closure'
+	imports += 'groovy.lang.GroovyObject'
+	imports += 'static io.github.NadhifRadityo.Library.LibraryEntry.getContext'
 
-	Stream.of(scripts.values().toArray()).filter { it.context == currentSession.context }.forEach { script ->
-		List<String> methods = mutableListOf()
-		Set<String> imports = mutableSetOf()
-		Stream.of(script.exports.toArray()).forEach { export ->
-			Stream.of(export.what.toArray()).forEach { closure ->
-				Stream.of(closure.overloads.toArray()).forEach { overload ->
-					String klass = overload.class.simpleName
-					if(klass.startsWith("KProperty")) {
-						def property = overload.property
-						def name = export.being
-						def generics = mutableMapOf()
-						def returnType = parseGenericString(property.returnType.javaType, imports, generics, true)
-						def returnTypeGeneric = parseGenericString(property.returnType.javaType, imports, generics, false)
-						def genericsDecl = generics.size() != 0 ? " <${generics.values().stream().collect(Collectors.joining(", "))}>" : ""
-						methods.add("""\
-                            public static$genericsDecl $returnType get${name.substring(0, 1).toUpperCase() + name.substring(1)}() {
-                                return ($returnTypeGeneric) ((GroovyObject) getContext().that).getProperty("${export.being}");
-                            }
-                        """.stripIndent())
+	script.exports.forEach { def export ->
+		export.what.forEach { def closure ->
+			def overload = closure.overloads[0]
+			String klass = overload.class.simpleName
+			if(klass.startsWith('KProperty')) {
+				def property = overload.property
+				def name = export.being
+				def generics = mutableMapOf()
+				def returnType = parseGenericString(property.returnType.javaType, imports, generics, true)
+				def returnTypeGeneric = parseGenericString(property.returnType.javaType, imports, generics, false)
+				def genericsDecl = generics.size() != 0 ? " <${generics.values().stream().collect(Collectors.joining(", "))}>" : ""
+				methods.add("""
+					public static$genericsDecl $returnType get${name.substring(0, 1).toUpperCase() + name.substring(1)}() {
+						return ($returnTypeGeneric) ((GroovyObject) getContext().getThat()).getProperty("${export.being}");
 					}
-					if(klass.startsWith("KMutableProperty")) {
-						def property = overload.property
-						def name = export.being
-						def generics = mutableMapOf()
-						def returnType = parseGenericString(property.returnType.javaType, imports, generics, true)
-						def genericsDecl = generics.size() != 0 ? " <${generics.values().stream().collect(Collectors.joining(", "))}>" : ""
-						methods.add("""\
-                            public static$genericsDecl void set${name.substring(0, 1).toUpperCase() + name.substring(1)}($returnType value) {
-                                ((GroovyObject) getContext().that).setProperty("${export.being}"), value);
-                            }
-                        """.stripIndent())
+				""".stripIndent().trim())
+			}
+			if(klass.startsWith('KMutableProperty')) {
+				def property = overload.property
+				def name = export.being
+				def generics = mutableMapOf()
+				def returnType = parseGenericString(property.returnType.javaType, imports, generics, true)
+				def genericsDecl = generics.size() != 0 ? " <${generics.values().stream().collect(Collectors.joining(", "))}>" : ""
+				methods.add("""
+					public static$genericsDecl void set${name.substring(0, 1).toUpperCase() + name.substring(1)}($returnType value) {
+						((GroovyObject) getContext().getThat()).setProperty("${export.being}"), value);
 					}
-					// Method wrapped in property
-					if(klass == "KLambdaOverload" && closure.overloads.size() == 1) {
-						def importedScript = importIfNotExist from(script.file), being(script.file.name)
-						def functionClosure = importedScript."${export.being}"
-						Stream.of(functionClosure.overloads.toArray()).forEach { funOverload ->
-							String klass2 = funOverload.class.simpleName
-							if(klass2.startsWith("KFunction")) {
-								def function = funOverload.function
-								def generics = mutableMapOf()
-								def parameters = Stream.of(funOverload.kParameters).filter { it.kind.toString() != "INSTANCE" }
-										.map { "${parseGenericString(it.type.javaType, imports, generics)} ${it.name}" }.collect(Collectors.joining(", "))
-								def parametersName = Stream.of(funOverload.kParameters).filter { it.kind.toString() != "INSTANCE" }
-										.map { it.name }.collect(Collectors.joining(", "))
-								def name = export.being
-								def returnType = parseGenericString(function.returnType.javaType, imports, generics, true)
-								def returnTypeGeneric = parseGenericString(function.returnType.javaType, imports, generics, false)
-								def genericsDecl = generics.size() != 0 ? " <${generics.values().stream().collect(Collectors.joining(", "))}>" : ""
-								methods.add("""\
-                                    public static$genericsDecl $returnType $name($parameters) {
-                                        return ((Closure<$returnTypeGeneric>) ((GroovyObject) getContext().that).getProperty("${export.being}")).call($parametersName);
-                                    }
-                                """.stripIndent())
+				""".stripIndent().trim())
+			}
+			// Method wrapped in property
+			if(klass == 'KLambdaOverload' && closure.overloads.size() == 1) {
+				def importedScript = importIfNotExist from(script.file), being(script.file.name)
+				def functionClosure = importedScript."${export.being}"
+				Stream.of(functionClosure.overloads.toArray()).forEach { def funOverload ->
+					String klass2 = funOverload.class.simpleName
+					if(klass2.startsWith("KFunction")) {
+						def function = funOverload.function
+						def generics = mutableMapOf()
+						def parameters = Stream.of(funOverload.kParameters).filter { it.kind.toString() != "INSTANCE" }
+								.map { "${convertToVaragsIfPossible(parseGenericString(it.type.javaType, imports, generics), it, funOverload)} ${it.name}" }.collect(Collectors.joining(", "))
+						def parametersName = Stream.of(funOverload.kParameters).filter { it.kind.toString() != "INSTANCE" }
+								.map { it.name }.collect(Collectors.joining(", "))
+						def name = export.being
+						def returnType = parseGenericString(function.returnType.javaType, imports, generics, true)
+						def returnTypeGeneric = parseGenericString(function.returnType.javaType, imports, generics, false)
+						def genericsDecl = generics.size() != 0 ? " <${generics.values().stream().collect(Collectors.joining(", "))}>" : ""
+						methods.add("""
+							public static$genericsDecl $returnType $name($parameters) {
+								${returnType != 'void' ? 'return ' : ''}((Closure<$returnTypeGeneric>) ((GroovyObject) getContext().getThat()).getProperty("${export.being}")).call($parametersName);
 							}
-						}
+						""".stripIndent().trim())
 					}
 				}
 			}
 		}
-		String name = script.file.name.substring("std\$".length())
-		lwarn name
-		println imports.stream().sorted().map { "import $it;" }.collect(Collectors.joining("\n"))
-		println ""
-		println "public class $name {"
-		println methods.stream().map { Stream.of(it.split("\n")).map { "\t$it" }.collect(Collectors.joining("\n")) }.collect(Collectors.joining("\n"))
-		println "}"
+	}
+	String name = script.file.name.substring("std\$".length())
+	StringBuilder sb = new StringBuilder()
+	sb.append("package io.github.NadhifRadityo.Library.Utils;\n\n")
+	imports.forEach { sb.append("import ").append(it).append(";\n") }
+	sb.append("\n")
+	sb.append("public class ").append(name).append(" {\n")
+	methods.forEach { Stream.of(it.split("\n")).forEach { sb.append("\t").append(it).append("\n") } }
+	sb.append("}\n")
+	return sb.toString()
+}
+def generate_std = {
+	Object currentSession = common.__INTERNAL_Gradle$Common_currentSession
+	HashMap scripts = scripting.__INTERNAL_Gradle$DynamicScripting$Scripting_scripts
+
+	scripts.values().stream().filter { it.context == currentSession.context }.forEach { def script ->
+		def name = script.file.name.substring("std\$".length())
+		def file = file("src/main/java/io/github/NadhifRadityo/Library/Utils/${name}.java")
+		linfo "Generating file $file"
+		def source = generate_script(script)
+		mkfile file
+		writeFileString file, source
+	}
+}
+def print_std = {
+	Object currentSession = common.__INTERNAL_Gradle$Common_currentSession
+	HashMap scripts = scripting.__INTERNAL_Gradle$DynamicScripting$Scripting_scripts
+
+	scripts.values().stream().filter { it.context == currentSession.context }.forEach { def script ->
+		def name = script.file.name.substring("std\$".length())
+		linfo "Source for ${name}.java"
+		def source = generate_script(script)
+		println source
 	}
 }
 def project_init = {
-	delegate.task('printGeneratedUtils') {
+	delegate.task('stdClearFiles') {
+		def generated_files = { -> file('src/main/java/io/github/NadhifRadityo/Library/Utils')
+				.listFiles({ File file -> fileExtension(file) == 'java' } as FileFilter) }
+
+		group = 'library'
+		description = 'Clean all generated std files'
+		onlyIf { generated_files().length != 0 }
+		doLast {
+			def files = generated_files()
+			for(File file : files)
+				delFile(file)
+		}
+	}
+	delegate.task('stdGenerateFiles') {
+		group = 'library'
+		description = 'Generate all std accessor files'
+		dependsOn('stdClearFiles')
+		doLast { currentContext { generate_std() } }
+	}
+	delegate.task('stdGeneratePrint') {
 		group = 'library'
 		description = 'Print out generated utils from runtime.'
-		doLast {
-			currentContext {
-				generate_utils()
-			}
-		}
+		doLast { currentContext { print_std() } }
 	}
 }
 def __default_import_action = { def info ->

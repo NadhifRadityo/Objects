@@ -27,7 +27,7 @@ class Main : LibraryModule() {
 		val dependencyFetchedDir = file(staticDir, "fetched")
 		task(unique("clearDependencyCache")).apply {
 			onlyIf { dependencyConfigsDir.exists() }
-			doLast { delfile(dependencyConfigsDir) }
+			doLast { delFile(dependencyConfigsDir) }
 		}
 		task(unique("searchDependency")).apply {
 			dependsOn(unique("clearDependencyCache"))
@@ -40,7 +40,7 @@ class Main : LibraryModule() {
 		}
 		task(unique("clearDependency")).apply {
 			onlyIf { dependencyFetchedDir.exists() }
-			doLast { delfile(dependencyFetchedDir) }
+			doLast { delFile(dependencyFetchedDir) }
 		}
 		task(unique("fetchDependency")).apply {
 //			dependsOn(unique("clearDependency"))

@@ -1,153 +1,91 @@
 package io.github.NadhifRadityo.Library.Utils;
 
-import io.github.NadhifRadityo.Library.Utils.ProgressUtils.ProgressWrapper;
-
-import java.io.BufferedInputStream;
+import groovy.lang.Closure;
+import groovy.lang.GroovyObject;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLConnection;
-import java.nio.file.Paths;
 import java.text.CharacterIterator;
-import java.text.StringCharacterIterator;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
-import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.debug;
-import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.info;
-import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progress;
-import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progressDo;
-import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progressEnd;
-import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progressStart;
-import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progress_id;
-import static io.github.NadhifRadityo.Library.Utils.StreamUtils.copy;
+import static io.github.NadhifRadityo.Library.LibraryEntry.getContext;
 
 public class CommonUtils {
-	private static StringBuilder downloadProgressCache;
-	protected static CharacterIterator readableByteCount = new StringCharacterIterator("kMGTPE");
-
-	public static URI urlToUri(URL url) throws URISyntaxException { return new URI(url.getProtocol(), url.getUserInfo(), url.getHost(), url.getPort(), url.getPath(), url.getQuery(), url.getRef()); }
-	public static String formattedUrl(String url) throws MalformedURLException, URISyntaxException { return urlToUri(new URL(url)).toASCIIString(); }
-
-	public static String bytesToHexString(byte[] bytes) {
-		StringBuilder builder = new StringBuilder();
-		for(byte aByte : bytes)
-			builder.append(Integer.toString((aByte & 0xff) + 0x100, 16).substring(1));
-		return builder.toString();
+	public static void __INTERNAL_Gradle$Strategies$CommonUtils_purgeThreadLocal(ThreadLocal<?> threadLocal) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_purgeThreadLocal")).call(threadLocal);
 	}
-	public static byte[] hexStringToBytes(String string) {
-		int length = string.length();
-		byte[] bytes = new byte[length / 2];
-		for(int i = 0; i < length; i += 2)
-			bytes[i / 2] = (byte) ((Character.digit(string.charAt(i), 16) << 4)
-					+ Character.digit(string.charAt(i + 1), 16));
-		return bytes;
+	public static void purgeThreadLocal(ThreadLocal<?> threadLocal) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("purgeThreadLocal")).call(threadLocal);
 	}
-
-	public static void downloadFile(URL url, OutputStream outputStream) throws Exception {
-		try(ProgressWrapper prog0 = progress(progress_id(url, outputStream))) {
-			prog0.inherit();
-			prog0.setCategory(CommonUtils.class);
-			prog0.setDescription("Downloading file");
-			prog0.pstart();
-
-			String source = Paths.get(new URI(url.toString()).getPath()).getFileName().toString();
-			prog0.pdo(String.format("Opening connection %s", source));
-			debug("Starting to download: %s", source);
-			URLConnection connection = url.openConnection();
-			long completeFileSize = connection.getContentLength();
-			try(BufferedInputStream inputStream = new BufferedInputStream(connection.getInputStream())) {
-				prog0.pdo(String.format("Downloading %s", source));
-				info("Downloading %s... (%s)", source, url.toString());
-				copy(inputStream, outputStream, newStreamProgress(completeFileSize));
-			}
-		}
+	public static boolean __INTERNAL_Gradle$Strategies$CommonUtils_equals(Object other) {
+		return ((Closure<Boolean>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_equals")).call(other);
+	}
+	public static String __INTERNAL_Gradle$Strategies$CommonUtils_toString() {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_toString")).call();
+	}
+	public static void __INTERNAL_Gradle$Strategies$CommonUtils_construct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_construct")).call();
+	}
+	public static void __INTERNAL_Gradle$Strategies$CommonUtils_downloadFile(URL url, OutputStream outputStream) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_downloadFile")).call(url, outputStream);
+	}
+	public static void downloadFile(URL url, OutputStream outputStream) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("downloadFile")).call(url, outputStream);
+	}
+	public static StringBuilder get__INTERNAL_Gradle$Strategies$CommonUtils_downloadProgressCache() {
+		return (StringBuilder) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_downloadProgressCache");
+	}
+	public static void __INTERNAL_Gradle$Strategies$CommonUtils_destruct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_destruct")).call();
+	}
+	public static CharacterIterator get__INTERNAL_Gradle$Strategies$CommonUtils_readableByteCount() {
+		return (CharacterIterator) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_readableByteCount");
+	}
+	public static Consumer<Long> __INTERNAL_Gradle$Strategies$CommonUtils_newStreamProgress(long totalSize) {
+		return ((Closure<Consumer<Long>>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_newStreamProgress")).call(totalSize);
 	}
 	public static Consumer<Long> newStreamProgress(long totalSize) {
-		return new Consumer<Long>() {
-			long startTime = 0;
-			long lastTime = 0;
-			long lastLength = 0;
-			long lastPrint = 0;
-			long speed = 0;
-			long[] speeds = null;
-			int speedsIndex = 0;
-			ProgressWrapper prog0;
-			public void accept(Long length) {
-				if(length == -1) {
-					startTime = System.currentTimeMillis();
-					lastTime = System.currentTimeMillis();
-					speeds = new long[30];
-					Arrays.fill(speeds, -1L);
-					prog0 = progress(progress_id((Object) speeds));
-					prog0.inherit();
-					prog0.setCategory(CommonUtils.class);
-					prog0.setDescription("Stream progress");
-					prog0.pstart();
-					return;
-				}
-				if(length == -2) {
-					prog0.close();
-					return;
-				}
-				prog0.pdo(String.format("%.2f%%", length * 100.0f / (float) totalSize));
-				float alpha = 0.9f;
-
-				long now = System.currentTimeMillis();
-				long deltaTime = Math.max(1, now - lastTime);
-				long deltaLength = length - lastLength;
-				speeds[speedsIndex++] = deltaLength * 1000 / deltaTime;
-				if(speedsIndex >= speeds.length) speedsIndex = 0;
-				lastTime = now; lastLength = length;
-				if(now - lastPrint < 1000) return;
-
-				long result = 0;
-				long[] values = speeds;
-				int counter = 0;
-				for(long value : values) {
-					if(value == -1) continue; counter++;
-					result += value;
-				} result /= counter;
-
-				speed = (long) (speed * alpha) + (long) (result * (1 - alpha));
-				printDownloadProgress(startTime, totalSize, length, speed);
-				lastPrint = now;
-			}
-		};
+		return ((Closure<Consumer<Long>>) ((GroovyObject) getContext().getThat()).getProperty("newStreamProgress")).call(totalSize);
+	}
+	public static URI __INTERNAL_Gradle$Strategies$CommonUtils_urlToUri(URL url) {
+		return ((Closure<URI>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_urlToUri")).call(url);
+	}
+	public static URI urlToUri(URL url) {
+		return ((Closure<URI>) ((GroovyObject) getContext().getThat()).getProperty("urlToUri")).call(url);
+	}
+	public static int __INTERNAL_Gradle$Strategies$CommonUtils_hashCode() {
+		return ((Closure<Integer>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_hashCode")).call();
+	}
+	public static String __INTERNAL_Gradle$Strategies$CommonUtils_humanReadableByteCount(long bytes0) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_humanReadableByteCount")).call(bytes0);
+	}
+	public static String humanReadableByteCount(long bytes0) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("humanReadableByteCount")).call(bytes0);
+	}
+	public static byte[] __INTERNAL_Gradle$Strategies$CommonUtils_hexStringToBytes(String string) {
+		return ((Closure<byte[]>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_hexStringToBytes")).call(string);
+	}
+	public static byte[] hexStringToBytes(String string) {
+		return ((Closure<byte[]>) ((GroovyObject) getContext().getThat()).getProperty("hexStringToBytes")).call(string);
+	}
+	public static Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.CommonUtils> get__INTERNAL_Gradle$Strategies$CommonUtils_cache() {
+		return (Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.CommonUtils>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_cache");
+	}
+	public static String __INTERNAL_Gradle$Strategies$CommonUtils_bytesToHexString(byte... bytes) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_bytesToHexString")).call(bytes);
+	}
+	public static String bytesToHexString(byte... bytes) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("bytesToHexString")).call(bytes);
+	}
+	public static void __INTERNAL_Gradle$Strategies$CommonUtils_printDownloadProgress(long startTime, long total, long current, long speed) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_printDownloadProgress")).call(startTime, total, current, speed);
 	}
 	public static void printDownloadProgress(long startTime, long total, long current, long speed) {
-		if(downloadProgressCache == null)
-			downloadProgressCache = new StringBuilder(200);
-		if(total < 0) return;
-
-		long eta = speed == 0 ? Long.MAX_VALUE : (total - current) * 1000 / speed;
-		String etaHms = speed == 0 ? "N/A" :
-				String.format("%02d:%02d:%02d", TimeUnit.MILLISECONDS.toHours(eta),
-						TimeUnit.MILLISECONDS.toMinutes(eta) % TimeUnit.HOURS.toMinutes(1),
-						TimeUnit.MILLISECONDS.toSeconds(eta) % TimeUnit.MINUTES.toSeconds(1));
-
-		int percent = total == 0 ? 0 : (int) (current * 100 / total);
-		downloadProgressCache
-//				.append('\r')
-				.append(String.join("", Collections.nCopies(2 - (percent == 0 ? 0 : (int) Math.log10(percent)), " ")))
-				.append(String.format(" %d%% [", percent))
-				.append(String.join("", Collections.nCopies(percent, "=")))
-				.append('>')
-				.append(String.join("", Collections.nCopies(100 - percent, " ")))
-				.append(']')
-				.append(String.join("", Collections.nCopies((int) Math.log10(total) - (current == 0 ? 0 : (int) Math.log10(current)), " ")))
-				.append(String.format(" %d/%d, ETA: %s, Speed: %s/s", current, total, etaHms, humanReadableByteCount(speed)));
-
-		info(downloadProgressCache.toString().replaceAll("%", "%%"));
-		downloadProgressCache.setLength(0);
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("printDownloadProgress")).call(startTime, total, current, speed);
 	}
-	public static String humanReadableByteCount(long bytes) {
-		if(-1000 < bytes && bytes < 1000) return bytes + " B"; readableByteCount.setIndex(0);
-		while(bytes <= -999_950 || bytes >= 999_950) { bytes /= 1000; readableByteCount.next(); }
-		return String.format("%.1f %cB", bytes / 1000.0, readableByteCount.current());
+	public static String __INTERNAL_Gradle$Strategies$CommonUtils_formattedUrl(String url) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$CommonUtils_formattedUrl")).call(url);
+	}
+	public static String formattedUrl(String url) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("formattedUrl")).call(url);
 	}
 }

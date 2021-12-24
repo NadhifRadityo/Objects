@@ -56,10 +56,12 @@ object StringUtils {
 				'\"' -> currentChar = '\"'
 				'\'' -> currentChar = '\''
 				'u' -> {
-					if(i >= string.length - 5) { currentChar = 'u'; break }
-					val code = ("" + string[i + 2] + string[i + 3] + string[i + 4] + string[i + 5]).toInt(16)
-					stringBuilder.append(Character.toChars(code))
-					i += 5; i++; continue
+					if(i >= string.length - 5) currentChar = 'u';
+					else {
+						val code = ("" + string[i + 2] + string[i + 3] + string[i + 4] + string[i + 5]).toInt(16)
+						stringBuilder.append(Character.toChars(code))
+						i += 5; i++; continue
+					}
 				}
 			}
 			stringBuilder.append(currentChar)

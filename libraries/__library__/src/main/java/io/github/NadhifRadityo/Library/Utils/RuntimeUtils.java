@@ -1,78 +1,129 @@
 package io.github.NadhifRadityo.Library.Utils;
 
-import io.github.NadhifRadityo.Library.ReferencedCallback;
-
-import java.lang.management.ManagementFactory;
-import java.nio.ByteOrder;
-import java.util.Collections;
+import groovy.lang.Closure;
+import groovy.lang.GroovyObject;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
-import static io.github.NadhifRadityo.Library.Utils.UnsafeUtils.unsafe;
-import static org.apache.commons.lang3.SystemUtils.IS_OS_LINUX;
-import static org.apache.commons.lang3.SystemUtils.IS_OS_MAC_OSX;
-import static org.apache.commons.lang3.SystemUtils.IS_OS_SOLARIS;
-import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
-import static org.apache.commons.lang3.SystemUtils.JAVA_VERSION;
-import static org.apache.commons.lang3.SystemUtils.OS_ARCH;
-import static org.apache.commons.lang3.SystemUtils.OS_NAME;
+import static io.github.NadhifRadityo.Library.LibraryEntry.getContext;
 
 public class RuntimeUtils {
-	public static final List<String> vmArguments = Collections.unmodifiableList(ManagementFactory.getRuntimeMXBean().getInputArguments());
-	public static final String OS_WINDOWS = "windows";
-	public static final String OS_OSX = "osx";
-	public static final String OS_SOLARIS = "solaris";
-	public static final String OS_LINUX = "linux";
-	public static final String ARCH_X86_32 = "x86_32";
-	public static final String ARCH_X86_64 = "x86_64";
-	public static final String ARCH_PPC = "ppc";
-
-	public static final String OS_DETECTION_NAME;
-	public static final String OS_DETECTION_ARCH;
-	public static final boolean IS_OS_32BIT;
-	public static final boolean IS_OS_64BIT;
-	public static final boolean IS_OS_BIG_ENDIAN;
-	public static final boolean IS_OS_LITTLE_ENDIAN;
-	public static final int JAVA_DETECTION_VERSION;
-	public static final boolean IS_JAVA_32BIT;
-	public static final boolean IS_JAVA_64BIT;
-
-	static {
-		OS_DETECTION_NAME = ((ReferencedCallback<String>) (args) -> {
-			if(IS_OS_WINDOWS) return OS_WINDOWS;
-			else if(IS_OS_MAC_OSX) return OS_OSX;
-			else if(IS_OS_SOLARIS) return OS_SOLARIS;
-			else if(IS_OS_LINUX) return OS_LINUX;
-			else throw new IllegalArgumentException("Unknown operating system " + OS_NAME);
-		}).get();
-
-		OS_DETECTION_ARCH = ((ReferencedCallback<String>) (args) -> {
-			switch(OS_ARCH) {
-				case "x86":
-				case "i386":
-				case "i486":
-				case "i586":
-				case "i686": return ARCH_X86_32;
-				case "x86_64":
-				case "amd64": return ARCH_X86_64;
-				case "powerpc": return ARCH_PPC;
-				default: throw new IllegalArgumentException("Unknown architecture " + OS_ARCH);
-			}
-		}).get();
-
-		IS_OS_32BIT = OS_DETECTION_ARCH.equals(ARCH_X86_32);
-		IS_OS_64BIT = OS_DETECTION_ARCH.equals(ARCH_X86_64);
-		IS_OS_BIG_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN;
-		IS_OS_LITTLE_ENDIAN = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
-
-		JAVA_DETECTION_VERSION = ((ReferencedCallback<Integer>) (args) -> {
-			Matcher matcher = Pattern.compile("(1\\.|)([0-9]+)").matcher(JAVA_VERSION);
-			if(!matcher.find()) throw new IllegalArgumentException("Unknown version " + JAVA_VERSION);
-			return Integer.parseInt(matcher.group(2));
-		}).get();
-
-		IS_JAVA_32BIT = unsafe.addressSize() == 4;
-		IS_JAVA_64BIT = unsafe.addressSize() == 8;
+	public static String get__INTERNAL_Gradle$Strategies$RuntimeUtils_OS_SOLARIS() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_OS_SOLARIS");
+	}
+	public static String getOS_SOLARIS() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("OS_SOLARIS");
+	}
+	public static String get__INTERNAL_Gradle$Strategies$RuntimeUtils_OS_WINDOWS() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_OS_WINDOWS");
+	}
+	public static String getOS_WINDOWS() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("OS_WINDOWS");
+	}
+	public static String get__INTERNAL_Gradle$Strategies$RuntimeUtils_OS_OSX() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_OS_OSX");
+	}
+	public static String getOS_OSX() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("OS_OSX");
+	}
+	public static String __INTERNAL_Gradle$Strategies$RuntimeUtils_toString() {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_toString")).call();
+	}
+	public static boolean __INTERNAL_Gradle$Strategies$RuntimeUtils_equals(Object other) {
+		return ((Closure<Boolean>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_equals")).call(other);
+	}
+	public static boolean get__INTERNAL_Gradle$Strategies$RuntimeUtils_IS_JAVA_32BIT() {
+		return (Boolean) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_IS_JAVA_32BIT");
+	}
+	public static boolean getIS_JAVA_32BIT() {
+		return (Boolean) ((GroovyObject) getContext().getThat()).getProperty("IS_JAVA_32BIT");
+	}
+	public static boolean get__INTERNAL_Gradle$Strategies$RuntimeUtils_IS_JAVA_64BIT() {
+		return (Boolean) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_IS_JAVA_64BIT");
+	}
+	public static boolean getIS_JAVA_64BIT() {
+		return (Boolean) ((GroovyObject) getContext().getThat()).getProperty("IS_JAVA_64BIT");
+	}
+	public static boolean get__INTERNAL_Gradle$Strategies$RuntimeUtils_IS_OS_LITTLE_ENDIAN() {
+		return (Boolean) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_IS_OS_LITTLE_ENDIAN");
+	}
+	public static boolean getIS_OS_LITTLE_ENDIAN() {
+		return (Boolean) ((GroovyObject) getContext().getThat()).getProperty("IS_OS_LITTLE_ENDIAN");
+	}
+	public static String get__INTERNAL_Gradle$Strategies$RuntimeUtils_OS_LINUX() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_OS_LINUX");
+	}
+	public static String getOS_LINUX() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("OS_LINUX");
+	}
+	public static String get__INTERNAL_Gradle$Strategies$RuntimeUtils_ARCH_PPC() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_ARCH_PPC");
+	}
+	public static String getARCH_PPC() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("ARCH_PPC");
+	}
+	public static boolean get__INTERNAL_Gradle$Strategies$RuntimeUtils_IS_OS_32BIT() {
+		return (Boolean) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_IS_OS_32BIT");
+	}
+	public static boolean getIS_OS_32BIT() {
+		return (Boolean) ((GroovyObject) getContext().getThat()).getProperty("IS_OS_32BIT");
+	}
+	public static void __INTERNAL_Gradle$Strategies$RuntimeUtils_construct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_construct")).call();
+	}
+	public static void __INTERNAL_Gradle$Strategies$RuntimeUtils_destruct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_destruct")).call();
+	}
+	public static String get__INTERNAL_Gradle$Strategies$RuntimeUtils_ARCH_X86_64() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_ARCH_X86_64");
+	}
+	public static String getARCH_X86_64() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("ARCH_X86_64");
+	}
+	public static int __INTERNAL_Gradle$Strategies$RuntimeUtils_hashCode() {
+		return ((Closure<Integer>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_hashCode")).call();
+	}
+	public static String get__INTERNAL_Gradle$Strategies$RuntimeUtils_ARCH_X86_32() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_ARCH_X86_32");
+	}
+	public static String getARCH_X86_32() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("ARCH_X86_32");
+	}
+	public static boolean get__INTERNAL_Gradle$Strategies$RuntimeUtils_IS_OS_BIG_ENDIAN() {
+		return (Boolean) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_IS_OS_BIG_ENDIAN");
+	}
+	public static boolean getIS_OS_BIG_ENDIAN() {
+		return (Boolean) ((GroovyObject) getContext().getThat()).getProperty("IS_OS_BIG_ENDIAN");
+	}
+	public static int get__INTERNAL_Gradle$Strategies$RuntimeUtils_JAVA_DETECTION_VERSION() {
+		return (Integer) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_JAVA_DETECTION_VERSION");
+	}
+	public static int getJAVA_DETECTION_VERSION() {
+		return (Integer) ((GroovyObject) getContext().getThat()).getProperty("JAVA_DETECTION_VERSION");
+	}
+	public static Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.RuntimeUtils> get__INTERNAL_Gradle$Strategies$RuntimeUtils_cache() {
+		return (Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.RuntimeUtils>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_cache");
+	}
+	public static String get__INTERNAL_Gradle$Strategies$RuntimeUtils_OS_DETECTION_ARCH() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_OS_DETECTION_ARCH");
+	}
+	public static String getOS_DETECTION_ARCH() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("OS_DETECTION_ARCH");
+	}
+	public static String get__INTERNAL_Gradle$Strategies$RuntimeUtils_OS_DETECTION_NAME() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_OS_DETECTION_NAME");
+	}
+	public static String getOS_DETECTION_NAME() {
+		return (String) ((GroovyObject) getContext().getThat()).getProperty("OS_DETECTION_NAME");
+	}
+	public static List<String> get__INTERNAL_Gradle$Strategies$RuntimeUtils_vmArguments() {
+		return (List<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_vmArguments");
+	}
+	public static List<String> getVmArguments() {
+		return (List<String>) ((GroovyObject) getContext().getThat()).getProperty("vmArguments");
+	}
+	public static boolean get__INTERNAL_Gradle$Strategies$RuntimeUtils_IS_OS_64BIT() {
+		return (Boolean) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$RuntimeUtils_IS_OS_64BIT");
+	}
+	public static boolean getIS_OS_64BIT() {
+		return (Boolean) ((GroovyObject) getContext().getThat()).getProperty("IS_OS_64BIT");
 	}
 }

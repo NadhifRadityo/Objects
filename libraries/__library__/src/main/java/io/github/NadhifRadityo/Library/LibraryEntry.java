@@ -1,6 +1,6 @@
 package io.github.NadhifRadityo.Library;
 
-import org.gradle.api.internal.project.DefaultProject;
+import Gradle.Context;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,20 +23,20 @@ import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.warn;
 import static io.github.NadhifRadityo.Library.Utils.ProcessUtils.searchPath;
 
 public class LibraryEntry {
-	protected static DefaultProject __PROJECT__;
+	protected static Context __CONTEXT__;
 	protected static File __ROOT_DIRECTORY__;
 	protected static File __TARGET_DIRECTORY__;
 	protected static Map<Class<? extends LibraryModule>, LibraryModule> __MODULES__;
 	protected static JSON_mainRoot __MAIN_CONFIG__;
 
-	public static DefaultProject getProject() { return __PROJECT__; }
+	public static Context getContext() { return __CONTEXT__; }
 	public static File getRootDirectory() { return __ROOT_DIRECTORY__; }
 	public static File getTargetDirectory() { return __TARGET_DIRECTORY__; }
 	public static Map<Class<? extends LibraryModule>, LibraryModule> getModules() { return Collections.unmodifiableMap(__MODULES__); }
 	public static JSON_mainRoot getMainConfig() { return __MAIN_CONFIG__; }
 
-	private static void entry(DefaultProject project, File rootDirectory, Map<String, File> rawModules) throws Exception {
-		__PROJECT__ = project;
+	private static void entry(Context context, File rootDirectory, Map<String, File> rawModules) throws Exception {
+		__CONTEXT__ = context;
 		__ROOT_DIRECTORY__ = rootDirectory;
 		__TARGET_DIRECTORY__ = mkdir(__ROOT_DIRECTORY__, "__target__");
 		__MODULES__ = new HashMap<>();

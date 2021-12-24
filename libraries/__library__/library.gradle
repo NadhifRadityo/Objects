@@ -7,7 +7,7 @@ context(this) {
 }
 
 def withCurrentImport = withCurrentImport()
-def project_init = {
+def project_init = { def context ->
 	delegate.repositories {
 		mavenCentral()
 	}
@@ -37,7 +37,7 @@ def project_init = {
 	if(daemonProbablyUnstable() && libraryLoad.source_files().length > 0)
 		libraryLoad.load()
 	if(libraryLoad.available())
-		libraryLoad.run(libraryModules.root_directory(), libraryModules.loaded_modules())
+		libraryLoad.run(context, libraryModules.root_directory(), libraryModules.loaded_modules())
 	delegate.task('libraryLoad') {
 		String[] depends = new String[] { 'compileKotlin', 'compileJava', 'processResources', 'classes' }
 		def anyChanged = { -> Stream.of(depends).map({ delegate.tasks.getByName(it) }).filter({
@@ -70,11 +70,10 @@ def project_init = {
 	}
 }
 def __default_import_action = { def info ->
-	def that = info.context.that
 	Project project = info.context.project
 	withCurrentImport { scriptImport from('libraryUtilsGenerate.gradle') }
 	project_init.delegate = project
-	try { project_init() }
+	try { project_init(info.context) }
 	finally { project_init.delegate = null }
 }
 

@@ -1,140 +1,175 @@
 package io.github.NadhifRadityo.Library.Utils;
 
-import io.github.NadhifRadityo.Library.Utils.ProgressUtils.ProgressWrapper;
-
+import groovy.lang.Closure;
+import groovy.lang.GroovyObject;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-
-import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.debug;
-import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progress;
-import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progress_id;
-import static io.github.NadhifRadityo.Library.Utils.StreamUtils.getBytes;
-import static io.github.NadhifRadityo.Library.Utils.StreamUtils.getString;
-import static io.github.NadhifRadityo.Library.Utils.StreamUtils.writeBytes;
-import static io.github.NadhifRadityo.Library.Utils.StreamUtils.writeString;
+import static io.github.NadhifRadityo.Library.LibraryEntry.getContext;
 
 public class FileUtils {
-
-	public static byte[] getFileBytes(File file) throws IOException {
-		try(ProgressWrapper prog0 = progress(progress_id(file))) {
-			prog0.inherit();
-			prog0.setCategory(FileUtils.class);
-			prog0.setDescription("Reading file");
-			prog0.pstart();
-
-			prog0.pdo(String.format("Reading %s", file.getPath()));
-			debug("Getting contents from file: %s", file.getPath());
-			try(FileInputStream fis = new FileInputStream(file)) { return getBytes(fis); }
-		}
+	public static void __INTERNAL_Gradle$Strategies$FileUtils_delFile0(File file) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_delFile0")).call(file);
 	}
-	public static byte[] getFileBytes(String path) throws IOException { return getFileBytes(new File(path)); }
-	public static String getFileString(File file, Charset charset) throws IOException {
-		try(ProgressWrapper prog0 = progress(progress_id(file, charset))) {
-			prog0.inherit();
-			prog0.setCategory(FileUtils.class);
-			prog0.setDescription("Reading file");
-			prog0.pstart();
-
-			prog0.pdo(String.format("Reading %s", file.getPath()));
-			debug("Getting contents from file: %s", file.getPath());
-			try(FileInputStream fis = new FileInputStream(file)) { return getString(fis, charset); }
-		}
+	public static String __INTERNAL_Gradle$Strategies$FileUtils_fileString(File file, Charset charset) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_fileString")).call(file, charset);
 	}
-	public static String getFileString(String path, Charset charset) throws IOException { return getFileString(new File(path), charset); }
-	public static String getFileString(File file) throws IOException { return getFileString(file, StandardCharsets.UTF_8); }
-	public static String getFileString(String path) throws IOException { return getFileString(path, StandardCharsets.UTF_8); }
-
-	public static void writeFileBytes(File file, byte[] bytes, int off, int len) throws IOException {
-		try(ProgressWrapper prog0 = progress(progress_id(file, bytes, off, len))) {
-			prog0.inherit();
-			prog0.setCategory(FileUtils.class);
-			prog0.setDescription("Writing file");
-			prog0.pstart();
-
-			prog0.pdo(String.format("Writing %s", file.getPath()));
-			debug("Writing contents to file: %s", file.getPath());
-			try(FileOutputStream fos = new FileOutputStream(file)) { writeBytes(bytes, off, len, fos); }
-		}
+	public static String __INTERNAL_Gradle$Strategies$FileUtils_fileString(File file) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_fileString")).call(file);
 	}
-	public static void writeFileBytes(String path, byte[] bytes, int off, int len) throws IOException { writeFileBytes(new File(path), bytes, off, len); }
-	public static void writeFileString(File file, String string, Charset charset) throws IOException {
-		try(ProgressWrapper prog0 = progress(progress_id(file, string, charset))) {
-			prog0.inherit();
-			prog0.setCategory(FileUtils.class);
-			prog0.setDescription("Writing file");
-			prog0.pstart();
-
-			prog0.pdo(String.format("Writing %s", file.getPath()));
-			debug("Writing contents to file: %s", file.getPath());
-			try(FileOutputStream fos = new FileOutputStream(file)) { writeString(string, fos, charset); }
-		}
+	public static String __INTERNAL_Gradle$Strategies$FileUtils_fileString(String path, Charset charset) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_fileString")).call(path, charset);
 	}
-	public static void writeFileString(String path, String string, Charset charset) throws IOException { writeFileString(new File(path), string, charset); }
-	public static void writeFileString(File file, String string) throws IOException { writeFileString(file, string, StandardCharsets.UTF_8); }
-	public static void writeFileString(String path, String string) throws IOException { writeFileString(path, string, StandardCharsets.UTF_8); }
-
-	public static String getFileName(String fileName) { String name = ""; try { if(fileName != null && fileName.contains(".")) name = fileName.substring(0, fileName.lastIndexOf(".")); } catch (Exception ignored) { } return name; }
-	public static String getFileName(File file) { return getFileName(file != null ? file.getName() : null); }
-	public static String getFileExtension(String fileName) { String extension = ""; try { if(fileName != null && fileName.contains(".")) extension = fileName.substring(fileName.lastIndexOf(".") + 1); } catch (Exception ignored) { } return extension; }
-	public static String getFileExtension(File file) { return getFileExtension(file != null ? file.getName() : null); }
-
-	public static File file(File parent, String... children) {
-		return new File(parent, String.join("/", children));
+	public static String __INTERNAL_Gradle$Strategies$FileUtils_fileString(String path) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_fileString")).call(path);
 	}
-	public static File file(String... children) {
-		return new File(String.join("/", children));
+	public static String fileString(File file, Charset charset) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("fileString")).call(file, charset);
 	}
-	public static File mkfile(File parent, String... children) {
-		File result = file(parent, children);
-		if(result.exists()) return result;
-		debug("Making file: %s", result.getPath());
-		mkdir(result.getParentFile());
-		try { if(result.createNewFile()) return result;
-		} catch(IOException e) { throw new Error(e); }
-		throw new IllegalStateException("Cannot make file");
+	public static String fileString(File file) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("fileString")).call(file);
 	}
-	public static File mkfile(String... children) {
-		File result = file(children);
-		if(result.exists()) return result;
-		debug("Making file: %s", result.getPath());
-		mkdir(result.getParentFile());
-		try { if(result.createNewFile()) return result;
-		} catch(IOException e) { throw new Error(e); }
-		throw new IllegalStateException("Cannot make file");
+	public static String fileString(String path, Charset charset) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("fileString")).call(path, charset);
+	}
+	public static String fileString(String path) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("fileString")).call(path);
+	}
+	public static File __INTERNAL_Gradle$Strategies$FileUtils_fileRelative(File from, File what) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_fileRelative")).call(from, what);
+	}
+	public static File fileRelative(File from, File what) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("fileRelative")).call(from, what);
+	}
+	public static void __INTERNAL_Gradle$Strategies$FileUtils_writeFileString(File file, String string, Charset charset) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_writeFileString")).call(file, string, charset);
+	}
+	public static void __INTERNAL_Gradle$Strategies$FileUtils_writeFileString(File file, String string) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_writeFileString")).call(file, string);
+	}
+	public static void __INTERNAL_Gradle$Strategies$FileUtils_writeFileString(String path, String string, Charset charset) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_writeFileString")).call(path, string, charset);
+	}
+	public static void __INTERNAL_Gradle$Strategies$FileUtils_writeFileString(String path, String string) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_writeFileString")).call(path, string);
+	}
+	public static void writeFileString(File file, String string, Charset charset) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("writeFileString")).call(file, string, charset);
+	}
+	public static void writeFileString(File file, String string) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("writeFileString")).call(file, string);
+	}
+	public static void writeFileString(String path, String string, Charset charset) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("writeFileString")).call(path, string, charset);
+	}
+	public static void writeFileString(String path, String string) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("writeFileString")).call(path, string);
+	}
+	public static String __INTERNAL_Gradle$Strategies$FileUtils_toString() {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_toString")).call();
+	}
+	public static void __INTERNAL_Gradle$Strategies$FileUtils_destruct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_destruct")).call();
+	}
+	public static Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.FileUtils> get__INTERNAL_Gradle$Strategies$FileUtils_cache() {
+		return (Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.FileUtils>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_cache");
+	}
+	public static void __INTERNAL_Gradle$Strategies$FileUtils_writeFileBytes(File file, byte[] bytes, int off, int len) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_writeFileBytes")).call(file, bytes, off, len);
+	}
+	public static void __INTERNAL_Gradle$Strategies$FileUtils_writeFileBytes(String path, byte[] bytes, int off, int len) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_writeFileBytes")).call(path, bytes, off, len);
+	}
+	public static void writeFileBytes(File file, byte[] bytes, int off, int len) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("writeFileBytes")).call(file, bytes, off, len);
+	}
+	public static void writeFileBytes(String path, byte[] bytes, int off, int len) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("writeFileBytes")).call(path, bytes, off, len);
+	}
+	public static boolean __INTERNAL_Gradle$Strategies$FileUtils_equals(Object other) {
+		return ((Closure<Boolean>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_equals")).call(other);
+	}
+	public static void __INTERNAL_Gradle$Strategies$FileUtils_construct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_construct")).call();
+	}
+	public static String __INTERNAL_Gradle$Strategies$FileUtils_fileName(File file) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_fileName")).call(file);
+	}
+	public static String __INTERNAL_Gradle$Strategies$FileUtils_fileName(String fileName) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_fileName")).call(fileName);
+	}
+	public static String fileName(File file) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("fileName")).call(file);
+	}
+	public static String fileName(String fileName) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("fileName")).call(fileName);
+	}
+	public static File __INTERNAL_Gradle$Strategies$FileUtils_mkdir(File parent, String... children) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_mkdir")).call(parent, children);
+	}
+	public static File __INTERNAL_Gradle$Strategies$FileUtils_mkdir(String... children) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_mkdir")).call(children);
 	}
 	public static File mkdir(File parent, String... children) {
-		File result = file(parent, children);
-		if(result.exists()) return result;
-		debug("Making directory: %s", result.getPath());
-		if(result.mkdirs()) return result;
-		throw new IllegalStateException("Cannot make directory");
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("mkdir")).call(parent, children);
 	}
 	public static File mkdir(String... children) {
-		File result = file(children);
-		if(result.exists()) return result;
-		debug("Making directory: %s", result.getPath());
-		if(result.mkdirs()) return result;
-		throw new IllegalStateException("Cannot make directory");
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("mkdir")).call(children);
 	}
-	public static void delfile0(File file) {
-		if(!file.exists()) return;
-		debug("Deleting file: %s", file.getPath());
-		if(file.delete()) return;
-		throw new IllegalStateException("Cannot delete file");
+	public static File __INTERNAL_Gradle$Strategies$FileUtils_mkfile(File parent, String... children) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_mkfile")).call(parent, children);
 	}
-	public static void delfile(File file) {
-		if(file.isFile()) { delfile0(file); return; }
-		File[] children = file.listFiles();
-		if(children == null) { delfile0(file); return; }
-		for(File child : children) {
-			if(child.isDirectory())
-				delfile(child);
-			delfile0(child);
-		}
-		delfile0(file);
+	public static File __INTERNAL_Gradle$Strategies$FileUtils_mkfile(String... children) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_mkfile")).call(children);
+	}
+	public static File mkfile(File parent, String... children) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("mkfile")).call(parent, children);
+	}
+	public static File mkfile(String... children) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("mkfile")).call(children);
+	}
+	public static void __INTERNAL_Gradle$Strategies$FileUtils_delFile(File file) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_delFile")).call(file);
+	}
+	public static void delFile(File file) {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("delFile")).call(file);
+	}
+	public static File __INTERNAL_Gradle$Strategies$FileUtils_file(File parent, String... children) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_file")).call(parent, children);
+	}
+	public static File __INTERNAL_Gradle$Strategies$FileUtils_file(String... children) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_file")).call(children);
+	}
+	public static File file(File parent, String... children) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("file")).call(parent, children);
+	}
+	public static File file(String... children) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("file")).call(children);
+	}
+	public static byte[] __INTERNAL_Gradle$Strategies$FileUtils_fileBytes(File file) {
+		return ((Closure<byte[]>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_fileBytes")).call(file);
+	}
+	public static byte[] __INTERNAL_Gradle$Strategies$FileUtils_fileBytes(String path) {
+		return ((Closure<byte[]>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_fileBytes")).call(path);
+	}
+	public static byte[] fileBytes(File file) {
+		return ((Closure<byte[]>) ((GroovyObject) getContext().getThat()).getProperty("fileBytes")).call(file);
+	}
+	public static byte[] fileBytes(String path) {
+		return ((Closure<byte[]>) ((GroovyObject) getContext().getThat()).getProperty("fileBytes")).call(path);
+	}
+	public static String __INTERNAL_Gradle$Strategies$FileUtils_fileExtension(File file) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_fileExtension")).call(file);
+	}
+	public static String __INTERNAL_Gradle$Strategies$FileUtils_fileExtension(String fileName) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_fileExtension")).call(fileName);
+	}
+	public static String fileExtension(File file) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("fileExtension")).call(file);
+	}
+	public static String fileExtension(String fileName) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("fileExtension")).call(fileName);
+	}
+	public static int __INTERNAL_Gradle$Strategies$FileUtils_hashCode() {
+		return ((Closure<Integer>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$FileUtils_hashCode")).call();
 	}
 }

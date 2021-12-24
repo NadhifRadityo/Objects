@@ -1,50 +1,45 @@
 package io.github.NadhifRadityo.Library.Utils;
 
+import groovy.lang.Closure;
+import groovy.lang.GroovyObject;
 import java.io.File;
-import java.nio.charset.StandardCharsets;
-
-import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.debug;
-import static io.github.NadhifRadityo.Library.Utils.LoggerUtils.error;
-import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progress;
-import static io.github.NadhifRadityo.Library.Utils.ProgressUtils.progress_id;
-import static io.github.NadhifRadityo.Library.Utils.StreamUtils.getString;
-import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
+import static io.github.NadhifRadityo.Library.LibraryEntry.getContext;
 
 public class ProcessUtils {
-
-	@groovy.transform.ThreadInterrupt
-	public static String getCommandOutput(File basedir, String... arguments) throws Exception {
-		try(ProgressUtils.ProgressWrapper prog0 = progress(progress_id(basedir, arguments))) {
-			prog0.inherit();
-			prog0.setCategory(ProcessUtils.class);
-			prog0.setDescription("Reading file");
-			prog0.pstart();
-
-			prog0.pdo(String.format("Executing command `%s`", String.join(" ", arguments)));
-			debug("Executing command: %s", String.join(" ", arguments));
-			ProcessBuilder processBuilder = new ProcessBuilder(arguments);
-			if(basedir != null) processBuilder.directory(basedir);
-			Process process = processBuilder.start();
-			int returnCode = process.waitFor();
-			String error = getString(process.getErrorStream(), StandardCharsets.UTF_8);
-			if(!error.isEmpty()) error(error); if(returnCode != 0) return null;
-			String result = getString(process.getInputStream(), StandardCharsets.UTF_8);
-			debug("%s", result);
-			return result;
-		}
+	public static void __INTERNAL_Gradle$Strategies$ProcessUtils_construct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ProcessUtils_construct")).call();
 	}
-	public static String getCommandOutput(String... arguments) throws Exception {
-		return getCommandOutput(null, arguments);
+	public static int __INTERNAL_Gradle$Strategies$ProcessUtils_hashCode() {
+		return ((Closure<Integer>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ProcessUtils_hashCode")).call();
 	}
-
-	public static File searchPath(String executable) throws Exception {
-		if(IS_OS_WINDOWS) {
-			String path = getCommandOutput("where", executable);
-			if(path == null || path.isEmpty()) return null;
-			return new File(path.trim().split("\r\n")[0]);
-		}
-		String path = getCommandOutput("which", executable);
-		if(path == null || path.isEmpty()) return null;
-		return new File(path.trim());
+	public static void __INTERNAL_Gradle$Strategies$ProcessUtils_destruct() {
+		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ProcessUtils_destruct")).call();
+	}
+	public static boolean __INTERNAL_Gradle$Strategies$ProcessUtils_equals(Object other) {
+		return ((Closure<Boolean>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ProcessUtils_equals")).call(other);
+	}
+	public static String __INTERNAL_Gradle$Strategies$ProcessUtils_getCommandOutput(File basedir, String... arguments) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ProcessUtils_getCommandOutput")).call(basedir, arguments);
+	}
+	public static String __INTERNAL_Gradle$Strategies$ProcessUtils_getCommandOutput(String... arguments) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ProcessUtils_getCommandOutput")).call(arguments);
+	}
+	public static String getCommandOutput(File basedir, String... arguments) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("getCommandOutput")).call(basedir, arguments);
+	}
+	public static String getCommandOutput(String... arguments) {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("getCommandOutput")).call(arguments);
+	}
+	public static File __INTERNAL_Gradle$Strategies$ProcessUtils_searchPath(String executable) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ProcessUtils_searchPath")).call(executable);
+	}
+	public static File searchPath(String executable) {
+		return ((Closure<File>) ((GroovyObject) getContext().getThat()).getProperty("searchPath")).call(executable);
+	}
+	public static String __INTERNAL_Gradle$Strategies$ProcessUtils_toString() {
+		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ProcessUtils_toString")).call();
+	}
+	public static Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.ProcessUtils> get__INTERNAL_Gradle$Strategies$ProcessUtils_cache() {
+		return (Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.ProcessUtils>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$ProcessUtils_cache");
 	}
 }

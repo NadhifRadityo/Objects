@@ -1,7 +1,9 @@
-import org.gradle.api.internal.project.DefaultProject
-
 import java.lang.reflect.Method
 import java.util.stream.Stream
+
+context(this) {
+	scriptImport from('/std$ClassUtils'), being('classUtils')
+}
 
 def memory
 Map<Integer, LoaderInfo> buildLoader
@@ -38,7 +40,7 @@ def load = { ->
 	try {
 		loaderInfo.classLoader = new URLClassLoader(sourceURLs, project.getClass().getClassLoader())
 		loaderInfo.CLASS_Library = loaderInfo.classLoader.loadClass('io.github.NadhifRadityo.Library.LibraryEntry')
-		loaderInfo.METHOD_Library_entry = loaderInfo.CLASS_Library.getDeclaredMethod('entry', DefaultProject.class, File.class, Map.class)
+		loaderInfo.METHOD_Library_entry = loaderInfo.CLASS_Library.getDeclaredMethod('entry', classUtils.classForName0('Gradle.Context'), File.class, Map.class)
 		loaderInfo.METHOD_Library_entry.setAccessible(true)
 	} catch(Exception e) {
 		lerror 'Error while loading library entry point\n', e
@@ -49,10 +51,10 @@ def available = { ->
 	LoaderInfo loaderInfo = get_current_loader_info()
 	return loaderInfo.METHOD_Library_entry != null
 }
-def run = { File rootDirectory, Map<String, File> modules ->
+def run = { def context, File rootDirectory, Map<String, File> modules ->
 	LoaderInfo loaderInfo = get_current_loader_info()
 	try {
-		loaderInfo.METHOD_Library_entry.invoke(null, project, rootDirectory, modules)
+		loaderInfo.METHOD_Library_entry.invoke(null, context, rootDirectory, modules)
 	} catch(Exception e) {
 		lerror 'Error while running library entry point\n', e
 	}
