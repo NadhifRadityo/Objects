@@ -99,9 +99,9 @@ context(this) {
 
 context(this) {
     /**
-     * `expandImport'N'<ReturnType0, ..., ReturnTypeN>(scriptImport): (Closure<ReturnType0, ..., ReturnTypeN>)`
+     * `expandImport'N'<ReturnType0, ..., ReturnTypeN>(scriptImport): (ReturnType0, ..., ReturnTypeN)`
      * It allows to destructure the imported script, but since kotlin is static language
-     * explicit return types are still required, the parameters types are resolved as `vararg Any?`
+     * explicit return types are still required. `cls` is typealias for `Closure`
      */
     val (printHello, getWorld) = expandImport2<cls<Unit>, cls<String>>(
         scriptImport(listOf("printHello", "getWorld"), from("functions.gradle.kts")))
@@ -169,4 +169,6 @@ Console Result:
 2. Threading is not and will never be intended feature. It will mess up the context stacks both in gradle and this project.
 
 ## Bugs
-1. Destructor is called before the task even run
+- [ ] Destructor call is currently unstable -- especially when the script is failing, because it relies on `afterTask`, but not all tasks will be guaranteed to be called from that event.
+      Fallback that will call destructor exactly before the constructor is possible, but not preferable because it will create memory leaks
+      in Gradle daemon. Predicting on which script will be executed based on the graph is currently the most reliable way. But in the mean time, I will be researching more about the event handlers.

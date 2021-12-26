@@ -88,11 +88,15 @@ object PersistentMemory {
 		}
 		@ExportGradle
 		operator fun get(property: String): Any? {
-			return getProperty(property)
+			return data[property]
 		}
 		@ExportGradle
 		operator fun set(property: String, value: Any?) {
-			setProperty(property, value)
+			data[property] = value
+		}
+		@ExportGradle
+		fun has(property: String) {
+			data.contains(property)
 		}
 
 		@ExportGradle

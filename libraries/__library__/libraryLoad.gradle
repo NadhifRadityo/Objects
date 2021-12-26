@@ -11,9 +11,12 @@ Integer currentBuildHash
 
 class LoaderInfo {
 	boolean accessed
+	boolean loaded
 	ClassLoader classLoader
 	Class<?> CLASS_Library
+	Method METHOD_Library_construct
 	Method METHOD_Library_entry
+	Method METHOD_Library_destruct
 }
 def get_current_loader_info = {
 	LoaderInfo loaderInfo = buildLoader.get(currentBuildHash)
@@ -24,7 +27,9 @@ def clear = { ->
 	LoaderInfo loaderInfo = get_current_loader_info()
 	loaderInfo.classLoader = null
 	loaderInfo.CLASS_Library = null
+	loaderInfo.METHOD_Library_construct = null
 	loaderInfo.METHOD_Library_entry = null
+	loaderInfo.METHOD_Library_destruct = null
 }
 def source_files = { ->
 	if(!buildDir.exists()) return new File[0]
@@ -40,8 +45,12 @@ def load = { ->
 	try {
 		loaderInfo.classLoader = new URLClassLoader(sourceURLs, classUtils.defaultClassLoader)
 		loaderInfo.CLASS_Library = loaderInfo.classLoader.loadClass('io.github.NadhifRadityo.Library.LibraryEntry')
-		loaderInfo.METHOD_Library_entry = loaderInfo.CLASS_Library.getDeclaredMethod('entry', classUtils.classForName0('Gradle.Context'), File.class, Map.class)
+		loaderInfo.METHOD_Library_construct = loaderInfo.CLASS_Library.getDeclaredMethod('construct', classUtils.classForName0('Gradle.Context'), File.class)
+		loaderInfo.METHOD_Library_construct.setAccessible(true)
+		loaderInfo.METHOD_Library_entry = loaderInfo.CLASS_Library.getDeclaredMethod('entry', Map.class)
 		loaderInfo.METHOD_Library_entry.setAccessible(true)
+		loaderInfo.METHOD_Library_destruct = loaderInfo.CLASS_Library.getDeclaredMethod('destruct')
+		loaderInfo.METHOD_Library_destruct.setAccessible(true)
 	} catch(Exception e) {
 		lerror 'Error while loading library entry point\n', e
 	}
@@ -49,14 +58,16 @@ def load = { ->
 }
 def available = { ->
 	LoaderInfo loaderInfo = get_current_loader_info()
-	return loaderInfo.METHOD_Library_entry != null
+	return loaderInfo.CLASS_Library != null
 }
 def run = { def context, File rootDirectory, Map<String, File> modules ->
 	LoaderInfo loaderInfo = get_current_loader_info()
 	try {
-		loaderInfo.METHOD_Library_entry.invoke(null, context, rootDirectory, modules)
+		loaderInfo.loaded = true
+		loaderInfo.METHOD_Library_construct.invoke(null, context, rootDirectory)
+		loaderInfo.METHOD_Library_entry.invoke(null, modules)
 	} catch(Exception e) {
-		lerror 'Error while running library entry point\n', e
+		lerror "Error while running library entry point from build hash ${currentBuildHash}\n", e
 	}
 }
 def __default_import_action = { def info ->
@@ -65,7 +76,7 @@ def __default_import_action = { def info ->
 		currentBuildHash = project.rootDir.hashCode()
 		LoaderInfo loaderInfo = buildLoader.get(currentBuildHash)
 		if(loaderInfo == null) {
-			llog "New build \"${project.name}\" at path \"${project.rootDir}\" with hash $currentBuildHash"
+			llog "New build '${project.name}' at path '${project.rootDir}' with hash $currentBuildHash"
 			loaderInfo = new LoaderInfo()
 			buildLoader.put(currentBuildHash, loaderInfo)
 		}
@@ -82,18 +93,30 @@ context(this) {
 		currentBuildHash = null
 	}
 	scriptDestruct {
-		removeImportAction(buildscript.sourceFile)
 		Iterator<Map.Entry<Integer, LoaderInfo>> iterator = buildLoader.entrySet().iterator()
 		while(iterator.hasNext()) {
 			Map.Entry<Integer, LoaderInfo> entry = iterator.next()
 			LoaderInfo loaderInfo = entry.getValue()
-			if(loaderInfo.accessed) { loaderInfo.accessed = false; continue }
-			llog "Removed library loader from build hash ${entry.getKey()}"
-			iterator.remove()
+			if(loaderInfo.loaded) {
+				loaderInfo.loaded = false
+				try {
+					loaderInfo.METHOD_Library_destruct.invoke(null)
+				} catch(Exception e) {
+					lerror "Error while running library destruct from build hash ${entry.getKey()}\n", e
+				}
+			}
+			if(loaderInfo.accessed) {
+				loaderInfo.accessed = false
+			}
+			if(loaderInfo.CLASS_Library == null) {
+				llog "Removed library loader from build hash ${entry.getKey()}"
+				iterator.remove()
+			}
 		}
-		memory = null
-		buildLoader = null
 		currentBuildHash = null
+		buildLoader = null
+		memory = null
+		removeImportAction(buildscript.sourceFile)
 	}
 }
 

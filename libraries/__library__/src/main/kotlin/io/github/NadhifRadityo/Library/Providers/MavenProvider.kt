@@ -66,7 +66,7 @@ class MavenProvider(
 		prog(arrayOf(this, group, artifact, version, 0), javaClass, "Maven dependency", true, 2).use { prog0 ->
 			val mavenSearch: JSONROOT_mavenSearch
 
-			prog0.pdo(String.format("Listing %s.%s.%s", group ?: "??", artifact ?: "??", version ?: "??"))
+			prog0.pdo(String.format("Listing %s.%s:%s", group ?: "*", artifact ?: "*", version ?: "*"))
 			prog(arrayOf(this, group, artifact, version, 1), javaClass, "Getting dependency list", true).use { prog1 ->
 				val curl = CURL()
 				curl.url = formattedUrl(searchUrlCallback(group, artifact, version))
@@ -84,7 +84,7 @@ class MavenProvider(
 
 			val results = mutableListOf<MavenDependency>()
 			val docs = mavenSearch.response.docs
-			prog0.pdo(String.format("Getting infos %s.%s.%s", group ?: "??", artifact ?: "??", version ?: "??"))
+			prog0.pdo(String.format("Getting infos %s.%s:%s", group ?: "*", artifact ?: "*", version ?: "*"))
 			prog(arrayOf(this, group, artifact, version, 2), javaClass, "Getting dependency infos", true, docs.size).use { prog2 ->
 				for(doc in docs) {
 					val id = doc.id

@@ -299,7 +299,7 @@ fun hashesAvailable(_properties: Properties?, options: String): Map<String, List
 	val sha512sum = getFileIfPropertiesExist("sha512sumPath")
 
 	for(option in options.split(",")) {
-		val settings = option.split(":")
+		val settings = option.split(":").toTypedArray()
 		val extension = settings[0]
 		val provider = settings[1]
 		val args = arrayOfNulls<String>(settings.size - 2)

@@ -39,54 +39,54 @@ public class LibraryEntry {
 	public static Map<Class<? extends LibraryModule>, LibraryModule> getModules() { return Collections.unmodifiableMap(__MODULES__); }
 	public static JSONROOT_main getMainConfig() { return __MAIN_CONFIG__; }
 
-	private static void entry(Context context, File rootDirectory, Map<String, File> rawModules) throws Exception {
-		try {
-			__CONTEXT__ = context;
-			__common__.construct();
-			__ROOT_DIRECTORY__ = rootDirectory;
-			__TARGET_DIRECTORY__ = mkdir(__ROOT_DIRECTORY__, "__target__");
-			__MODULES__ = new HashMap<>();
-
-			File mainConfigFile = mkfile(__TARGET_DIRECTORY__, "configurations.json");
-			JSONROOT_main configurations = toJson(fileString(mainConfigFile), JSONROOT_main.class);
-			if(configurations == null) {
-				configurations = new JSONROOT_main();
-				configurations.properties = new Properties();
-			}
-			__MAIN_CONFIG__ = configurations;
-
-			for(Map.Entry<String, File> rawModule : rawModules.entrySet()) {
-				String moduleIdentifier = rawModule.getKey();
-				File modulePath = rawModule.getValue();
-				File manifestFile = new File(modulePath, "lib.mf");
-				if(!manifestFile.exists()) continue;
-
-				Manifest moduleManifest;
-				Class<? extends LibraryModule> moduleEntry;
-				try(FileInputStream manifestFileStream = new FileInputStream(manifestFile)) {
-					moduleManifest = new Manifest(manifestFileStream);
-					moduleEntry = classForName0(a_getString(moduleManifest.getMainAttributes(), "Module-Entry"), true, currentClassLoader);
-				} catch(Exception e) {
-					_lwarn("Error reading manifest file \"%s\"\n%s", manifestFile.getPath(), exception(e));
-					continue;
-				}
-
-				LibraryModule module = initModule(moduleEntry, moduleIdentifier, modulePath, moduleManifest);
-				__MODULES__.put(moduleEntry, module);
-			}
-
-			defaultPropertiesConfig(configurations);
-			for(LibraryModule module : __MODULES__.values())
-				module.run();
-			createJSONFile(configurations, mainConfigFile);
-		} finally {
-			__MAIN_CONFIG__ = null;
-			__MODULES__ = null;
-			__TARGET_DIRECTORY__ = null;
-			__ROOT_DIRECTORY__ = null;
-			__common__.destruct();
-			__CONTEXT__ = null;
+	private static void construct(Context context, File rootDirectory) throws Exception {
+		__CONTEXT__ = context;
+		__common__.construct();
+		__ROOT_DIRECTORY__ = rootDirectory;
+		__TARGET_DIRECTORY__ = mkdir(__ROOT_DIRECTORY__, "__target__");
+		__MODULES__ = new HashMap<>();
+	}
+	private static void entry(Map<String, File> rawModules) throws Exception {
+		File mainConfigFile = mkfile(__TARGET_DIRECTORY__, "configurations.json");
+		JSONROOT_main configurations = toJson(fileString(mainConfigFile), JSONROOT_main.class);
+		if(configurations == null) {
+			configurations = new JSONROOT_main();
+			configurations.properties = new Properties();
 		}
+		__MAIN_CONFIG__ = configurations;
+
+		for(Map.Entry<String, File> rawModule : rawModules.entrySet()) {
+			String moduleIdentifier = rawModule.getKey();
+			File modulePath = rawModule.getValue();
+			File manifestFile = new File(modulePath, "lib.mf");
+			if(!manifestFile.exists()) continue;
+
+			Manifest moduleManifest;
+			Class<? extends LibraryModule> moduleEntry;
+			try(FileInputStream manifestFileStream = new FileInputStream(manifestFile)) {
+				moduleManifest = new Manifest(manifestFileStream);
+				moduleEntry = classForName0(a_getString(moduleManifest.getMainAttributes(), "Module-Entry"), true, currentClassLoader);
+			} catch(Exception e) {
+				_lwarn("Error reading manifest file \"%s\"\n%s", manifestFile.getPath(), exception(e));
+				continue;
+			}
+
+			LibraryModule module = initModule(moduleEntry, moduleIdentifier, modulePath, moduleManifest);
+			__MODULES__.put(moduleEntry, module);
+		}
+
+		defaultPropertiesConfig(configurations);
+		for(LibraryModule module : __MODULES__.values())
+			module.run();
+		createJSONFile(configurations, mainConfigFile);
+	}
+	private static void destruct() throws Exception {
+		__MAIN_CONFIG__ = null;
+		__MODULES__ = null;
+		__TARGET_DIRECTORY__ = null;
+		__ROOT_DIRECTORY__ = null;
+		__common__.destruct();
+		__CONTEXT__ = null;
 	}
 
 	protected static final Method METHOD_LibraryModule_init;

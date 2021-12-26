@@ -19,11 +19,11 @@ import java.lang.reflect.Method
 object JavascriptUtils {
     @JvmStatic private var cache: GroovyKotlinCache<JavascriptUtils>? = null
     @ExportGradle @JvmStatic
-    val javascriptGraalVm: Lazy<((String, Array<out Any?>) -> Any?)?> = lazy lambda@{
+    val javascriptGraalVm: Lazy<((String, Array<out Any?>) -> Any?)?> = lazy lazy@{
         val CLASS_Context = classForName<Any>("org.graalvm.polyglot.Context")
         val CLASS_Value = classForName<Any>("org.graalvm.polyglot.Value")
-        if(CLASS_Context == null) return@lambda null
-        if(CLASS_Value == null) return@lambda null
+        if(CLASS_Context == null) return@lazy null
+        if(CLASS_Value == null) return@lazy null
         val METHOD_Context_create = CLASS_Context.getMethod("create", Array<String>::class.java)
         val METHOD_Context_eval = CLASS_Context.getMethod("eval", String::class.java, CharSequence::class.java)
         val METHOD_Value_execute = CLASS_Value.getMethod("execute", Array<Any>::class.java)
@@ -39,7 +39,7 @@ object JavascriptUtils {
             catch(e: Exception) { exception(e); continue }
             convertToJavaType[method] = converter
         }
-        return@lambda lambda2@{ source: String, args: Array<out Any?> ->
+        return@lazy lambda@{ source: String, args: Array<out Any?> ->
             val context = METHOD_Context_create.invoke(null, arrayOfNulls<String>(0) as Any)
             (context as AutoCloseable).use { _ ->
                 val function = METHOD_Context_eval.invoke(context, "js", source)
@@ -47,21 +47,21 @@ object JavascriptUtils {
                 for((key, value) in convertToJavaType) {
                     try { if(!(key.invoke(result) as Boolean)) continue }
                     catch(e: Exception) { exception(e); continue }
-                    return@lambda2 value.invoke(result)
+                    return@lambda value.invoke(result)
                 }
                 lwarn("GraalVM object not found! value=$result")
-                return@lambda2 result
+                return@lambda result
             }
         }
     }
     @ExportGradle @JvmStatic
-    val javascriptNashorn: Lazy<((String, Array<out Any?>) -> Any?)?> = lazy lambda@{
+    val javascriptNashorn: Lazy<((String, Array<out Any?>) -> Any?)?> = lazy lazy@{
         val CLASS_ScriptEngineManager = classForName<Any>("javax.script.ScriptEngineManager")
         val CLASS_ScriptEngine = classForName<Any>("javax.script.ScriptEngine")
         val CLASS_JSObject = classForName<Any>("jdk.nashorn.api.scripting.JSObject")
-        if(CLASS_ScriptEngineManager == null) return@lambda null
-        if(CLASS_ScriptEngine == null) return@lambda null
-        if(CLASS_JSObject == null) return@lambda null
+        if(CLASS_ScriptEngineManager == null) return@lazy null
+        if(CLASS_ScriptEngine == null) return@lazy null
+        if(CLASS_JSObject == null) return@lazy null
         val CONSTRUCTOR_ScriptEngineManager = CLASS_ScriptEngineManager.getConstructor()
         val METHOD_ScriptEngineManager_getEngineByName = CLASS_ScriptEngineManager.getMethod("getEngineByName", String::class.java)
         val METHOD_ScriptEngine_eval = CLASS_ScriptEngine.getMethod("eval", String::class.java)
@@ -71,11 +71,11 @@ object JavascriptUtils {
             if(!isEs6) lwarn("Error may occur, Please add \"-Dnashorn.args=--language=es6\" to your JVM arguments")
             else if(JAVA_DETECTION_VERSION <= 8) lwarn("Error may occur, javascript functionality may be limited. It is recommended to use java >= 9")
         }
-        return@lambda lambda2@{ source: String, args: Array<out Any?> ->
+        return@lazy lambda@{ source: String, args: Array<out Any?> ->
             var engine = CONSTRUCTOR_ScriptEngineManager.newInstance()
             engine = METHOD_ScriptEngineManager_getEngineByName.invoke(engine, "nashorn")
             val function = METHOD_ScriptEngine_eval.invoke(engine, source)
-            return@lambda2 METHOD_JSObject_call.invoke(function, null, args)
+            return@lambda METHOD_JSObject_call.invoke(function, null, args)
         }
     }
 

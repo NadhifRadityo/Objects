@@ -241,11 +241,12 @@ open class KotlinClosure(
 				result += KMutableProperty2Overload(owner1, owner2, property)
 			return result.toTypedArray()
 		}
+		@JvmStatic val emptyArr = emptyArray<Any?>()
 		@ExportGradle @JvmStatic
 		fun doOverloading(overloads: List<Overload>, args: Array<out Any?>): Pair<Overload, Array<Any?>> {
 			data class CallData(
 				var overload: Overload,
-				var args: Array<Any?>? = null,
+				var args: Array<Any?> = emptyArr,
 				var error: String? = null,
 				var notExactMatchCount: Int = 0,
 				var changedArgsCount: Int = 0
@@ -281,9 +282,9 @@ open class KotlinClosure(
 			 * every parameter will be checked if it's assignable from args
 			 */
 			val pushArg: (CallData, Int, Any?) -> Unit = { data, i, arg ->
-				if(data.args == null)
+				if(data.args == emptyArr)
 					data.args = arrayOfNulls(data.overload.parameterCount)
-				data.args!![i] = arg
+				data.args[i] = arg
 			}
 			val tryChangeArg: (CallData, Any?, Class<*>) -> Any? = { data, arg, type ->
 				var result = arg
@@ -367,23 +368,19 @@ open class KotlinClosure(
 				}
 			}
 			val notError = filteredOverloads.filter { it.error == null }
-			// Only happen when the parameter is empty,
-			// thus args.size always zero. But whatever.
-			for(data in notError) if(data.args == null)
-				data.args = arrayOfNulls(args.size)
 			if(notError.isEmpty())
 				throw IllegalStateException("No matched method definition for [${args.joinToString(", ") { if(it != null) it::class.java.toString() else "NULL" }}]\n" +
 						"\t\twith values [${args.joinToString(", ") { it.toString() }}]\n" +
 						"Filtered overloads: \n${filteredOverloads.joinToString("\n") { "\t- ${it.overload} (${it.error})" }}\n" +
 						"Non-filtered overloads: \n${overloads.filter { o -> filteredOverloads.find { it.overload == o } == null }.joinToString("\n") { "\t- $it" }}")
 			if(notError.size > 1) {
-				/* Exact match
+				/* Prefer not exact minimum
 				 */
 				val minNotExactMatchCount = notError.minOf { it.notExactMatchCount }
 				val notExactMatch = notError.filter { it.notExactMatchCount == minNotExactMatchCount }
 				if(notExactMatch.size == 1) {
 					val first = notExactMatch.first()
-					return Pair(first.overload, first.args!!)
+					return Pair(first.overload, first.args)
 				}
 				/* Prefer args not changed
 				 */
@@ -391,22 +388,30 @@ open class KotlinClosure(
 				val notChangedArgs = notExactMatch.filter { it.changedArgsCount == minChangedArgsCount }
 				if(notChangedArgs.size == 1) {
 					val first = notChangedArgs.first()
-					return Pair(first.overload, first.args!!)
+					return Pair(first.overload, first.args)
+				}
+				/* Prefer exact maximum
+				 */
+				val maxExactCount = notChangedArgs.maxOf { it.args.size }
+				val maxExactArgs = notChangedArgs.filter { it.args.size == maxExactCount }
+				if(maxExactArgs.size == 1) {
+					val first = maxExactArgs.first()
+					return Pair(first.overload, first.args)
 				}
 				/* Priorites
 				 */
-				val maxPriorityValue = notChangedArgs.maxOf { it.overload.priority }
-				val maxPriority = notChangedArgs.filter { it.overload.priority == maxPriorityValue }
+				val maxPriorityValue = maxExactArgs.maxOf { it.overload.priority }
+				val maxPriority = maxExactArgs.filter { it.overload.priority == maxPriorityValue }
 				if(maxPriority.size == 1) {
 					val first = maxPriority.first()
-					return Pair(first.overload, first.args!!)
+					return Pair(first.overload, first.args)
 				}
 				throw IllegalStateException("Ambiguous overloads call for [${args.joinToString(", ") { if(it != null) it::class.java.toString() else "NULL" }}]\n" +
 						"\t\twith values [${args.joinToString(", ") { it.toString() }}]\n" +
 						"Matched overloads: \n${notError.joinToString("\n") { "\t- ${it.overload} (Not Exact: ${it.notExactMatchCount}, Changed Args: ${it.changedArgsCount}, Priority: ${it.overload.priority})" }}")
 			}
 			val first = notError.first()
-			return Pair(first.overload, first.args!!)
+			return Pair(first.overload, first.args)
 		}
 	}
 }
