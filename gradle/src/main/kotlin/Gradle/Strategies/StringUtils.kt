@@ -28,8 +28,7 @@ object StringUtils {
 	}
 
 	// https://stackoverflow.com/questions/3537706/how-to-unescape-a-java-string-literal-in-java
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun unescapeJavaString(string: String): String {
 		val stringBuilder = StringBuilder(string.length)
 		var i = 0
@@ -71,8 +70,7 @@ object StringUtils {
 	}
 
 	// https://stackoverflow.com/questions/2406121/how-do-i-escape-a-string-in-java
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun escape(string: String): String {
 		return string.replace("\\", "\\\\")
 			.replace("\t", "\\t")

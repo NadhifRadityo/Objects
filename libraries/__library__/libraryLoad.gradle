@@ -38,7 +38,7 @@ def load = { ->
 	if(loaderInfo.classLoader != null) return loaderInfo.classLoader
 	URL[] sourceURLs = Stream.of(source_files()).map { it.toURI().toURL() }.toArray(URL[]::new)
 	try {
-		loaderInfo.classLoader = new URLClassLoader(sourceURLs, project.getClass().getClassLoader())
+		loaderInfo.classLoader = new URLClassLoader(sourceURLs, classUtils.defaultClassLoader)
 		loaderInfo.CLASS_Library = loaderInfo.classLoader.loadClass('io.github.NadhifRadityo.Library.LibraryEntry')
 		loaderInfo.METHOD_Library_entry = loaderInfo.CLASS_Library.getDeclaredMethod('entry', classUtils.classForName0('Gradle.Context'), File.class, Map.class)
 		loaderInfo.METHOD_Library_entry.setAccessible(true)

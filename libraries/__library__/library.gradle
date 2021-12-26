@@ -4,6 +4,7 @@ context(this) {
 	scriptImport listOf('CONFIG'), from('/common.gradle')
 	scriptImport from('libraryModules.gradle'), being('libraryModules'), with(includeFlags('dont_clear_last_state'))
 	scriptImport from('libraryLoad.gradle'), being('libraryLoad'), with(includeFlags('export_functions_only'))
+	scriptImport listOf('gradleKotlinDsl'), from('/std$GradleUtils')
 }
 
 def withCurrentImport = withCurrentImport()
@@ -13,6 +14,7 @@ def project_init = { def context ->
 	}
 	delegate.dependencies {
 		compileOnly(gradleApi())
+		compileOnly(gradleKotlinDsl())
 		compileOnly(localGroovy())
 		testCompileOnly(gradleTestKit())
 		compileOnly 'io.github.NadhifRadityo.Objects:gradle:LATEST'

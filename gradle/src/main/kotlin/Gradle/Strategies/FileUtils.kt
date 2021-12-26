@@ -7,8 +7,7 @@ import Gradle.GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyK
 import Gradle.GroovyKotlinInteroperability.GroovyKotlinCache
 import Gradle.Strategies.ExceptionUtils.exception
 import Gradle.Strategies.LoggerUtils.ldebug
-import Gradle.Strategies.ProgressUtils.progress
-import Gradle.Strategies.ProgressUtils.progress_id
+import Gradle.Strategies.ProgressUtils.prog
 import Gradle.Strategies.StreamUtils.streamBytes
 import Gradle.Strategies.StreamUtils.streamString
 import Gradle.Strategies.StreamUtils.writeBytes
@@ -35,15 +34,9 @@ object FileUtils {
         cache = null
     }
 
-    @ExportGradle
-    @JvmStatic
-    @Throws(IOException::class)
+    @ExportGradle @JvmStatic @Throws(IOException::class)
     fun fileBytes(file: File): ByteArray {
-        progress(progress_id(file)).use { prog0 ->
-            prog0.inherit()
-            prog0.category = FileUtils::class.java.toString()
-            prog0.description = "Reading file"
-            prog0.pstart()
+        prog(arrayOf(file), FileUtils::class.java, "Reading file", true).use { prog0 ->
             prog0.pdo("Reading ${file.path}")
             ldebug("Getting contents from file: ${file.path}")
             FileInputStream(file).use { fis -> return streamBytes(fis) }
@@ -52,15 +45,9 @@ object FileUtils {
     @ExportGradle @JvmStatic @Throws(IOException::class)
     fun fileBytes(path: String): ByteArray { return fileBytes(File(path)) }
 
-    @ExportGradle
-    @JvmStatic @JvmOverloads
-    @Throws(IOException::class)
+    @ExportGradle @JvmStatic @JvmOverloads @Throws(IOException::class)
     fun fileString(file: File, charset: Charset = StandardCharsets.UTF_8): String {
-        progress(progress_id(file, charset)).use { prog0 ->
-            prog0.inherit()
-            prog0.category = FileUtils::class.java.toString()
-            prog0.description = "Reading file"
-            prog0.pstart()
+        prog(arrayOf(file, charset), FileUtils::class.java, "Reading file", true).use { prog0 ->
             prog0.pdo("Reading ${file.path}")
             ldebug("Getting contents from file: ${file.path}")
             FileInputStream(file).use { fis ->
@@ -71,15 +58,9 @@ object FileUtils {
     @ExportGradle @JvmStatic @JvmOverloads @Throws(IOException::class)
     fun fileString(path: String, charset: Charset = StandardCharsets.UTF_8): String { return fileString(File(path), charset) }
 
-    @ExportGradle
-    @JvmStatic
-    @Throws(IOException::class)
+    @ExportGradle @JvmStatic @Throws(IOException::class)
     fun writeFileBytes(file: File, bytes: ByteArray, off: Int, len: Int) {
-        progress(progress_id(file, bytes, off, len)).use { prog0 ->
-            prog0.inherit()
-            prog0.category = FileUtils::class.java.toString()
-            prog0.description = "Writing file"
-            prog0.pstart()
+        prog(arrayOf(file, bytes, off, len), FileUtils::class.java, "Writing file", true).use { prog0 ->
             prog0.pdo("Writing ${file.path}")
             ldebug("Writing contents to file: ${file.path}")
             FileOutputStream(file).use { fos ->
@@ -90,15 +71,9 @@ object FileUtils {
     @ExportGradle @JvmStatic @Throws(IOException::class)
     fun writeFileBytes(path: String, bytes: ByteArray, off: Int, len: Int) { writeFileBytes(File(path), bytes, off, len) }
 
-    @ExportGradle
-    @JvmStatic @JvmOverloads
-    @Throws(IOException::class)
+    @ExportGradle @JvmStatic @JvmOverloads @Throws(IOException::class)
     fun writeFileString(file: File, string: String, charset: Charset = StandardCharsets.UTF_8) {
-        progress(progress_id(file, string, charset)).use { prog0 ->
-            prog0.inherit()
-            prog0.category = FileUtils::class.java.toString()
-            prog0.description = "Writing file"
-            prog0.pstart()
+        prog(arrayOf(file, string, charset), FileUtils::class.java, "Writing file", true).use { prog0 ->
             prog0.pdo("Writing ${file.path}")
             ldebug("Writing contents to file: ${file.path}")
             FileOutputStream(file).use { fos ->
@@ -117,8 +92,7 @@ object FileUtils {
     @ExportGradle @JvmStatic fun file(vararg children: String): File { return File(children.joinToString("/")) }
     @ExportGradle @JvmStatic fun fileRelative(from: File, what: File): File { return Paths.get(from.canonicalPath).relativize(Paths.get(what.canonicalPath)).toFile() }
 
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun mkfile(parent: File, vararg children: String): File {
         val result = file(parent, *children)
         if(result.exists()) return result
@@ -128,8 +102,7 @@ object FileUtils {
             catch(e: IOException) { throw Error(exception(e)) }
         throw IllegalStateException("Cannot make file")
     }
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun mkfile(vararg children: String): File {
         val result = file(*children)
         if(result.exists()) return result
@@ -140,8 +113,7 @@ object FileUtils {
         throw IllegalStateException("Cannot make file")
     }
 
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun mkdir(parent: File, vararg children: String): File {
         val result = file(parent, *children)
         if(result.exists()) return result
@@ -149,8 +121,7 @@ object FileUtils {
         if(result.mkdirs()) return result
         throw IllegalStateException("Cannot make directory")
     }
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun mkdir(vararg children: String): File {
         val result = file(*children)
         if(result.exists()) return result
@@ -166,8 +137,7 @@ object FileUtils {
         if(file.delete()) return
         throw IllegalStateException("Cannot delete file")
     }
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun delFile(file: File) {
         if(file.isFile) { delFile0(file); return }
         val children = file.listFiles()

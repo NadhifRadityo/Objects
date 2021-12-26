@@ -7,8 +7,7 @@ import Gradle.GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyK
 import Gradle.GroovyKotlinInteroperability.GroovyKotlinCache
 import Gradle.Strategies.LoggerUtils.ldebug
 import Gradle.Strategies.LoggerUtils.lerror
-import Gradle.Strategies.ProgressUtils.progress
-import Gradle.Strategies.ProgressUtils.progress_id
+import Gradle.Strategies.ProgressUtils.prog
 import Gradle.Strategies.StreamUtils.streamString
 import groovy.transform.ThreadInterrupt
 import org.apache.commons.lang3.SystemUtils
@@ -29,16 +28,9 @@ object ProcessUtils {
         cache = null
     }
 
-    @ExportGradle
-    @JvmStatic
-    @ThreadInterrupt
-    @Throws(Exception::class)
+    @ExportGradle @JvmStatic @ThreadInterrupt @Throws(Exception::class)
     fun getCommandOutput(basedir: File?, vararg arguments: String): String? {
-        progress(progress_id(basedir, arguments)).use { prog0 ->
-            prog0.inherit()
-            prog0.category = ProcessUtils::class.java.toString()
-            prog0.description = "Reading file"
-            prog0.pstart()
+        prog(arrayOf(basedir, arguments), ProcessUtils::class.java, "Reading file", true).use { prog0 ->
             prog0.pdo("Executing command `${java.lang.String.join(" ", *arguments)}`")
             ldebug("Executing command: ${java.lang.String.join(" ", *arguments)}")
             val processBuilder = ProcessBuilder(*arguments)
@@ -56,9 +48,7 @@ object ProcessUtils {
     @ExportGradle @JvmStatic @Throws(Exception::class)
     fun getCommandOutput(vararg arguments: String): String? { return getCommandOutput(null, *arguments) }
 
-    @ExportGradle
-    @JvmStatic
-    @Throws(Exception::class)
+    @ExportGradle @JvmStatic @Throws(Exception::class)
     fun searchPath(executable: String): File? {
         if(SystemUtils.IS_OS_WINDOWS) {
             val path = getCommandOutput("where", executable)

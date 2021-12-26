@@ -80,12 +80,38 @@ def importIfNotExist = { def from, def being ->
 	return that."${being.user}"
 }
 def generate_script = { def script ->
+	def importedScript = importIfNotExist from(script.file), being(script.file.name)
+	String className = script.file.name.substring("std\$".length())
+	List<String> fields = mutableListOf()
 	List<String> methods = mutableListOf()
 	Set<String> imports = new TreeSet()
 	imports += 'groovy.lang.Closure'
 	imports += 'groovy.lang.GroovyObject'
 	imports += 'static io.github.NadhifRadityo.Library.LibraryEntry.getContext'
 
+	fields.add("protected static GroovyObject __UTILS_IMPORTED__;")
+	methods.add("""
+		protected static void __UTILS_CONSTRUCT__() {
+			if(__UTILS_IMPORTED__ == null)
+				__UTILS_IMPORTED__ = ((Closure<GroovyObject>) ((GroovyObject) getContext().getThat()).getProperty("scriptImport")).call("/${script.file.name}", "${script.file.name}");
+		}
+	""".stripIndent().trim())
+	methods.add("""
+		protected static void __UTILS_DESTRUCT__() {
+			if(__UTILS_IMPORTED__ != null)
+				__UTILS_IMPORTED__ = null;
+		}
+	""".stripIndent().trim())
+	methods.add("""
+		protected static <T> T __UTILS_GET_PROPERTY__(String property) {
+			return (T) __UTILS_IMPORTED__.getProperty(property);
+		}
+	""".stripIndent().trim())
+	methods.add("""
+		protected static <T> void __UTILS_SET_PROPERTY__(String property, T value) {
+			__UTILS_IMPORTED__.setProperty(property, value);
+		}
+	""".stripIndent().trim())
 	script.exports.forEach { def export ->
 		export.what.forEach { def closure ->
 			def overload = closure.overloads[0]
@@ -99,7 +125,7 @@ def generate_script = { def script ->
 				def genericsDecl = generics.size() != 0 ? " <${generics.values().stream().collect(Collectors.joining(", "))}>" : ""
 				methods.add("""
 					public static$genericsDecl $returnType get${name.substring(0, 1).toUpperCase() + name.substring(1)}() {
-						return ($returnTypeGeneric) ((GroovyObject) getContext().getThat()).getProperty("${export.being}");
+						return ${className}.<$returnTypeGeneric>__UTILS_GET_PROPERTY__("${name}");
 					}
 				""".stripIndent().trim())
 			}
@@ -111,13 +137,12 @@ def generate_script = { def script ->
 				def genericsDecl = generics.size() != 0 ? " <${generics.values().stream().collect(Collectors.joining(", "))}>" : ""
 				methods.add("""
 					public static$genericsDecl void set${name.substring(0, 1).toUpperCase() + name.substring(1)}($returnType value) {
-						((GroovyObject) getContext().getThat()).setProperty("${export.being}"), value);
+						${className}.__UTILS_SET_PROPERTY__("${name}", value);
 					}
 				""".stripIndent().trim())
 			}
 			// Method wrapped in property
 			if(klass == 'KLambdaOverload' && closure.overloads.size() == 1) {
-				def importedScript = importIfNotExist from(script.file), being(script.file.name)
 				def functionClosure = importedScript."${export.being}"
 				Stream.of(functionClosure.overloads.toArray()).forEach { def funOverload ->
 					String klass2 = funOverload.class.simpleName
@@ -134,7 +159,7 @@ def generate_script = { def script ->
 						def genericsDecl = generics.size() != 0 ? " <${generics.values().stream().collect(Collectors.joining(", "))}>" : ""
 						methods.add("""
 							public static$genericsDecl $returnType $name($parameters) {
-								${returnType != 'void' ? 'return ' : ''}((Closure<$returnTypeGeneric>) ((GroovyObject) getContext().getThat()).getProperty("${export.being}")).call($parametersName);
+								${returnType != 'void' ? 'return ' : ''}${className}.<Closure<$returnTypeGeneric>>__UTILS_GET_PROPERTY__("${name}").call($parametersName);
 							}
 						""".stripIndent().trim())
 					}
@@ -142,13 +167,32 @@ def generate_script = { def script ->
 			}
 		}
 	}
-	String name = script.file.name.substring("std\$".length())
 	StringBuilder sb = new StringBuilder()
 	sb.append("package io.github.NadhifRadityo.Library.Utils;\n\n")
 	imports.forEach { sb.append("import ").append(it).append(";\n") }
 	sb.append("\n")
-	sb.append("public class ").append(name).append(" {\n")
+	sb.append("public class ").append(className).append(" {\n")
+	fields.forEach { Stream.of(it.split("\n")).forEach { sb.append("\t").append(it).append("\n") } }
 	methods.forEach { Stream.of(it.split("\n")).forEach { sb.append("\t").append(it).append("\n") } }
+	sb.append("}\n")
+	return sb.toString()
+}
+def generate_constructor_destructor = { def scripts, def currentSession ->
+	StringBuilder sb = new StringBuilder()
+	sb.append("package io.github.NadhifRadityo.Library.Utils;\n\n")
+	sb.append("public class __common__ {\n")
+	sb.append("\tpublic static void construct() {\n")
+	scripts.stream().filter { it.context == currentSession.context }.forEach { def script ->
+		def name = script.file.name.substring("std\$".length())
+		sb.append("\t\t").append(name).append(".__UTILS_CONSTRUCT__();\n")
+	}
+	sb.append("\t}\n")
+	sb.append("\tpublic static void destruct() {\n")
+	scripts.stream().filter { it.context == currentSession.context }.forEach { def script ->
+		def name = script.file.name.substring("std\$".length())
+		sb.append("\t\t").append(name).append(".__UTILS_DESTRUCT__();\n")
+	}
+	sb.append("\t}\n")
 	sb.append("}\n")
 	return sb.toString()
 }
@@ -164,6 +208,11 @@ def generate_std = {
 		mkfile file
 		writeFileString file, source
 	}
+	def file = file("src/main/java/io/github/NadhifRadityo/Library/Utils/__common__.java")
+	linfo "Generating file $file"
+	def source = generate_constructor_destructor(scripts.values(), currentSession)
+	mkfile file
+	writeFileString file, source
 }
 def print_std = {
 	Object currentSession = common.__INTERNAL_Gradle$Common_currentSession
@@ -175,6 +224,9 @@ def print_std = {
 		def source = generate_script(script)
 		println source
 	}
+	linfo "Source for __common__.java"
+	def source = generate_constructor_destructor(scripts.values(), currentSession)
+	println source
 }
 def project_init = {
 	delegate.task('stdClearFiles') {

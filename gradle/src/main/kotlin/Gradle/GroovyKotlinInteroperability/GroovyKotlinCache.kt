@@ -2,7 +2,7 @@ package Gradle.GroovyKotlinInteroperability
 
 import kotlin.reflect.KClass
 
-class GroovyKotlinCache<T : Any>(
+class GroovyKotlinCache<T: Any>(
 	val owner: T?,
 	val ownerKotlinClass: KClass<out T>,
 	val ownerJavaClass: Class<out T>,

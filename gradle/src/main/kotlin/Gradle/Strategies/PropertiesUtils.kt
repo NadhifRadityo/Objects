@@ -28,45 +28,39 @@ object PropertiesUtils {
         AFIELD_Properties_defaults = unsafe.objectFieldOffset(FIELD_Properties_defaults)
     }
 
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun __get_defaults_properties(properties: Properties?): Properties? {
         return unsafe.getObject(properties, AFIELD_Properties_defaults) as Properties?
     }
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun extendProperties(original: Properties?, extend: Properties?, nullable: Boolean): Properties? {
         if(nullable && sizeNonDefaultProperties(original) == 0 && sizeAllProperties(extend) == 0) return null
         val properties = Properties(extend)
         if(original != null) properties.putAll(original)
         return properties
     }
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun copyAllProperties(properties: Properties?, nullable: Boolean): Properties? {
         if(nullable && sizeAllProperties(properties) == 0) return null
         val result = Properties()
         enumerateAllProperties(properties, result)
         return result
     }
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun copyNonDefaultProperties(properties: Properties?, nullable: Boolean): Properties? {
         if(nullable && sizeNonDefaultProperties(properties) == 0) return null
         val result = Properties()
         enumerateNonDefaultProperties(properties, result)
         return result
     }
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun enumerateAllProperties(properties: Properties?, hashtable: Hashtable<Any?, Any?>) {
         if(properties == null) return
         val defaults = __get_defaults_properties(properties)
         if(defaults != null) enumerateAllProperties(defaults, hashtable)
         enumerateNonDefaultProperties(properties, hashtable)
     }
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun enumerateNonDefaultProperties(properties: Properties?, hashtable: Hashtable<Any?, Any?>) {
         if(properties == null) return
         val enumeration = properties.keys()
@@ -76,21 +70,18 @@ object PropertiesUtils {
             hashtable[key] = value
         }
     }
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun sizeAllProperties(properties: Properties?): Int {
         if(properties == null) return 0
         val defaults = __get_defaults_properties(properties)
         return (if(defaults != null) sizeAllProperties(defaults) else 0) + sizeNonDefaultProperties(properties)
     }
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun sizeNonDefaultProperties(properties: Properties?): Int {
         return properties?.size ?: 0
     }
 
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun <T> pn_getObject(properties: Properties, key: String, type: Class<T>, defaultValue: T?): T? {
         val obj = properties[key]
         return if(type.isInstance(obj)) obj as T? else defaultValue
@@ -106,8 +97,7 @@ object PropertiesUtils {
     @ExportGradle @JvmStatic @JvmOverloads fun pn_getFloat(properties: Properties, key: String, defaultValue: Float = 0f): Float { return pn_getObject(properties, key, Float::class.java, defaultValue)!! }
     @ExportGradle @JvmStatic @JvmOverloads fun pn_getDouble(properties: Properties, key: String, defaultValue: Double = 0.0): Double { return pn_getObject(properties, key, Double::class.java, defaultValue)!! }
 
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun <T> p_getObject(properties: Properties, key: String, type: Class<T>, defaultValue: T?): T? {
         val obj = properties[key]
         val castedObject = if(type.isInstance(obj)) obj as T? else null
@@ -126,8 +116,7 @@ object PropertiesUtils {
     @ExportGradle @JvmStatic @JvmOverloads fun p_getFloat(properties: Properties, key: String, defaultValue: Float = 0f): Float { return p_getObject(properties, key, Float::class.java, defaultValue)!! }
     @ExportGradle @JvmStatic @JvmOverloads fun p_getDouble(properties: Properties, key: String, defaultValue: Double = 0.0): Double { return p_getObject(properties, key, Double::class.java, defaultValue)!! }
 
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun <T> p_setObject(properties: Properties, key: String?, type: Class<T>?, value: T?) {
         if(key == null || value == null) return
         properties[key] = value

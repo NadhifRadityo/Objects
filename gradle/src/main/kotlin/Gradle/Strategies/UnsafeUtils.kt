@@ -46,8 +46,7 @@ object UnsafeUtils {
         AFIELD_ByteArrayInputStream_count = unsafe.objectFieldOffset(FIELD_ByteArrayInputStream_count)
     }
 
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun tempByteArray(length: Int): ByteArray {
         var result = tempByteArrayStore.get()?.get()
         if(result == null || result.size < length) {
@@ -57,8 +56,7 @@ object UnsafeUtils {
         return result
     }
 
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun tempOutputBuffer(): ByteArrayOutputStream {
         var result = tempOutputBufferStore.get()?.get()
         if(result == null) {
@@ -68,8 +66,7 @@ object UnsafeUtils {
         return result
     }
 
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun tempInputBuffer(bytes: ByteArray, off: Int, len: Int): ByteArrayInputStream {
         var result = tempInputBufferStore.get()?.get()
         if(result == null) {

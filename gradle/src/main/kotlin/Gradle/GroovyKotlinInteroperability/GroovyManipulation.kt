@@ -29,129 +29,104 @@ object GroovyManipulation {
 	}
 
 	/*
-	console.log(new Array(23).fill(null).map((v, i) => `@ExportGradle
-	@JvmStatic
+	console.log(new Array(23).fill(null).map((v, i) => `@ExportGradle @JvmStatic
 	fun closureToLambda${i}(closure: Closure<*>): fn${i} {
 		return { ${new Array(i).fill(null).map((_v, _i) => `a${_i + 1}`).join(", ")} -> closure.call(${new Array(i).fill(null).map((_v, _i) => `a${_i + 1}`).join(", ")}) }
 	}`).join("\n"))
 	 */
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda0(closure: Closure<*>): fn0 {
 		return {  -> closure.call() }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda1(closure: Closure<*>): fn1 {
 		return { a1 -> closure.call(a1) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda2(closure: Closure<*>): fn2 {
 		return { a1, a2 -> closure.call(a1, a2) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda3(closure: Closure<*>): fn3 {
 		return { a1, a2, a3 -> closure.call(a1, a2, a3) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda4(closure: Closure<*>): fn4 {
 		return { a1, a2, a3, a4 -> closure.call(a1, a2, a3, a4) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda5(closure: Closure<*>): fn5 {
 		return { a1, a2, a3, a4, a5 -> closure.call(a1, a2, a3, a4, a5) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda6(closure: Closure<*>): fn6 {
 		return { a1, a2, a3, a4, a5, a6 -> closure.call(a1, a2, a3, a4, a5, a6) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda7(closure: Closure<*>): fn7 {
 		return { a1, a2, a3, a4, a5, a6, a7 -> closure.call(a1, a2, a3, a4, a5, a6, a7) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda8(closure: Closure<*>): fn8 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda9(closure: Closure<*>): fn9 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda10(closure: Closure<*>): fn10 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda11(closure: Closure<*>): fn11 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda12(closure: Closure<*>): fn12 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda13(closure: Closure<*>): fn13 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda14(closure: Closure<*>): fn14 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda15(closure: Closure<*>): fn15 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda16(closure: Closure<*>): fn16 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda17(closure: Closure<*>): fn17 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda18(closure: Closure<*>): fn18 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda19(closure: Closure<*>): fn19 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda20(closure: Closure<*>): fn20 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda21(closure: Closure<*>): fn21 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda22(closure: Closure<*>): fn22 {
 		return { a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22 -> closure.call(a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambdaN(closure: Closure<*>, arity: Int): fnn {
 		return object: fnn {
 			override val arity: Int
@@ -163,8 +138,7 @@ object GroovyManipulation {
 		}
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun closureToLambda(closure: Closure<*>, target: Class<Function<*>>): Function<*> {
 		run {
 			/*
@@ -226,13 +200,16 @@ object GroovyManipulation {
 		FIELD_MetaMethodIndex_size.isAccessible = true
 	}
 
-	open class DummyGroovyObject : GroovyObjectSupport() {
+	open class DummyGroovyObject: GroovyObjectSupport() {
+		@ExportGradle
 		fun __start__() {
 			metaClass = MetaClassImpl(DummyGroovyObject::class.java)
 		}
+		@ExportGradle
 		fun __end__() {
 			METHOD_MetaClassImpl_reinitialize.invoke(metaClass)
 		}
+		@ExportGradle
 		fun __clear__() {
 			metaClass = null
 		}

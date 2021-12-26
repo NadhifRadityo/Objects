@@ -8,58 +8,73 @@ import java.io.Reader;
 import static io.github.NadhifRadityo.Library.LibraryEntry.getContext;
 
 public class JSONUtils {
+	protected static GroovyObject __UTILS_IMPORTED__;
+	protected static void __UTILS_CONSTRUCT__() {
+		if(__UTILS_IMPORTED__ == null)
+			__UTILS_IMPORTED__ = ((Closure<GroovyObject>) ((GroovyObject) getContext().getThat()).getProperty("scriptImport")).call("/std$JSONUtils", "std$JSONUtils");
+	}
+	protected static void __UTILS_DESTRUCT__() {
+		if(__UTILS_IMPORTED__ != null)
+			__UTILS_IMPORTED__ = null;
+	}
+	protected static <T> T __UTILS_GET_PROPERTY__(String property) {
+		return (T) __UTILS_IMPORTED__.getProperty(property);
+	}
+	protected static <T> void __UTILS_SET_PROPERTY__(String property, T value) {
+		__UTILS_IMPORTED__.setProperty(property, value);
+	}
 	public static <T> String __INTERNAL_Gradle$Strategies$JSONUtils_createJSONFile(T obj, File target) {
-		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_createJSONFile")).call(obj, target);
+		return JSONUtils.<Closure<String>>__UTILS_GET_PROPERTY__("__INTERNAL_Gradle$Strategies$JSONUtils_createJSONFile").call(obj, target);
 	}
 	public static <T> String createJSONFile(T obj, File target) {
-		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("createJSONFile")).call(obj, target);
+		return JSONUtils.<Closure<String>>__UTILS_GET_PROPERTY__("createJSONFile").call(obj, target);
 	}
 	public static boolean __INTERNAL_Gradle$Strategies$JSONUtils_equals(Object other) {
-		return ((Closure<Boolean>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_equals")).call(other);
+		return JSONUtils.<Closure<Boolean>>__UTILS_GET_PROPERTY__("__INTERNAL_Gradle$Strategies$JSONUtils_equals").call(other);
 	}
 	public static int __INTERNAL_Gradle$Strategies$JSONUtils_hashCode() {
-		return ((Closure<Integer>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_hashCode")).call();
+		return JSONUtils.<Closure<Integer>>__UTILS_GET_PROPERTY__("__INTERNAL_Gradle$Strategies$JSONUtils_hashCode").call();
 	}
 	public static Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.JSONUtils> get__INTERNAL_Gradle$Strategies$JSONUtils_cache() {
-		return (Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.JSONUtils>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_cache");
+		return JSONUtils.<Gradle.GroovyKotlinInteroperability.GroovyKotlinCache<Gradle.Strategies.JSONUtils>>__UTILS_GET_PROPERTY__("__INTERNAL_Gradle$Strategies$JSONUtils_cache");
 	}
 	public static <T> String __INTERNAL_Gradle$Strategies$JSONUtils_JSONToString(T obj) {
-		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_JSONToString")).call(obj);
+		return JSONUtils.<Closure<String>>__UTILS_GET_PROPERTY__("__INTERNAL_Gradle$Strategies$JSONUtils_JSONToString").call(obj);
 	}
 	public static <T> String jSONToString(T obj) {
-		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("jSONToString")).call(obj);
+		return JSONUtils.<Closure<String>>__UTILS_GET_PROPERTY__("jSONToString").call(obj);
 	}
 	public static <T> T __INTERNAL_Gradle$Strategies$JSONUtils_toJson(File file, Class<T> clazz) {
-		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_toJson")).call(file, clazz);
+		return JSONUtils.<Closure<T>>__UTILS_GET_PROPERTY__("__INTERNAL_Gradle$Strategies$JSONUtils_toJson").call(file, clazz);
 	}
 	public static <T> T __INTERNAL_Gradle$Strategies$JSONUtils_toJson(InputStream stream, Class<T> clazz) {
-		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_toJson")).call(stream, clazz);
+		return JSONUtils.<Closure<T>>__UTILS_GET_PROPERTY__("__INTERNAL_Gradle$Strategies$JSONUtils_toJson").call(stream, clazz);
 	}
 	public static <T> T __INTERNAL_Gradle$Strategies$JSONUtils_toJson(Reader reader, Class<T> clazz) {
-		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_toJson")).call(reader, clazz);
+		return JSONUtils.<Closure<T>>__UTILS_GET_PROPERTY__("__INTERNAL_Gradle$Strategies$JSONUtils_toJson").call(reader, clazz);
 	}
 	public static <T> T __INTERNAL_Gradle$Strategies$JSONUtils_toJson(String string, Class<T> clazz) {
-		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_toJson")).call(string, clazz);
+		return JSONUtils.<Closure<T>>__UTILS_GET_PROPERTY__("__INTERNAL_Gradle$Strategies$JSONUtils_toJson").call(string, clazz);
 	}
 	public static <T> T toJson(File file, Class<T> clazz) {
-		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("toJson")).call(file, clazz);
+		return JSONUtils.<Closure<T>>__UTILS_GET_PROPERTY__("toJson").call(file, clazz);
 	}
 	public static <T> T toJson(InputStream stream, Class<T> clazz) {
-		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("toJson")).call(stream, clazz);
+		return JSONUtils.<Closure<T>>__UTILS_GET_PROPERTY__("toJson").call(stream, clazz);
 	}
 	public static <T> T toJson(Reader reader, Class<T> clazz) {
-		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("toJson")).call(reader, clazz);
+		return JSONUtils.<Closure<T>>__UTILS_GET_PROPERTY__("toJson").call(reader, clazz);
 	}
 	public static <T> T toJson(String string, Class<T> clazz) {
-		return ((Closure<T>) ((GroovyObject) getContext().getThat()).getProperty("toJson")).call(string, clazz);
+		return JSONUtils.<Closure<T>>__UTILS_GET_PROPERTY__("toJson").call(string, clazz);
 	}
 	public static String __INTERNAL_Gradle$Strategies$JSONUtils_toString() {
-		return ((Closure<String>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_toString")).call();
+		return JSONUtils.<Closure<String>>__UTILS_GET_PROPERTY__("__INTERNAL_Gradle$Strategies$JSONUtils_toString").call();
 	}
 	public static void __INTERNAL_Gradle$Strategies$JSONUtils_construct() {
-		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_construct")).call();
+		JSONUtils.<Closure<Void>>__UTILS_GET_PROPERTY__("__INTERNAL_Gradle$Strategies$JSONUtils_construct").call();
 	}
 	public static void __INTERNAL_Gradle$Strategies$JSONUtils_destruct() {
-		((Closure<Void>) ((GroovyObject) getContext().getThat()).getProperty("__INTERNAL_Gradle$Strategies$JSONUtils_destruct")).call();
+		JSONUtils.<Closure<Void>>__UTILS_GET_PROPERTY__("__INTERNAL_Gradle$Strategies$JSONUtils_destruct").call();
 	}
 }

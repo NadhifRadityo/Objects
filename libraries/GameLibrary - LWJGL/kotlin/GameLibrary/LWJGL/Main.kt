@@ -1,15 +1,15 @@
 package GameLibrary.LWJGL
 
 import io.github.NadhifRadityo.Library.LibraryModule
+import io.github.NadhifRadityo.Library.Providers.ItemFileCallback
 import io.github.NadhifRadityo.Library.Providers.MavenProvider
-import io.github.NadhifRadityo.Library.Providers.MavenProvider.getDefaultMavenProvider
+import io.github.NadhifRadityo.Library.Providers.MavenProvider.Companion.defaultMavenProvider
 import io.github.NadhifRadityo.Library.Utils.FileUtils.*
 import io.github.NadhifRadityo.Library.Utils.JSONUtils.createJSONFile
 import io.github.NadhifRadityo.Library.Utils.JSONUtils.toJson
 import io.github.NadhifRadityo.Library.Utils.StringUtils.mostSafeString
-import java.io.File
 
-class Main : LibraryModule() {
+class Main: LibraryModule() {
 	companion object {
 		val GROUP = "org.lwjgl"
 		val ARTIFACTS = arrayOf(
@@ -22,7 +22,7 @@ class Main : LibraryModule() {
 	}
 
 	override fun run() {
-		val mavenProvider = getDefaultMavenProvider()
+		val mavenProvider = defaultMavenProvider.value
 		val dependencyConfigsDir = file(staticDir, "dependencies")
 		val dependencyFetchedDir = file(staticDir, "fetched")
 		task(unique("clearDependencyCache")).apply {
@@ -50,9 +50,8 @@ class Main : LibraryModule() {
 			doLast {
 				val configFiles = dependencyConfigsDir.listFiles { file -> file.isFile }!!
 				val nativesDir = mkdir(dependencyFetchedDir, "gamelib_natives")
-				val itemFileCallback: (Array<Any>) -> File = itemFileCallback@ { args ->
-					val dependency = args[0] as MavenProvider.MavenDependency
-					val item = args[1] as String
+				val itemFileCallback: ItemFileCallback = itemFileCallback@ { _dependency, item ->
+					val dependency = _dependency as MavenProvider.MavenDependency
 					val mainJar: String = dependency.artifact + "-" + dependency.version + ".jar"
 					val md5SplitIndex = item.lastIndexOf(".md5")
 					val sha1SplitIndex = item.lastIndexOf(".sha1")

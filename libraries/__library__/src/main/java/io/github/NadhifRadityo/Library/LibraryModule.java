@@ -18,7 +18,7 @@ import static io.github.NadhifRadityo.Library.LibraryEntry.__ROOT_DIRECTORY__;
 import static io.github.NadhifRadityo.Library.LibraryEntry.__TARGET_DIRECTORY__;
 import static io.github.NadhifRadityo.Library.Utils.AttributesUtils.a_getString;
 import static io.github.NadhifRadityo.Library.Utils.AttributesUtils.a_setObject;
-import static io.github.NadhifRadityo.Library.Utils.ClassUtils.getCurrentClassFile;
+import static io.github.NadhifRadityo.Library.Utils.ClassUtils.currentClassFile;
 import static io.github.NadhifRadityo.Library.Utils.FileUtils.file;
 import static io.github.NadhifRadityo.Library.Utils.FileUtils.mkdir;
 import static java.util.Objects.requireNonNull;
@@ -63,7 +63,7 @@ public abstract class LibraryModule extends LibraryImplement {
 	private void initProperties() throws Exception {
 		this.fileResolver = new BaseDirFileResolver(this.path);
 		this.buildDir = file(__TARGET_DIRECTORY__, this.name);
-		this.buildFile = getCurrentClassFile(getClass());
+		this.buildFile = currentClassFile(getClass());
 		this.staticDir = file(this.buildDir, "__static__");
 		mkdir(buildDir);
 		mkdir(staticDir);

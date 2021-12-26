@@ -10,8 +10,7 @@ import Gradle.Strategies.CommonUtils.hexStringToBytes
 import Gradle.Strategies.FileUtils.fileString
 import Gradle.Strategies.LoggerUtils.ldebug
 import Gradle.Strategies.ProcessUtils.getCommandOutput
-import Gradle.Strategies.ProgressUtils.progress
-import Gradle.Strategies.ProgressUtils.progress_id
+import Gradle.Strategies.ProgressUtils.prog
 import Gradle.Strategies.UnsafeUtils.tempByteArray
 import java.io.File
 import java.io.FileInputStream
@@ -32,15 +31,9 @@ object HashUtils {
 		cache = null
 	}
 
-	@ExportGradle
-	@JvmStatic
-	@Throws(Exception::class)
+	@ExportGradle @JvmStatic @Throws(Exception::class)
 	fun checksumJavaNative(file: File, digest: String): ByteArray {
-		progress(progress_id(file, digest)).use { prog0 ->
-			prog0.inherit()
-			prog0.category = HashUtils::class.java.toString()
-			prog0.description = "Creating java checksum"
-			prog0.pstart()
+		prog(arrayOf(file, digest), HashUtils::class.java, "Creating java checksum", true).use { prog0 ->
 			prog0.pdo("Checksum Java ($digest) ${file.path}")
 			ldebug("Creating java checksum $digest: ${file.path}")
 			FileInputStream(file).use { fileInputStream ->
@@ -52,15 +45,9 @@ object HashUtils {
 			}
 		}
 	}
-	@ExportGradle
-	@JvmStatic
-	@Throws(Exception::class)
+	@ExportGradle @JvmStatic @Throws(Exception::class)
 	fun checksumJavaNative(bytes: ByteArray, digest: String): ByteArray {
-		progress(progress_id(bytes, digest)).use { prog0 ->
-			prog0.inherit()
-			prog0.category = HashUtils::class.java.toString()
-			prog0.description = "Creating java checksum"
-			prog0.pstart()
+		prog(arrayOf(bytes, digest), HashUtils::class.java, "Creating java checksum", true).use { prog0 ->
 			prog0.pdo("Checksum Java ($digest) [Array]")
 			ldebug("Creating java checksum $digest: [Array]")
 			val messageDigest = MessageDigest.getInstance(digest)
@@ -68,15 +55,9 @@ object HashUtils {
 			return messageDigest.digest()
 		}
 	}
-	@ExportGradle
-	@JvmStatic
-	@Throws(Exception::class)
+	@ExportGradle @JvmStatic @Throws(Exception::class)
 	fun checksumExeCertutil(exe: File, file: File, digest: String): ByteArray {
-		progress(progress_id(exe, file, digest)).use { prog0 ->
-			prog0.inherit()
-			prog0.category = HashUtils::class.java.toString()
-			prog0.description = "Creating certutil checksum"
-			prog0.pstart()
+		prog(arrayOf(exe, file, digest), HashUtils::class.java, "Creating certutil checksum", true).use { prog0 ->
 			prog0.pdo("Checksum certutil ($digest) ${file.path}")
 			ldebug("Creating exe certutil (${exe.path}) checksum $digest: ${file.path}")
 			val commandOutput = getCommandOutput(exe.canonicalPath, "-hashfile", file.canonicalPath, digest)
@@ -84,15 +65,9 @@ object HashUtils {
 			return hexStringToBytes(commandOutput.split("\n").toTypedArray()[1].trim())
 		}
 	}
-	@ExportGradle
-	@JvmStatic
-	@Throws(Exception::class)
+	@ExportGradle @JvmStatic @Throws(Exception::class)
 	fun checksumExeOpenssl(exe: File, file: File, digest: String): ByteArray {
-		progress(progress_id(exe, file, digest)).use { prog0 ->
-			prog0.inherit()
-			prog0.category = HashUtils::class.java.toString()
-			prog0.description = "Creating openssl checksum"
-			prog0.pstart()
+		prog(arrayOf(exe, file, digest), HashUtils::class.java, "Creating openssl checksum", true).use { prog0 ->
 			prog0.pdo("Checksum openssl ($digest) ${file.path}")
 			ldebug("Creating exe openssl (${exe.path}) checksum $digest: ${file.path}")
 			val prefix = digest.uppercase(Locale.getDefault()) + "(" + file.canonicalPath + ")= "
@@ -101,15 +76,9 @@ object HashUtils {
 			return hexStringToBytes(commandOutput.substring(prefix.length).trim())
 		}
 	}
-	@ExportGradle
-	@JvmStatic
-	@Throws(Exception::class)
+	@ExportGradle @JvmStatic @Throws(Exception::class)
 	fun checksumExeMdNsum(exe: File, file: File, N: Int): ByteArray {
-		progress(progress_id(exe, file, N)).use { prog0 ->
-			prog0.inherit()
-			prog0.category = HashUtils::class.java.toString()
-			prog0.description = ("Creating mdnsum checksum")
-			prog0.pstart()
+		prog(arrayOf(exe, file, N), HashUtils::class.java, "Creating md${N}sum checksum", true).use { prog0 ->
 			prog0.pdo("Checksum md${N}sum ${file.path}")
 			ldebug("Creating exe md${N}sum (${exe.path}) checksum: ${file.path}")
 			val commandOutput = getCommandOutput(exe.canonicalPath, file.canonicalPath)
@@ -117,15 +86,9 @@ object HashUtils {
 			return hexStringToBytes(commandOutput.substring(1, 33).trim())
 		}
 	}
-	@ExportGradle
-	@JvmStatic
-	@Throws(Exception::class)
+	@ExportGradle @JvmStatic @Throws(Exception::class)
 	fun checksumExeShaNsum(exe: File, file: File, N: Int): ByteArray {
-		progress(progress_id(exe, file, N)).use { prog0 ->
-			prog0.inherit()
-			prog0.category = HashUtils::class.java.toString()
-			prog0.description = ("Creating shansum checksum")
-			prog0.pstart()
+		prog(arrayOf(exe, file, N), HashUtils::class.java, "Creating sha${N}sum checksum", true).use { prog0 ->
 			prog0.pdo("Checksum sha${N}sum ${file.path}")
 			ldebug("Creating exe sha${N}sum (${exe.path}) checksum: ${file.path}")
 			val commandOutput = getCommandOutput(exe.canonicalPath, file.canonicalPath)
@@ -134,9 +97,7 @@ object HashUtils {
 		}
 	}
 
-	@ExportGradle
-	@JvmStatic
-	@Throws(Exception::class)
+	@ExportGradle @JvmStatic @Throws(Exception::class)
 	internal fun getHashExpected(obj: Any?): String {
 		return when(obj) {
 			is String -> obj
@@ -146,8 +107,7 @@ object HashUtils {
 		}
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun HASH_JAVA_NATIVE(digest: String): (Any, Any?) -> Boolean {
 		return { obj, expected0 ->
 			val generated: String = when(obj) {
@@ -159,8 +119,7 @@ object HashUtils {
 			generated == expected
 		}
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun HASH_EXE_CERTUTIL(exe: File, digest: String): (File, Any?) -> Boolean {
 		return { obj, expected0 ->
 			val generated: String = bytesToHexString(checksumExeCertutil(exe, obj, digest))
@@ -168,8 +127,7 @@ object HashUtils {
 			generated == expected
 		}
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun HASH_EXE_OPENSSL(exe: File, digest: String): (File, Any?) -> Boolean {
 		return { obj, expected0 ->
 			val generated: String = bytesToHexString(checksumExeOpenssl(exe, obj, digest))
@@ -177,8 +135,7 @@ object HashUtils {
 			generated == expected
 		}
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun HASH_EXE_MDNSUM(exe: File, N: Int): (File, Any?) -> Boolean {
 		return { obj, expected0 ->
 			val generated: String = bytesToHexString(checksumExeMdNsum(exe, obj, N))
@@ -186,8 +143,7 @@ object HashUtils {
 			generated == expected
 		}
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun HASH_EXE_SHANSUM(exe: File, N: Int): (File, Any?) -> Boolean {
 		return { obj, expected0 ->
 			val generated: String = bytesToHexString(checksumExeShaNsum(exe, obj, N))

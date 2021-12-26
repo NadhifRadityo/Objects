@@ -10,8 +10,7 @@ import Gradle.Strategies.ClassUtils.classForName
 import Gradle.Strategies.ExceptionUtils.exception
 import Gradle.Strategies.LoggerUtils.ldebug
 import Gradle.Strategies.LoggerUtils.lwarn
-import Gradle.Strategies.ProgressUtils.progress
-import Gradle.Strategies.ProgressUtils.progress_id
+import Gradle.Strategies.ProgressUtils.prog
 import Gradle.Strategies.RuntimeUtils.JAVA_DETECTION_VERSION
 import Gradle.Strategies.RuntimeUtils.vmArguments
 import groovy.lang.Closure
@@ -91,15 +90,9 @@ object JavascriptUtils {
         cache = null
     }
 
-    @ExportGradle
-    @JvmStatic
-    @Throws(Exception::class)
+    @ExportGradle @JvmStatic @Throws(Exception::class)
     fun runJavascript(source: String, vararg args: Any?): Any? {
-        progress(progress_id(source, args)).use { prog0 ->
-            prog0.inherit()
-            prog0.category = JavascriptUtils::class.java.toString()
-            prog0.description = "Running javascript"
-            prog0.pstart()
+        prog(arrayOf(source, args), JavascriptUtils::class.java, "Running javascript", true).use { prog0 ->
             val jsGraalVM = javascriptGraalVm.value
             if(jsGraalVM != null) {
                 prog0.pdo("Running javascript (GraalVM)")
@@ -116,15 +109,13 @@ object JavascriptUtils {
         }
     }
 
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun <T> runJavascriptAsCallback(source: String): Closure<T?> {
         val result = KotlinClosure("js ($source)")
         result.overloads += KotlinClosure.KLambdaOverload { args -> runJavascript(source, *args) }
         return result as Closure<T?>
     }
-    @ExportGradle
-    @JvmStatic
+    @ExportGradle @JvmStatic
     fun <T> runJavascriptAsCallbackF(source: String): (Array<out Any?>) -> Any? {
         return { args -> runJavascript(source, *args) }
     }

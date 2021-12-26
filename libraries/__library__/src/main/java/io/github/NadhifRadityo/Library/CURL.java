@@ -1,5 +1,7 @@
 package io.github.NadhifRadityo.Library;
 
+import kotlin.jvm.functions.Function4;
+
 import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -19,8 +21,8 @@ public class CURL {
 	protected final HashMap<String, String> headers;
 	protected final HashMap<String, String> queries;
 	protected final HashMap<String, String> posts;
-	protected ThrowsReferencedCallback<Void> customHandler;
-	protected ThrowsReferencedCallback<Object> onConnect;
+	protected Function4<URLConnection, URL, Boolean, CURL, Void> customHandler;
+	protected Function4<URLConnection, URL, Boolean, CURL, Object> onConnect;
 
 	public CURL() {
 		this.headers = new HashMap<>();
@@ -30,8 +32,8 @@ public class CURL {
 
 	public void setUrl(String url) { this.url = url; }
 	public void setRequestMethod(RequestMethod requestMethod) { this.requestMethod = requestMethod; }
-	public void setCustomHandler(ThrowsReferencedCallback<Void> customHandler) { this.customHandler = customHandler; }
-	public void setOnConnect(ThrowsReferencedCallback<Object> onConnect) { this.onConnect = onConnect; }
+	public void setCustomHandler(Function4<URLConnection, URL, Boolean, CURL, Void> customHandler) { this.customHandler = customHandler; }
+	public void setOnConnect(Function4<URLConnection, URL, Boolean, CURL, Object> onConnect) { this.onConnect = onConnect; }
 	public void addHeader(String key, String value) { headers.put(key, value); }
 	public void addQuery(String key, String value) { queries.put(key, value); }
 	public void addPost(String key, String value) { posts.put(key, value); }
@@ -41,8 +43,8 @@ public class CURL {
 
 	public String getUrl() { return url; }
 	public RequestMethod getRequestMethod() { return requestMethod; }
-	public ThrowsReferencedCallback<Void> getCustomHandler() { return customHandler; }
-	public ThrowsReferencedCallback<Object> getOnConnect() { return onConnect; }
+	public Function4<URLConnection, URL, Boolean, CURL, Void> getCustomHandler() { return customHandler; }
+	public Function4<URLConnection, URL, Boolean, CURL, Object> getOnConnect() { return onConnect; }
 	public Map<String, String> getHeaders() { return headers; }
 	public Map<String, String> getQueries() { return queries; }
 	public Map<String, String> getPosts() { return posts; }
@@ -84,7 +86,7 @@ public class CURL {
 			else ((HttpURLConnection) urlConnection).setFixedLengthStreamingMode(postByte.length); }
 		if(customHandler != null)
 			try {
-				customHandler.get(urlConnection, urlObject, isHttps, this);
+				customHandler.invoke(urlConnection, urlObject, isHttps, this);
 			} catch(Exception e) {
 				if(e instanceof IOException) throw (IOException) e;
 				throw new IOException(e);
@@ -93,7 +95,7 @@ public class CURL {
 		if(postByte != null) try(OutputStream outputStream = urlConnection.getOutputStream()) { outputStream.write(postByte); }
 		if(onConnect == null) return urlConnection;
 		try {
-			return onConnect.get(urlConnection, urlObject, isHttps, this);
+			return onConnect.invoke(urlConnection, urlObject, isHttps, this);
 		} catch(Exception e) {
 			if(e instanceof IOException) throw (IOException) e;
 			throw new IOException(e);

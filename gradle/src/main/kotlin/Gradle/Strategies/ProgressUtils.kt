@@ -34,37 +34,31 @@ object ProgressUtils {
 		instances = null
 	}
 
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun progressCreate(identifier: Any? = null, progressCategory: String?) {
 		val instance = factory!!.newOperation(progressCategory)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun progressCreate(identifier: Any? = null, progressCategory: Class<*>?) {
 		val instance = factory!!.newOperation(progressCategory)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun progressCreate(identifier: Any? = null, progressCategory: Class<*>?, buildOperationDescriptor: BuildOperationDescriptor?) {
 		val instance = factory!!.newOperation(progressCategory, buildOperationDescriptor)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun progressCreate(identifier: Any? = null, progressCategory: Class<*>?, progressLogger: ProgressLogger?) {
 		val instance = factory!!.newOperation(progressCategory, progressLogger)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun progressDestroy(identifier: Any? = null) {
 		instances!!.remove(System.identityHashCode(identifier))
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun progressInstance(identifier: Any? = null): ProgressLogger? {
 		return instances!![System.identityHashCode(identifier)]
 	}
@@ -87,38 +81,31 @@ object ProgressUtils {
 			progressDestroy(identifier)
 		}
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun pstart(identifier: Any? = null) {
 		__on_start(identifier) { it.started() }
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun pstart(identifier: Any? = null, status: String?) {
 		__on_start(identifier) { it.started(status) }
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun pstart(identifier: Any? = null, description: String?, status: String?) {
 		__on_start(identifier) { it.start(description, status) }
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun pdo(identifier: Any? = null, status: String?) {
 		__on_do(identifier) { it.progress(status) }
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun pdo(identifier: Any? = null, status: String?, failing: Boolean) {
 		__on_do(identifier) { it.progress(status, failing) }
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun pend(identifier: Any? = null) {
 		__on_end(identifier) { it.completed() }
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun pend(identifier: Any? = null, status: String?, failed: Boolean) {
 		__on_end(identifier) { it.completed(status, failed) }
 	}
@@ -170,8 +157,7 @@ object ProgressUtils {
 		AFIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_totalProgress = unsafe.objectFieldOffset(FIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_totalProgress)
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun progress(identifier: Any): ProgressWrapper {
 		progressCreate(identifier, null as String?)
 		val progressWrapper = ProgressWrapper(identifier)
@@ -181,29 +167,44 @@ object ProgressUtils {
 		progressWrapper.__end__()
 		return progressWrapper
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun progress_id(vararg objects: Any?): String {
 		return objects.joinToString(";") { System.identityHashCode(it).toString(16) }
 	}
+	@ExportGradle @JvmStatic
+	fun prog(id: Array<Any?>, category: String = "", description: String = "", inherit: Boolean = true, totalProgress: Int = 0): ProgressWrapper {
+		val prog = progress(progress_id(*id))
+		if(inherit) prog.inherit()
+		prog.category = category
+		prog.description = description
+		prog.totalProgress = totalProgress
+		prog.pstart()
+		return prog
+	}
+	@ExportGradle @JvmStatic
+	fun prog(id: Array<Any?>, category: Class<*>, description: String = "", inherit: Boolean = true, totalProgress: Int = 0): ProgressWrapper {
+		return prog(id, category.toString(), description, inherit, totalProgress)
+	}
 
-	class ProgressWrapper(val identifier: Any) : GroovyManipulation.DummyGroovyObject(), AutoCloseable {
+	class ProgressWrapper(
+		@ExportGradle val identifier: Any
+	): GroovyManipulation.DummyGroovyObject(), AutoCloseable {
 		var cache: GroovyKotlinCache<ProgressWrapper>? = null
 			internal set
-		val instance: ProgressLogger?
+		@ExportGradle val instance: ProgressLogger?
 			get() { return progressInstance(identifier) }
-		val state: String
+		@ExportGradle val state: String
 			get() { return (unsafe.getObject(instance, AFIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_state) as Enum<*>).name.uppercase() }
-		var category: String
+		@ExportGradle var category: String
 			get() { return unsafe.getObject(instance, AFIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_category) as String }
 			set(v) { assertNotStarted(); unsafe.putObject(instance, AFIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_category, v) }
-		var description: String
+		@ExportGradle var description: String
 			get() { return unsafe.getObject(instance, AFIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_description) as String }
 			set(v) { assertNotStarted(); unsafe.putObject(instance, AFIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_description, v) }
-		var loggingHeader: String
+		@ExportGradle var loggingHeader: String
 			get() { return unsafe.getObject(instance, AFIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_loggingHeader) as String }
 			set(v) { assertNotStarted(); unsafe.putObject(instance, AFIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_loggingHeader, v) }
-		var totalProgress: Int
+		@ExportGradle var totalProgress: Int
 			get() { return unsafe.getInt(instance, AFIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_totalProgress) }
 			set(v) { assertNotStarted(); unsafe.putInt(instance, AFIELD_DefaultProgressLoggerFactory_ProgressLoggerImpl_totalProgress, v) }
 
@@ -226,7 +227,7 @@ object ProgressUtils {
 		}
 
 		internal var inherited = false
-		fun inherit() {
+		@ExportGradle fun inherit() {
 			assertNotStarted()
 			if(inherited) return
 			var list = stack.get()
@@ -245,17 +246,18 @@ object ProgressUtils {
 			inherited = true
 		}
 
-		fun pstart(description: String?, status: String?) { pstart(identifier, description, status) }
-		fun pstart(status: String?) { pstart(identifier, status) }
-		fun pstart() { pstart(identifier) }
+		@ExportGradle fun pstart(description: String?, status: String?) { pstart(identifier, description, status) }
+		@ExportGradle fun pstart(status: String?) { pstart(identifier, status) }
+		@ExportGradle fun pstart() { pstart(identifier) }
 
-		fun pdo(status: String?) { pdo(identifier, status) }
-		fun pdo(status: String?, failing: Boolean) { pdo(identifier, status, failing) }
+		@ExportGradle fun pdo(status: String?) { pdo(identifier, status) }
+		@ExportGradle fun pdo(status: String?, failing: Boolean) { pdo(identifier, status, failing) }
 
 		internal var endCalled = false
-		fun pend() { endCalled = true; pend(identifier) }
-		fun pend(status: String?, failed: Boolean) { endCalled = true; pend(identifier, status, failed) }
+		@ExportGradle fun pend() { endCalled = true; pend(identifier) }
+		@ExportGradle fun pend(status: String?, failed: Boolean) { endCalled = true; pend(identifier, status, failed) }
 
+		@ExportGradle
 		override fun close() {
 			if(inherited) {
 				val list = stack.get()

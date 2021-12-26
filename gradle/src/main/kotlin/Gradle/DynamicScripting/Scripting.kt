@@ -57,34 +57,28 @@ object Scripting {
 		actions.clear()
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun getScript(id: String): Script? {
 		return scripts[id]
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun getScript(info: ScriptImport): Script? {
 		return getScript(info.scriptId)
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun getScript(file: File): Script? {
 		return getScript(getScriptId(file))
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun getScriptId(file: File): String {
 		return file.canonicalPath
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun __getLastImport(): ScriptImport? {
 		val stack = stack.get()
 		return if(stack.size > 0) stack.last else null
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun __getLastImportScript(): Script? {
 		val lastImport = __getLastImport()
 		return if(lastImport != null) getScript(lastImport) else null
@@ -227,8 +221,7 @@ object Scripting {
 	 * - `require('Test:test.gradle')` and `test.gradle` contains `require('test2.gradle')`, loads `test.gradle` from project
 	 *   root build `Test`, then loads `test2.gradle` from the same build too.
 	 */
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun scriptImport(what: List<String>?, from: Any, being: String? = null, with: List<ImportAction> = listOf()): Imported {
 		val context = lastContext()
 		val project = context.project
@@ -284,51 +277,42 @@ object Scripting {
 		}
 		return scriptImport.imported!!
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun scriptImport(from: Any, being: String? = null, with: List<ImportAction> = listOf()): Imported {
 		return scriptImport(null as List<String>?, from, being, with)
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun scriptImport(from: Any, with: List<ImportAction>): Imported {
 		return scriptImport(null as List<String>?, from, null, with)
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun scriptImport(what: List<String>?, from: KeywordsUtils.From<Any>, being: KeywordsUtils.Being<String?> = being(null),
 					 with: KeywordsUtils.With<List<ImportAction>> = with(listOf())): Imported {
 		return scriptImport(what, from.user, being.user, with.user)
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun scriptImport(what: List<String>?, from: KeywordsUtils.From<Any>, with: KeywordsUtils.With<List<ImportAction>>): Imported {
 		return scriptImport(what, from.user, null, with.user)
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun scriptImport(from: KeywordsUtils.From<Any>, being: KeywordsUtils.Being<String?> = being(null),
 					 with: KeywordsUtils.With<List<ImportAction>> = with(listOf())): Imported {
 		return scriptImport(null as List<String>?, from.user, being.user, with.user)
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun scriptImport(from: KeywordsUtils.From<Any>, with: KeywordsUtils.With<List<ImportAction>>): Imported {
 		return scriptImport(null as List<String>?, from.user, null, with.user)
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun scriptExport(what: Any?, being: String, with: List<ExportAction> = listOf()) {
 		val lastImportScript = __getLastImportScript()!!
 		lastImportScript.exports += ScriptExport(lastImportScript.id, what, being, ArrayList(with))
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun scriptExport(what: Any?, being: KeywordsUtils.Being<String>, with: KeywordsUtils.With<List<ExportAction>> = with(exportGetter())) {
 		scriptExport(what, being.user, with.user)
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun scriptApply() {
 		val lastImportScript = __getLastImportScript()!!
 		val context = lastContext()
@@ -336,46 +320,40 @@ object Scripting {
 		for(cache in groovyKotlinCaches)
 			attachObject(context, cache)
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun scriptConstruct(callback: () -> Unit) {
 		val lastImportScript = __getLastImportScript()!!
 		lastImportScript.construct = callback
 		callback()
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun scriptDestruct(callback: () -> Unit) {
 		val lastImportScript = __getLastImportScript()!!
 		lastImportScript.destruct = callback
 		addOnConfigFinished(1, callback)
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun addImportAction(from: Any, action: ImportAction) {
 		val (_, scriptFile) = __getScriptFile(from)
 		val scriptId = getScriptId(scriptFile)
 		actions[scriptId] = action
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun removeImportAction(from: Any) {
 		val (_, scriptFile) = __getScriptFile(from)
 		val scriptId = getScriptId(scriptFile)
 		actions.remove(scriptId)
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun includeFlags(vararg flags: String): List<ImportAction> {
 		return listOf(
 			{ importInfo -> for(flag in flags) importInfo.context.project.extensions.extraProperties.set("${importInfo.scriptId}_${flag}", true) },
 			{ importInfo -> for(flag in flags) importInfo.context.project.extensions.extraProperties.set("${importInfo.scriptId}_${flag}", null) }
 		)
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun containsFlag(flag: String, scriptImport: ScriptImport? = __getLastImport()): Boolean {
 		val context = scriptImport?.context ?: lastContext()
 		val ext = context.project.extensions.extraProperties
@@ -383,8 +361,7 @@ object Scripting {
 		else ext.has("${scriptImport.scriptId}_${flag}")
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun exportMethod(): List<ExportAction> {
 		return listOf { exportInfo, methods, _, _ ->
 			methods[exportInfo.being] = { args ->
@@ -395,19 +372,16 @@ object Scripting {
 			}
 		}
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun exportGetter(): List<ExportAction> {
 		return listOf { exportInfo, _, getter, _ -> getter[exportInfo.being] = { exportInfo.what } }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun exportSetter(): List<ExportAction> {
 		return listOf { exportInfo, _, _, setter -> setter[exportInfo.being] = { args -> exportInfo.what = args[0] } }
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun withCurrentImport(): Closure<*> {
 		val lastImport = __getLastImport()!!
 		val result = KotlinClosure("scriptState (${lastImport.id})")

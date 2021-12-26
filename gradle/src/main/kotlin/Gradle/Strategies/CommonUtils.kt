@@ -8,8 +8,7 @@ import Gradle.GroovyKotlinInteroperability.GroovyKotlinCache
 import Gradle.Strategies.ExceptionUtils.exception
 import Gradle.Strategies.LoggerUtils.ldebug
 import Gradle.Strategies.LoggerUtils.linfo
-import Gradle.Strategies.ProgressUtils.progress
-import Gradle.Strategies.ProgressUtils.progress_id
+import Gradle.Strategies.ProgressUtils.prog
 import Gradle.Strategies.StreamUtils.copyStream
 import java.io.BufferedInputStream
 import java.io.OutputStream
@@ -48,15 +47,13 @@ object CommonUtils {
 	@ExportGradle @JvmStatic @Throws(MalformedURLException::class, URISyntaxException::class)
 	fun formattedUrl(url: String): String { return urlToUri(URL(url)).toASCIIString() }
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun bytesToHexString(bytes: ByteArray): String {
 		val builder = StringBuilder()
 		for(aByte in bytes) builder.append(((aByte.toInt() and 0xff) + 0x100).toString(16).substring(1))
 		return builder.toString()
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun hexStringToBytes(string: String): ByteArray {
 		val bytes = ByteArray(string.length / 2)
 		for(i in string.indices step 2)
@@ -64,8 +61,7 @@ object CommonUtils {
 		return bytes
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun purgeThreadLocal(threadLocal: ThreadLocal<*>) {
 		for(thread in Thread.getAllStackTraces().keys) { try {
 			val FIELD_Thread_threadLocals: Field = thread.javaClass.getDeclaredField("threadLocals")
@@ -77,15 +73,10 @@ object CommonUtils {
 		} catch(e: Throwable) { exception(e) } }
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	@Throws(Exception::class)
 	fun downloadFile(url: URL, outputStream: OutputStream) {
-		 progress(progress_id(url, outputStream)).use { prog0 ->
-			prog0.inherit()
-			prog0.category = CommonUtils::class.java.toString()
-			prog0.description = "Downloading file"
-			prog0.pstart()
+		 prog(arrayOf(url, outputStream), CommonUtils::class.java, "Downloading file", true).use { prog0 ->
 			val source = Paths.get(URI(url.toString()).path).fileName.toString()
 			prog0.pdo("Opening connection $source")
 			ldebug("Starting to download: $source")
@@ -99,10 +90,9 @@ object CommonUtils {
 		}
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun newStreamProgress(totalSize: Long): Consumer<Long> {
-		return object : Consumer<Long> {
+		return object: Consumer<Long> {
 			var startTime = 0L
 			var lastTime = 0L
 			var lastLength = 0L
@@ -117,11 +107,7 @@ object CommonUtils {
 					lastTime = System.currentTimeMillis()
 					speeds = LongArray(30)
 					Arrays.fill(speeds, -1L)
-					prog0 = progress(progress_id(speeds as Any?))
-					prog0?.inherit()
-					prog0?.category = CommonUtils::class.java.toString()
-					prog0?.description = "Stream progress"
-					prog0?.pstart()
+					prog0 = prog(arrayOf(speeds as Any?), CommonUtils::class.java, "Stream progress", true)
 					return
 				}
 				if(length == -2L) {
@@ -154,8 +140,7 @@ object CommonUtils {
 		}
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun printDownloadProgress(startTime: Long, total: Long, current: Long, speed: Long) {
 		if(downloadProgressCache == null) downloadProgressCache = StringBuilder(200)
 		if(total < 0) return
@@ -180,8 +165,7 @@ object CommonUtils {
 		downloadProgressCache!!.setLength(0)
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun humanReadableByteCount(bytes0: Long): String {
 		var bytes = bytes0
 		if(-1000 < bytes && bytes < 1000) return "$bytes B"; readableByteCount.index = 0

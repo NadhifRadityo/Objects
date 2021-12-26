@@ -19,6 +19,8 @@ import java.nio.charset.StandardCharsets
 object ClassUtils {
 	@JvmStatic private var cache: GroovyKotlinCache<ClassUtils>? = null
 	@ExportGradle @JvmStatic
+	val defaultClassLoader = ClassUtils::class.java.classLoader
+	@ExportGradle @JvmStatic
 	val boxedToPrimitive = mapOf<Class<*>, Class<*>>(
 		Void::class.javaObjectType to Void::class.javaPrimitiveType!!,
 		Int::class.javaObjectType to Int::class.javaPrimitiveType!!,
@@ -53,16 +55,17 @@ object ClassUtils {
 	}
 
 	@ExportGradle @JvmStatic
-	fun <T> classForName(classname: String?): Class<out T>? { return try { Class.forName(classname) as Class<out T> } catch(e: Exception) { exception(e); null } }
+	fun <T> classForName(name: String?, initialize: Boolean = true, loader: ClassLoader? = defaultClassLoader): Class<out T>? {
+		return try { Class.forName(name, initialize, loader) as Class<out T> } catch(e: Exception) { exception(e); null } }
 	@ExportGradle @JvmStatic @Throws(ClassNotFoundException::class)
-	fun <T> classForName0(classname: String?): Class<out T> { return Class.forName(classname) as Class<out T> }
+	fun <T> classForName0(name: String?, initialize: Boolean = true, loader: ClassLoader? = defaultClassLoader): Class<out T> {
+		return Class.forName(name, initialize, loader) as Class<out T> }
 	@ExportGradle @JvmStatic
 	fun metaClassFor(clazz: Class<*>): MetaClass { return getMetaClass(clazz) }
 	@ExportGradle @JvmStatic
 	fun metaClassFor(obj: Any): MetaClass { return getMetaClass(obj) }
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun overrideFinal(obj: Any?, field: Field, newValue: Any?) {
 		val useUnsafe: Boolean = JAVA_DETECTION_VERSION > 12
 		var exception: Throwable? = null
@@ -86,20 +89,26 @@ object ClassUtils {
 		}
 	}
 
-	@ExportGradle
-	@JvmStatic
-	@Throws(Exception::class)
+	@ExportGradle @JvmStatic @Throws(Exception::class)
 	fun currentClassFile(clazz: Class<*>): File {
 		var result = File(URLDecoder.decode(clazz.protectionDomain.codeSource.location.path, StandardCharsets.UTF_8.name()))
 		if(result.isDirectory) result = File(result, clazz.simpleName + ".class")
 		return result
 	}
 
-	@ExportGradle
-	@JvmStatic
-	@Throws(Exception::class)
-	fun currentClassFile(): File? {
-		val currentClass = classForName<Any>(Thread.currentThread().stackTrace[2].className)
+	@ExportGradle @JvmStatic @Throws(Exception::class)
+	fun currentClassFile(vararg notFilter: String): File? {
+		val currentClass = classForName<Any>(callerUserImplementedClass(*notFilter))
 		return if(currentClass == null) null else currentClassFile(currentClass)
+	}
+
+	val defaultNotPackageFilter = listOf("java", "sun", "kotlin", "groovy", "org.gradle", "org.apache", "org.codehaus", "Gradle", "DUMMY$")
+	@ExportGradle @JvmStatic
+	fun callerUserImplementedClass(vararg notFilter: String): String? {
+		return Thread.currentThread().stackTrace.first { s ->
+			val className = s.className
+			defaultNotPackageFilter.find { className.startsWith(it) } == null &&
+					notFilter.find { className.startsWith(it) } == null
+		}?.className
 	}
 }

@@ -22,8 +22,7 @@ object ClosureUtils {
 		cache = null
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun lash(that: Any, closure: KotlinClosure, vararg prependArgs: Any?): KotlinClosure {
 		val result = KotlinClosure("lash ${closure.name}")
 		result.overloads += KotlinClosure.KLambdaOverload lambda@{ args ->
@@ -34,14 +33,12 @@ object ClosureUtils {
 		}
 		return result
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun lash(closure: KotlinClosure): KotlinClosure {
 		return lash(lastContext().that, closure)
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun bind(self: Any?, closure: KotlinClosure, vararg prependArgs: Any?): KotlinClosure {
 		val result = KotlinClosure("bind ${closure.name}")
 		result.overloads += KotlinClosure.KLambdaOverload lambda@{ args ->

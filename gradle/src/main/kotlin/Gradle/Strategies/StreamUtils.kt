@@ -30,10 +30,7 @@ object StreamUtils {
 		cache = null
 	}
 
-	@ExportGradle
-	@JvmStatic
-	@ThreadInterrupt
-	@Throws(IOException::class)
+	@ExportGradle @JvmStatic @ThreadInterrupt @Throws(IOException::class)
 	fun copyStream(inputStream: InputStream, outputStream: OutputStream, progress: Consumer<Long>?) {
 		val buffer = tempByteArray(COPY_CACHE_SIZE)
 		progress?.accept(-1L)
@@ -48,9 +45,7 @@ object StreamUtils {
 		if(Thread.currentThread().isInterrupted) throw InterruptedIOException()
 	}
 
-	@ExportGradle
-	@JvmStatic
-	@Throws(IOException::class)
+	@ExportGradle @JvmStatic @Throws(IOException::class)
 	fun streamBytes(inputStream: InputStream): ByteArray {
 		val outputStream = tempOutputBuffer()
 		val totalSize = if(inputStream is FileInputStream) inputStream.channel.size() else 0
@@ -61,9 +56,7 @@ object StreamUtils {
 		} finally { outputStream.reset() }
 	}
 
-	@ExportGradle
-	@JvmStatic
-	@Throws(IOException::class)
+	@ExportGradle @JvmStatic @Throws(IOException::class)
 	fun writeBytes(input: ByteArray, off: Int, len: Int, outputStream: OutputStream) {
 		val inputStream = tempInputBuffer(input, off, len)
 		val progress = if(len >= 1000 * 1000 * 10) newStreamProgress(len.toLong()) else null

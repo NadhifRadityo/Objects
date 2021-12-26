@@ -73,8 +73,8 @@ object Common {
 							}
 						}
 						for(tree in dependsTree.entries) {
-							val dependencies = tree.value
-							if(tree.key == unfinishedTask || dependencies == null) continue
+							val (task, dependencies) = tree
+							if(task == unfinishedTask || dependencies == null) continue
 							if(!dependencies.contains(unfinishedTask)) continue
 							val failures = dependencies.count { it.state.failure != null }
 							if(failures > 0) continue

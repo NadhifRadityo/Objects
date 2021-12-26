@@ -25,8 +25,7 @@ object ExceptionUtils {
 		cache = null
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun throwableToString(throwable: Throwable): String {
 		try {
 			StringWriter().use { stringWriter ->
@@ -38,16 +37,15 @@ object ExceptionUtils {
 		} catch(e: IOException) { throw Error(exception(e)) }
 	}
 
-	@ExportGradle
-	@JvmStatic
-	fun <E : Throwable?> exception(e: E): E {
+	@ExportGradle @JvmStatic
+	fun <E: Throwable?> exception(e: E): E {
 		if(e is InterruptedException) throw MustNotCatchThisError(e)
 		if(e is ClosedByInterruptException) throw MustNotCatchThisError(e)
 		if(e is InterruptedIOException) throw MustNotCatchThisError(e)
 		return e
 	}
 
-	private class MustNotCatchThisError(e: Throwable?) : Error(e) {
+	private class MustNotCatchThisError(e: Throwable?): Error(e) {
 		init {
 			LoggerUtils.lerror(e)
 		}

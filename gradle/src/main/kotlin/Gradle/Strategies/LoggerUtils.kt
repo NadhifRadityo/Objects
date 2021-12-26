@@ -30,37 +30,31 @@ object LoggerUtils {
 		instances = null
 	}
 
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun loggerCreate(identifier: Any? = null, loggerCategory: String?) {
 		val instance = factory!!.create(loggerCategory)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun loggerCreate(identifier: Any? = null, loggerCategory: String?, logLevel: LogLevel?) {
 		val instance = factory!!.create(loggerCategory, logLevel)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun loggerCreate(identifier: Any? = null, loggerCategory: Class<*>?) {
 		val instance = factory!!.create(loggerCategory)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun loggerCreate(identifier: Any? = null, loggerCategory: Class<*>?, logLevel: LogLevel?) {
 		val instance = factory!!.create(loggerCategory, logLevel)
 		instances!![System.identityHashCode(identifier)] = instance
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun loggerDestroy(identifier: Any? = null) {
 		instances!!.remove(System.identityHashCode(identifier))
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun loggerInstance(identifier: Any? = null): StyledTextOutput? {
 		return instances!![System.identityHashCode(identifier)]
 	}
@@ -72,33 +66,27 @@ object LoggerUtils {
 		loggerCreate(identifier, identifier?.toString() ?: "default")
 		callback(loggerInstance(identifier)!!)
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun loggerAppend(identifier: Any? = null, c: Char) {
 		__on_print(identifier) { it.append(c) }
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun loggerAppend(identifier: Any? = null, csq: CharSequence?) {
 		__on_print(identifier) { it.append(csq) }
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun loggerAppend(identifier: Any? = null, csq: CharSequence?, start: Int, end: Int) {
 		__on_print(identifier) { it.append(csq, start, end) }
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun loggerStyle(identifier: Any? = null, style: StyledTextOutput.Style?) {
 		__on_print(identifier) { it.style(style) }
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun loggerText(identifier: Any? = null, text: Any?) {
 		__on_print(identifier) { it.text(text) }
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun loggerPrintln(identifier: Any? = null, text: Any? = null) {
 		__on_print(identifier) { if(text != null) it.println(text) else it.println() }
 	}
@@ -112,24 +100,20 @@ object LoggerUtils {
 //	fun println(identifier: Any? = null) {
 //		__on_print(identifier) { it.println() }
 //	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun loggerFormat(identifier: Any? = null, pattern: String, vararg args: Any?) {
 		__on_print(identifier) { it.format(pattern, args); }
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun loggerFormatln(identifier: Any? = null, pattern: String, vararg args: Any?) {
 		__on_print(identifier) { it.formatln(pattern, args); }
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun loggerException(identifier: Any? = null, throwable: Throwable?) {
 		__on_print(identifier) { it.exception(throwable); }
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	val __escapeCodes: Map<String, String> =
 		("fblack|30 fred|31 fgreen|32 fyellow|33 fblue|34 fmagenta|35 fcyan|36 fwhite|37 fbblack|90 fbred|91 fbgreen|92 fbyellow|93 fbblue|94 fbmagenta|95 fbcyan|96 fbwhite|97 freset|39 " +
 		 "bblack|40 bred|41 bgreen|42 byellow|43 bblue|44 bmagenta|45 bcyan|46 bwhite|47 bbblack|100 bbred|101 bbgreen|102 bbyellow|103 bbblue|104 bbmagenta|105 bbcyan|106 bbwhite|107 breset|49")

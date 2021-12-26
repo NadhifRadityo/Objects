@@ -44,8 +44,7 @@ object PersistentMemory {
 		cache = null
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun persistentMemory(id: String): Memory {
 		var memory = memories[id]
 		if(memory != null)
@@ -58,8 +57,7 @@ object PersistentMemory {
 		memories[id] = memory
 		return memory
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun persistentMemory(): Memory {
 		val scriptFile = (lastContext().that as org.gradle.api.Script).buildscript.sourceFile!!
 		val memory = persistentMemory(scriptFile.canonicalPath)
@@ -76,16 +74,27 @@ object PersistentMemory {
 	open class Memory(
 		@ExportGradle val id: String
 	): GroovyManipulation.DummyGroovyObject() {
-		val data = HashMap<String, Any?>()
-		var invalidate: (() -> Boolean)? = null
-			internal set
 		var cache: GroovyKotlinCache<Memory>? = null
 			internal set
+		@ExportGradle val data = HashMap<String, Any?>()
+		@ExportGradle var invalidate: (() -> Boolean)? = null
+			internal set
 
-		@ExportGradle
-		fun get(name: String): Any? {
-			return data[name]
+		override fun getProperty(property: String): Any? {
+			return if(data.contains(property)) data[property] else super.getProperty(property)
 		}
+		override fun setProperty(property: String, value: Any?) {
+			if(data.contains(property)) data[property] = value else super.getProperty(property)
+		}
+		@ExportGradle
+		operator fun get(property: String): Any? {
+			return getProperty(property)
+		}
+		@ExportGradle
+		operator fun set(property: String, value: Any?) {
+			setProperty(property, value)
+		}
+
 		@ExportGradle
 		fun getOrCompute(name: String, callback: () -> Any?): Any? {
 			val exists = data.containsKey(name)
@@ -100,10 +109,6 @@ object PersistentMemory {
 			if(exists) return data[name]
 			data[name] = default
 			return default
-		}
-		@ExportGradle
-		fun set(name: String, value: Any?) {
-			data[name] = value
 		}
 	}
 }

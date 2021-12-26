@@ -1,0 +1,64 @@
+package io.github.NadhifRadityo.Library.Utils;
+
+public class __common__ {
+	public static void construct() {
+		GroovyInteroperability.__UTILS_CONSTRUCT__();
+		GroovyManipulation.__UTILS_CONSTRUCT__();
+		UnsafeUtils.__UTILS_CONSTRUCT__();
+		RuntimeUtils.__UTILS_CONSTRUCT__();
+		JSONUtils.__UTILS_CONSTRUCT__();
+		AttributesUtils.__UTILS_CONSTRUCT__();
+		PersistentMemory.__UTILS_CONSTRUCT__();
+		JavascriptUtils.__UTILS_CONSTRUCT__();
+		ClosureUtils.__UTILS_CONSTRUCT__();
+		Common.__UTILS_CONSTRUCT__();
+		ProgressUtils.__UTILS_CONSTRUCT__();
+		PropertiesUtils.__UTILS_CONSTRUCT__();
+		ExceptionUtils.__UTILS_CONSTRUCT__();
+		ClassUtils.__UTILS_CONSTRUCT__();
+		Scripting.__UTILS_CONSTRUCT__();
+		XMLUtils.__UTILS_CONSTRUCT__();
+		KeywordsUtils.__UTILS_CONSTRUCT__();
+		GradleUtils.__UTILS_CONSTRUCT__();
+		KotlinUtils.__UTILS_CONSTRUCT__();
+		KotlinClosureUtils.__UTILS_CONSTRUCT__();
+		StringUtils.__UTILS_CONSTRUCT__();
+		FileUtils.__UTILS_CONSTRUCT__();
+		HashUtils.__UTILS_CONSTRUCT__();
+		StreamUtils.__UTILS_CONSTRUCT__();
+		LoggerUtils.__UTILS_CONSTRUCT__();
+		Utils.__UTILS_CONSTRUCT__();
+		ProcessUtils.__UTILS_CONSTRUCT__();
+		CommonUtils.__UTILS_CONSTRUCT__();
+	}
+	public static void destruct() {
+		GroovyInteroperability.__UTILS_DESTRUCT__();
+		GroovyManipulation.__UTILS_DESTRUCT__();
+		UnsafeUtils.__UTILS_DESTRUCT__();
+		RuntimeUtils.__UTILS_DESTRUCT__();
+		JSONUtils.__UTILS_DESTRUCT__();
+		AttributesUtils.__UTILS_DESTRUCT__();
+		PersistentMemory.__UTILS_DESTRUCT__();
+		JavascriptUtils.__UTILS_DESTRUCT__();
+		ClosureUtils.__UTILS_DESTRUCT__();
+		Common.__UTILS_DESTRUCT__();
+		ProgressUtils.__UTILS_DESTRUCT__();
+		PropertiesUtils.__UTILS_DESTRUCT__();
+		ExceptionUtils.__UTILS_DESTRUCT__();
+		ClassUtils.__UTILS_DESTRUCT__();
+		Scripting.__UTILS_DESTRUCT__();
+		XMLUtils.__UTILS_DESTRUCT__();
+		KeywordsUtils.__UTILS_DESTRUCT__();
+		GradleUtils.__UTILS_DESTRUCT__();
+		KotlinUtils.__UTILS_DESTRUCT__();
+		KotlinClosureUtils.__UTILS_DESTRUCT__();
+		StringUtils.__UTILS_DESTRUCT__();
+		FileUtils.__UTILS_DESTRUCT__();
+		HashUtils.__UTILS_DESTRUCT__();
+		StreamUtils.__UTILS_DESTRUCT__();
+		LoggerUtils.__UTILS_DESTRUCT__();
+		Utils.__UTILS_DESTRUCT__();
+		ProcessUtils.__UTILS_DESTRUCT__();
+		CommonUtils.__UTILS_DESTRUCT__();
+	}
+}

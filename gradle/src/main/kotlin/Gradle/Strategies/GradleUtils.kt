@@ -10,6 +10,7 @@ import Gradle.Strategies.Utils.__unimplemented
 import groovy.lang.Closure
 import org.gradle.api.*
 import org.gradle.api.artifacts.ConfigurationContainer
+import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.dsl.ArtifactHandler
 import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.artifacts.dsl.DependencyLockingHandler
@@ -33,6 +34,7 @@ import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.WorkResult
 import org.gradle.groovy.scripts.BasicScript
 import org.gradle.internal.composite.IncludedBuildInternal
+import org.gradle.kotlin.dsl.gradleKotlinDsl
 import org.gradle.kotlin.dsl.support.DefaultKotlinScript
 import org.gradle.kotlin.dsl.support.KotlinScriptHost
 import org.gradle.launcher.daemon.server.scaninfo.DaemonScanInfo
@@ -60,8 +62,7 @@ object GradleUtils {
 	}
 
 	// Gradle Object Conversion
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun asProject(project: Any? = null): Project {
 		if(project == null) return lastContext().project
 		if(project is Project) return project
@@ -70,20 +71,17 @@ object GradleUtils {
 		if(project is DefaultKotlinScript) return kotlinScriptHostTarget(project)
 		throw __invalid_type()
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun asGradle(project: Any? = null): Gradle {
 		return asProject(project).gradle
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun asTask(task: Any, project: Any? = null): Task {
 		if(task is Task) return task
 		if(task is String) return asProject(project).tasks.getByName(task)
 		throw __invalid_type()
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun <T> asService(clazz: Class<T>, project: Any? = null): T {
 		return (asProject(project) as ProjectInternal).services.get(clazz)
 	}
@@ -94,65 +92,61 @@ object GradleUtils {
 	}
 
 	// Gradle Global Ext
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun hasGlobalExt(key: String, project: Any? = null): Boolean {
 		val gradleExt = asGradle(project) as ExtraPropertiesExtension
 		return gradleExt.has(key)
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun <T> getGlobalExt(key: String, project: Any? = null): T? {
 		val gradleExt = asGradle(project) as ExtraPropertiesExtension
 		return if(gradleExt.has(key)) gradleExt.get(key) as T? else null
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun <T> setGlobalExt(key: String, obj: T, project: Any? = null) {
 		val gradleExt = asGradle(project) as ExtraPropertiesExtension
 		gradleExt.set(key, obj)
 	}
 
 	// Gradle Task
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun forwardTask(project: Any?, filter: (Task) -> Boolean, exec: (Task) -> Unit = {}) {
 		val project0 = lastContext().project
 		val project1 = asProject(project)
 		project1.tasks.filter(filter).map { task -> project0.task(task.name) {
 			it.group = task.group; it.dependsOn(task) } }.forEach(exec)
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun runAfterAnotherTask(tasks: Collection<Any>, project: Any? = null) {
 		val tasks0 = tasks.map { asTask(it, project) }
 		for(i in 1 until tasks0.size) tasks0[i].mustRunAfter(tasks0[i - 1])
 	}
 
 	// Gradle Daemon
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun isSingleUseDaemon(project: Any? = null): Boolean {
 		return asService(DaemonScanInfo::class.java, project).isSingleUse
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun isRunningOnDebug(): Boolean {
 		return ManagementFactory.getRuntimeMXBean().getInputArguments().stream()
 			.filter { it.indexOf("-agentlib:jdwp") != -1 }.count() > 0
 	}
-	@ExportGradle
-	@JvmStatic @JvmOverloads
+	@ExportGradle @JvmStatic @JvmOverloads
 	fun isDaemonProbablyUnstable(project: Any? = null): Boolean {
 		return isSingleUseDaemon(project) || isRunningOnDebug()
 	}
 
 	// Kotlin DSL
-	fun <T : Any> kotlinScriptHostTarget(script: DefaultKotlinScript): T {
+	fun <T: Any> kotlinScriptHostTarget(script: DefaultKotlinScript): T {
 		val FIELD_UNKNOWN_host = script.javaClass.superclass.getDeclaredField("host")
 		if(!KotlinScriptHost::class.java.isAssignableFrom(FIELD_UNKNOWN_host.type)) throw __invalid_type()
 		FIELD_UNKNOWN_host.isAccessible = true
 		return (FIELD_UNKNOWN_host.get(script) as KotlinScriptHost<T>).target
+	}
+	@ExportGradle @JvmStatic
+	fun gradleKotlinDsl(project: Any? = null): Dependency {
+		return asProject(project).gradleKotlinDsl()
 	}
 
 	open class GradleBuildProject<T: IncludedBuild>(
@@ -177,7 +171,7 @@ object GradleUtils {
 		override fun allprojects(action: Action<in Project>) = internal.allprojects(action)
 		override fun getGradle(): Gradle = internal.gradle
 	}
-	open class UnimplementedProject : Project {
+	open class UnimplementedProject: Project {
 		override fun compareTo(other: Project?): Int = __unimplemented()
 		override fun getExtensions(): ExtensionContainer = __unimplemented()
 		override fun getPlugins(): PluginContainer = __unimplemented()
@@ -238,7 +232,7 @@ object GradleUtils {
 		override fun fileTree(args: MutableMap<String, *>): ConfigurableFileTree = __unimplemented()
 		override fun zipTree(zipPath: Any): FileTree = __unimplemented()
 		override fun tarTree(tarPath: Any): FileTree = __unimplemented()
-		override fun <T : Any?> provider(value: Callable<T>): Provider<T> = __unimplemented()
+		override fun <T: Any?> provider(value: Callable<T>): Provider<T> = __unimplemented()
 		override fun getProviders(): ProviderFactory = __unimplemented()
 		override fun getObjects(): ObjectFactory = __unimplemented()
 		override fun getLayout(): ProjectLayout = __unimplemented()
@@ -281,7 +275,7 @@ object GradleUtils {
 		override fun getLogging(): LoggingManager = __unimplemented()
 		override fun configure(`object`: Any, configureClosure: Closure<*>): Any = __unimplemented()
 		override fun configure(objects: MutableIterable<*>, configureClosure: Closure<*>): MutableIterable<*> = __unimplemented()
-		override fun <T : Any?> configure(objects: MutableIterable<T>, configureAction: Action<in T>): MutableIterable<T> = __unimplemented()
+		override fun <T: Any?> configure(objects: MutableIterable<T>, configureAction: Action<in T>): MutableIterable<T> = __unimplemented()
 		override fun getRepositories(): RepositoryHandler = __unimplemented()
 		override fun repositories(configureClosure: Closure<*>): Unit = __unimplemented()
 		override fun getDependencies(): DependencyHandler = __unimplemented()
@@ -295,9 +289,9 @@ object GradleUtils {
 		override fun copySpec(): CopySpec = __unimplemented()
 		override fun sync(action: Action<in CopySpec>): WorkResult = __unimplemented()
 		override fun getState(): ProjectState = __unimplemented()
-		override fun <T : Any?> container(type: Class<T>): NamedDomainObjectContainer<T> = __unimplemented()
-		override fun <T : Any?> container(type: Class<T>, factory: NamedDomainObjectFactory<T>): NamedDomainObjectContainer<T> = __unimplemented()
-		override fun <T : Any?> container(type: Class<T>, factoryClosure: Closure<*>): NamedDomainObjectContainer<T> = __unimplemented()
+		override fun <T: Any?> container(type: Class<T>): NamedDomainObjectContainer<T> = __unimplemented()
+		override fun <T: Any?> container(type: Class<T>, factory: NamedDomainObjectFactory<T>): NamedDomainObjectContainer<T> = __unimplemented()
+		override fun <T: Any?> container(type: Class<T>, factoryClosure: Closure<*>): NamedDomainObjectContainer<T> = __unimplemented()
 		override fun getResources(): ResourceHandler = __unimplemented()
 		override fun getComponents(): SoftwareComponentContainer = __unimplemented()
 		override fun getNormalization(): InputNormalizationHandler = __unimplemented()

@@ -35,8 +35,7 @@ object AttributesUtils {
 		AFIELD_Attributes_Name_hashCode = unsafe.objectFieldOffset(FIELD_Attributes_Name_hashCode)
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun keyAttribute(key: String?): Attributes.Name? {
 		var result = localAttributesKey.get()?.get()
 		if(result == null) {
@@ -50,7 +49,7 @@ object AttributesUtils {
 	}
 
 	@ExportGradle @JvmStatic @JvmOverloads fun <T> a_getObject(attributes: Attributes, key: String?, converter: Function<String?, T>, defaultValue: T? = null): T? { val value = attributes[keyAttribute(key)] as String?; return if(value != null) converter.apply(value) else defaultValue }
-	@ExportGradle @JvmStatic @JvmOverloads fun a_getString(attributes: Attributes, key: String?, defaultValue: String? = null): String? { return a_getObject(attributes, key, { s -> s }, defaultValue)!! }
+	@ExportGradle @JvmStatic @JvmOverloads fun a_getString(attributes: Attributes, key: String?, defaultValue: String? = null): String? { return a_getObject(attributes, key, { s -> s }, defaultValue) }
 	@ExportGradle @JvmStatic @JvmOverloads fun a_getByte(attributes: Attributes, key: String?, defaultValue: Byte = 0.toByte()): Byte { return a_getObject(attributes, key, { s -> java.lang.Byte.valueOf(s) }, defaultValue)!! }
 	@ExportGradle @JvmStatic @JvmOverloads fun a_getBoolean(attributes: Attributes, key: String?, defaultValue: Boolean = false): Boolean { return a_getObject(attributes, key, { s -> java.lang.Boolean.valueOf(s) }, defaultValue)!! }
 	@ExportGradle @JvmStatic @JvmOverloads fun a_getChar(attributes: Attributes, key: String?, defaultValue: Char = 0.toChar()): Char { return a_getObject(attributes, key, { s -> s!![0] }, defaultValue)!! }

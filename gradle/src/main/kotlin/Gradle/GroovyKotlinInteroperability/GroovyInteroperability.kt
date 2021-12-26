@@ -27,7 +27,7 @@ object GroovyInteroperability {
 	}
 
 	@JvmStatic
-	fun <T : Any> prepareGroovyKotlinCache(obj: T): GroovyKotlinCache<T> {
+	fun <T: Any> prepareGroovyKotlinCache(obj: T): GroovyKotlinCache<T> {
 		val kclass = obj::class
 		val jclass = obj::class.java
 		val cache = GroovyKotlinCache(obj, kclass, jclass)
@@ -193,8 +193,7 @@ object GroovyInteroperability {
 		return cache
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun attachObject(context: Context, cache: GroovyKotlinCache<*>) {
 		// Mostly, any property getter will use context.that
 		// As shown in BasicScript$ScriptDynamicObject.tryGetProperty
@@ -212,34 +211,29 @@ object GroovyInteroperability {
 		}
 		attachProjectObject(context.project, cache)
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun attachAnyObject(that: Any, cache: GroovyKotlinCache<*>) {
 		for(pushed in cache.pushed.values)
 			setKotlinToGroovy(that, null, pushed.names.toTypedArray(), pushed.closure)
 		addOnConfigFinished(0) { detachAnyObject(that, cache) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun attachProjectObject(project: Project, cache: GroovyKotlinCache<*>) {
 		for(pushed in cache.pushed.values)
 			setKotlinToGroovy(null, project, pushed.names.toTypedArray(), pushed.closure)
 		addOnConfigFinished(0) { detachProjectObject(project, cache) }
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun detachObject(context: Context, cache: GroovyKotlinCache<*>) {
 		detachAnyObject(context.that, cache)
 		detachProjectObject(context.project, cache)
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun detachAnyObject(that: Any, cache: GroovyKotlinCache<*>) {
 		for(pushed in cache.pushed.values)
 			setKotlinToGroovy(that, null, pushed.names.toTypedArray(), null)
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun detachProjectObject(project: Project, cache: GroovyKotlinCache<*>) {
 		for(pushed in cache.pushed.values)
 			setKotlinToGroovy(null, project, pushed.names.toTypedArray(), null)

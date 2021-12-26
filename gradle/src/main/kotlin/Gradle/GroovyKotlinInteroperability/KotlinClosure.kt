@@ -61,7 +61,7 @@ open class KotlinClosure(
 	open class IgnoreSelfOverload(
 		val selfClass: Class<*>,
 		val overload: Overload
-	) : Overload(arrayOf(selfClass, *overload.parameterTypes), { overload.callback(it.copyOfRange(1, it.size)) }, -1) {
+	): Overload(arrayOf(selfClass, *overload.parameterTypes), { overload.callback(it.copyOfRange(1, it.size)) }, -1) {
 		override fun toString(): String {
 			return "^$overload"
 		}
@@ -69,7 +69,7 @@ open class KotlinClosure(
 	open class WithSelfOverload(
 		val self: Any?,
 		val overload: Overload
-	) : Overload(overload.parameterTypes.copyOfRange(1, overload.parameterTypes.size), { overload.callback(arrayOf(self, *it)) }, -1) {
+	): Overload(overload.parameterTypes.copyOfRange(1, overload.parameterTypes.size), { overload.callback(arrayOf(self, *it)) }, -1) {
 		override fun toString(): String {
 			return "*$overload"
 		}
@@ -77,7 +77,7 @@ open class KotlinClosure(
 	open class MethodOverload(
 		val owner: Any?,
 		val method: Method
-	) : Overload(method.parameterTypes, { method.invoke(owner, *it) }) {
+	): Overload(method.parameterTypes, { method.invoke(owner, *it) }) {
 		override fun toString(): String {
 			return method.toString()
 		}
@@ -85,7 +85,7 @@ open class KotlinClosure(
 	open class FieldGetOverload(
 		val owner: Any?,
 		val field: Field
-	) : Overload(arrayOf(), { field.get(owner) }) {
+	): Overload(arrayOf(), { field.get(owner) }) {
 		override fun toString(): String {
 			return "get${field.toString().replaceFirstChar { c -> c.uppercase() }}"
 		}
@@ -93,14 +93,14 @@ open class KotlinClosure(
 	open class FieldSetOverload(
 		val owner: Any?,
 		val field: Field
-	) : Overload(arrayOf(field.type), { field.set(owner, it[0]) }) {
+	): Overload(arrayOf(field.type), { field.set(owner, it[0]) }) {
 		override fun toString(): String {
 			return "set${field.toString().replaceFirstChar { c -> c.uppercase() }}"
 		}
 	}
 	open class KLambdaOverload(
 		val lambda: (Array<out Any?>) -> Any?
-	) : Overload(arrayOf(Array<Any?>::class.java), { val args = it[0] ?: arrayOf<Any?>(); lambda(args as Array<out Any?>) }) {
+	): Overload(arrayOf(Array<Any?>::class.java), { val args = it[0] ?: arrayOf<Any?>(); lambda(args as Array<out Any?>) }) {
 		override fun toString(): String {
 			return lambda.toString()
 		}
@@ -109,7 +109,7 @@ open class KotlinClosure(
 		val owners: Array<Any?>,
 		val function: KFunction<R>,
 		val kParameters: Array<KParameter>
-	) : Overload(kParameters.filter { it.kind != KParameter.Kind.INSTANCE }.map { it.type.jvmErasure.java }.toTypedArray(),
+	): Overload(kParameters.filter { it.kind != KParameter.Kind.INSTANCE }.map { it.type.jvmErasure.java }.toTypedArray(),
 		{
 			val args = HashMap<KParameter, Any?>();
 			var offset = 0
@@ -140,14 +140,14 @@ open class KotlinClosure(
 	}
 	open class KProperty0Overload<V>(
 		val property: KProperty0<V>
-	) : Overload(arrayOf(), { property.get() }) {
+	): Overload(arrayOf(), { property.get() }) {
 		override fun toString(): String {
 			return "get${property.toString().replaceFirstChar { c -> c.uppercase() }}"
 		}
 	}
 	open class KMutableProperty0Overload<V>(
 		val property: KMutableProperty0<V>
-	) : Overload(arrayOf(property.returnType.jvmErasure.java), { property.set(it[0] as V) }) {
+	): Overload(arrayOf(property.returnType.jvmErasure.java), { property.set(it[0] as V) }) {
 		override fun toString(): String {
 			return "set${property.toString().replaceFirstChar { c -> c.uppercase() }}"
 		}
@@ -155,7 +155,7 @@ open class KotlinClosure(
 	open class KProperty1Overload<T, V>(
 		val owner: T,
 		val property: KProperty1<T, V>
-	) : Overload(arrayOf(), { property.get(owner) }) {
+	): Overload(arrayOf(), { property.get(owner) }) {
 		override fun toString(): String {
 			return "get${property.toString().replaceFirstChar { c -> c.uppercase() }}"
 		}
@@ -163,7 +163,7 @@ open class KotlinClosure(
 	open class KMutableProperty1Overload<T, V>(
 		val owner: T,
 		val property: KMutableProperty1<T, V>
-	) : Overload(arrayOf(property.returnType.jvmErasure.java), { property.set(owner, it[0] as V) }) {
+	): Overload(arrayOf(property.returnType.jvmErasure.java), { property.set(owner, it[0] as V) }) {
 		override fun toString(): String {
 			return "set${property.toString().replaceFirstChar { c -> c.uppercase() }}"
 		}
@@ -172,7 +172,7 @@ open class KotlinClosure(
 		val owner1: D,
 		val owner2: E,
 		val property: KProperty2<D, E, V>
-	) : Overload(arrayOf(), { property.get(owner1, owner2) }) {
+	): Overload(arrayOf(), { property.get(owner1, owner2) }) {
 		override fun toString(): String {
 			return "get${property.toString().replaceFirstChar { c -> c.uppercase() }}"
 		}
@@ -181,7 +181,7 @@ open class KotlinClosure(
 		val owner1: D,
 		val owner2: E,
 		val property: KMutableProperty2<D, E, V>
-	) : Overload(arrayOf(property.returnType.jvmErasure.java), { property.set(owner1, owner2, it[0] as V) }) {
+	): Overload(arrayOf(property.returnType.jvmErasure.java), { property.set(owner1, owner2, it[0] as V) }) {
 		override fun toString(): String {
 			return "set${property.toString().replaceFirstChar { c -> c.uppercase() }}"
 		}
@@ -201,8 +201,7 @@ open class KotlinClosure(
 			cache = null
 		}
 
-		@ExportGradle
-		@JvmStatic
+		@ExportGradle @JvmStatic
 		fun <R> getKFunctionOverloads(owners: Array<Any?>, function: KFunction<R>): Array<Overload> {
 			val result = ArrayList<KFunctionOverload<out R>>()
 			val parameters = function.parameters
@@ -218,8 +217,7 @@ open class KotlinClosure(
 			}
 			return result.toTypedArray()
 		}
-		@ExportGradle
-		@JvmStatic
+		@ExportGradle @JvmStatic
 		fun <V> getKProperty0Overloads(property: KProperty0<V>): Array<Overload> {
 			val result = ArrayList<Overload>()
 			result += KProperty0Overload(property)
@@ -227,8 +225,7 @@ open class KotlinClosure(
 				result += KMutableProperty0Overload(property)
 			return result.toTypedArray()
 		}
-		@ExportGradle
-		@JvmStatic
+		@ExportGradle @JvmStatic
 		fun <T, V> getKProperty1Overloads(owner: T, property: KProperty1<T, V>): Array<Overload> {
 			val result = ArrayList<Overload>()
 			result += KProperty1Overload(owner, property)
@@ -236,8 +233,7 @@ open class KotlinClosure(
 				result += KMutableProperty1Overload(owner, property)
 			return result.toTypedArray()
 		}
-		@ExportGradle
-		@JvmStatic
+		@ExportGradle @JvmStatic
 		fun <D, E, V> getKProperty2Overloads(owner1: D, owner2: E, property: KProperty2<D, E, V>): Array<Overload> {
 			val result = ArrayList<Overload>()
 			result += KProperty2Overload(owner1, owner2, property)
@@ -245,8 +241,7 @@ open class KotlinClosure(
 				result += KMutableProperty2Overload(owner1, owner2, property)
 			return result.toTypedArray()
 		}
-		@ExportGradle
-		@JvmStatic
+		@ExportGradle @JvmStatic
 		fun doOverloading(overloads: List<Overload>, args: Array<out Any?>): Pair<Overload, Array<Any?>> {
 			data class CallData(
 				var overload: Overload,

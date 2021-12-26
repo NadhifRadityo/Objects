@@ -39,9 +39,7 @@ object XMLUtils {
 		cache = null
 	}
 
-	@ExportGradle
-	@JvmStatic
-	@Throws(Exception::class)
+	@ExportGradle @JvmStatic @Throws(Exception::class)
 	fun newXMLDocument(obj0: Any?): Document {
 		val documentBuilderFactory = DocumentBuilderFactory.newInstance()
 		val documentBuilder = documentBuilderFactory.newDocumentBuilder()
@@ -55,9 +53,7 @@ object XMLUtils {
 			else documentBuilder.parse(InputSource(StringReader(obj)))
 	}
 
-	@ExportGradle
-	@JvmStatic
-	@Throws(Exception::class)
+	@ExportGradle @JvmStatic @Throws(Exception::class)
 	fun XMLToString(obj: Any?): String {
 		val transformerFactory = TransformerFactory.newInstance()
 		val transformer = transformerFactory.newTransformer()
@@ -83,9 +79,7 @@ object XMLUtils {
 		return stringWriter.toString()
 	}
 
-	@ExportGradle
-	@JvmStatic
-	@Throws(Exception::class)
+	@ExportGradle @JvmStatic @Throws(Exception::class)
 	fun createXMLFile(obj: Any?, target: File): String {
 		val stringOut = XMLToString(obj)
 		mkfile(target)

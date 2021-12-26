@@ -38,9 +38,7 @@ object JSONUtils {
 	@ExportGradle @JvmStatic @Throws(IOException::class)
 	fun <T> toJson(file: File, clazz: Class<T>?): T { return Gson().fromJson(fileString(file), clazz) }
 
-	@ExportGradle
-	@JvmStatic
-	@Throws(IOException::class)
+	@ExportGradle @JvmStatic @Throws(IOException::class)
 	fun <T> JSONToString(obj: T): String {
 		StringWriter().use { stringWriter ->
 			JsonWriter(stringWriter).use { jsonWriter ->
@@ -51,9 +49,7 @@ object JSONUtils {
 		}
 	}
 
-	@ExportGradle
-	@JvmStatic
-	@Throws(Exception::class)
+	@ExportGradle @JvmStatic @Throws(Exception::class)
 	fun <T> createJSONFile(obj: T, target: File): String {
 		val stringOut = JSONToString(obj)
 		mkfile(target)
