@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
-class DynamicScriptingTest: BaseTest() {
+class DynamicScriptingTest: AbstractGradleTest() {
 
 	@Test
 	fun `import script ()`() {

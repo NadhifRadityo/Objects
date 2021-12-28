@@ -5,7 +5,6 @@ import Gradle.Common.destructNoContext
 import Gradle.Strategies.FileUtils
 import Gradle.Strategies.FileUtils.file
 import Gradle.Strategies.FileUtils.fileRelative
-import Gradle.Strategies.FileUtils.mkdir
 import Gradle.Strategies.LoggerUtils
 import Gradle.Strategies.LoggerUtils.lwarn
 import Gradle.Strategies.StringUtils
@@ -35,7 +34,7 @@ fun validate_gradle_build_path() {
 		throw Error("Gradle build path is not a valid expected project!")
 	GRADLE_BUILD_PATH_VALIDATED = true
 }
-fun ROOTPROJECT_SETTINGS(name: String, directory: File, rootBuild: Boolean, children: List<ProjectInterface>): String {
+fun ROOTPROJECT_SETTINGS(name: String, directory: File, rootBuild: Boolean, children: List<Project>): String {
 	validate_gradle_build_path()
 	return if(rootBuild) """
 		import java.nio.file.Paths
@@ -127,95 +126,105 @@ fun ROOTPROJECT_BUILD(name: String): String {
 	"""
 }
 
-typealias FileDSLExpression<T> = FileDSL.() -> T
-
-fun <T> File.withDSL(expression: FileDSLExpression<T>): T =
-	FileDSL(this).expression()
-
-open class FileDSL(val root: File) {
-	operator fun String.not(): File {
+typealias FileDSLExpression<RECEIVER, RESULT> = RECEIVER.() -> RESULT
+typealias FileDSLGenerator<RECEIVER> = (File, FileDSL<RECEIVER>) -> RECEIVER
+open class FileDSL<RECEIVER: FileDSL<RECEIVER>>(val generator: FileDSLGenerator<RECEIVER>, val root: File) {
+	internal val _instance: RECEIVER = this as RECEIVER
+	open operator fun String.not(): File {
 		return if(!this.startsWith("/")) mkfile(this)
 			else mkdir(this)
 	}
-	operator fun <T> String.times(expression: FileDSLExpression<T>): T {
-		return (!this).withDSL(expression)
+	open operator fun <RESULT> String.times(expression: FileDSLExpression<RECEIVER, RESULT>): RESULT {
+		return generator(!this, _instance).expression()
 	}
 	// Technically same as `"/testDir" * `
-	operator fun <T> String.div(expression: FileDSLExpression<T>): T {
-		return (!("/$this")).withDSL(expression)
+	open operator fun <RESULT> String.div(expression: FileDSLExpression<RECEIVER, RESULT>): RESULT {
+		return generator(!"/$this", _instance).expression()
 	}
 
-	fun file(vararg name: String): File {
+	open fun <RESULT> files(expression: FileDSLExpression<RECEIVER, RESULT>): RESULT =
+		generator(root, _instance).expression()
+	open fun <RESULT> File.files(expression: FileDSLExpression<RECEIVER, RESULT>): RESULT =
+		generator(this, _instance).expression()
+
+	open fun file(vararg name: String): File {
 		return file(root, *name)
 	}
-	fun fileRelative(file: File): File {
+	open fun fileRelative(file: File): File {
 		return fileRelative(root, file)
 	}
-	fun mkfile(vararg name: String): File {
+	open fun mkfile(vararg name: String): File {
 		return FileUtils.mkfile(file(*name))
 	}
-	fun mkdir(vararg name: String): File {
+	open fun mkdir(vararg name: String): File {
 		return FileUtils.mkdir(file(*name))
 	}
-	fun delfile(vararg name: String): File {
+	open fun delfile(vararg name: String): File {
 		return FileUtils.delfile(file(*name))
 	}
-	fun readBytes(vararg name: String): ByteArray {
+	open fun readBytes(vararg name: String): ByteArray {
 		return FileUtils.fileBytes(file(*name))
 	}
-	fun readString(vararg name: String): String {
+	open fun readString(vararg name: String): String {
 		return FileUtils.fileString(file(*name))
 	}
-	fun writeBytes(content: ByteArray) {
+	open fun writeBytes(content: ByteArray) {
 		FileUtils.writeFileBytes(file(), content)
 	}
-	fun writeString(content: String) {
+	open fun writeString(content: String) {
 		FileUtils.writeFileString(file(), content)
 	}
 
 	// "test.txt" * { -"replace content" }
-	operator fun String.unaryMinus() {
+	open operator fun String.unaryMinus() {
 		writeString(this)
 	}
 	// "test.txt" * { +"append content" }
-	operator fun String.unaryPlus() {
+	open operator fun String.unaryPlus() {
 		val old = readString()
 		writeString(old + this)
 	}
 	// "test.txt" * { -"replace content".encodeToByteArray() }
-	operator fun ByteArray.unaryMinus() {
+	open operator fun ByteArray.unaryMinus() {
 		writeBytes(this)
 	}
 	// "test.txt" * { +"append content".encodeToByteArray() }
-	operator fun ByteArray.unaryPlus() {
+	open operator fun ByteArray.unaryPlus() {
 		val old = readBytes()
 		writeBytes(old + this)
 	}
 	// "test.txt" -= "replace content"
-	operator fun String.minusAssign(content: String) {
-		(!this).withDSL { -content }
+	open operator fun String.minusAssign(content: String) {
+		this * { -content }
 	}
 	// "test.txt" += "append content"
-	operator fun String.plusAssign(content: String) {
-		(!this).withDSL { +content }
+	open operator fun String.plusAssign(content: String) {
+		this * { +content }
 	}
 	// "test.txt" % "replace content".encodeToByteArray()
-	operator fun String.rem(content: ByteArray) {
-		(!this).withDSL { -content }
+	open operator fun String.rem(content: ByteArray) {
+		this * { -content }
 	}
 	// "test.txt" .. "append content".encodeToByteArray()
-	operator fun String.rangeTo(content: ByteArray) {
-		(!this).withDSL { +content }
+	open operator fun String.rangeTo(content: ByteArray) {
+		this * { +content }
 	}
 }
 
-typealias ScriptSourceDSLExpression = ScriptSourceDSL.() -> Unit
-class ScriptSourceDSL(file: File): FileDSL(file) { }
+typealias DefaultFileDSLExpression<RESULT> = FileDSLExpression<DefaultFileDSL, RESULT>
+typealias DefaultFileDSLGenerator = FileDSLGenerator<DefaultFileDSL>
+fun DefaultFileDSLGenerator(): DefaultFileDSLGenerator { lateinit var generator: DefaultFileDSLGenerator;
+	generator = { file, _ -> DefaultFileDSL(file, generator) }; return generator }
+open class DefaultFileDSL(root: File, generator: DefaultFileDSLGenerator = DefaultFileDSLGenerator()): FileDSL<DefaultFileDSL>(generator, root) { }
 
-open class BaseTest {
+fun <T> File.files(expression: DefaultFileDSLExpression<T>) {
+	DefaultFileDSL(this).expression()
+}
+
+open class AbstractGradleTest {
 	@TempDir
 	lateinit var testDir: File
-	private var currentProject: ProjectInterface? = null
+	private var currentProject: Project? = null
 	val currentProjectDir: File
 		get() = currentProject?.directory ?: testDir
 
@@ -231,9 +240,15 @@ open class BaseTest {
 			currentProject = oldCurrentProject
 		}
 	}
-	fun ProjectInterface.withProject(name: String = "TestProject_${randomString()}", callback: ChildProject.() -> Unit): ChildProject {
-		val projectDir = file(directory, "/${name}")
-		val project = ChildProject(this, projectDir, name)
+	fun ProjectFileDSL.withProject(name: String = "TestProject_${randomString()}", callback: Project.() -> Unit): Project {
+		var parent: Project? = project
+		while(parent != null && parent !is RootProject)
+			parent = parent.parent
+		if(parent == null)
+			throw IllegalStateException("Cannot find parent project!")
+		val projectDir = file(root, "/${name}")
+		val project = Project(parent, projectDir, name)
+		(parent as RootProject).children += project
 		val oldCurrentProject = currentProject
 		try {
 			currentProject = project
@@ -243,35 +258,30 @@ open class BaseTest {
 			currentProject = oldCurrentProject
 		}
 	}
-	fun RootProjectInterface.withDefaultSettingsSource() {
+	fun RootProject.withDefaultSettingsSource() {
 		withSettingsSource {
 			-ROOTPROJECT_SETTINGS(name, directory, builds.isEmpty(), children)
 		}
 	}
-	fun RootProjectInterface.withDefaultBuildSource() {
+	fun RootProject.withDefaultBuildSource() {
 		withBuildSource {
 			-ROOTPROJECT_BUILD(name)
 		}
 	}
-	fun <T> ProjectInterface.withFileDSL(expression: FileDSLExpression<T>): T {
-		return mkdir(directory).withDSL(expression)
-	}
 
-	fun ProjectInterface.newScript(name: String = randomString(10), expression: ScriptSourceDSLExpression): File {
-		return withFileDSL {
-			ScriptSourceDSL(!name).apply {
-				-"""
-					context(this) {
-						scriptApply()
-					}
-				"""
-				expression()
-			}
-			!name
+	fun Project.newScript(name: String = randomString(10), expression: ProjectFileDSLExpression<Unit>): File {
+		name * {
+			-"""
+				context(this) {
+					scriptApply()
+				}
+			"""
+			expression()
 		}
+		return !name
 	}
 
-	fun run(rootProject: RootProjectInterface, expectSucceed: Boolean = true): BuildResult {
+	fun run(rootProject: RootProject, expectSucceed: Boolean = true): BuildResult {
 		var throwable: Throwable? = null
 		var result: BuildResult? = null
 		try {

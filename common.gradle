@@ -10,7 +10,6 @@ CONFIG['LIBRARY_ECLIPSE_COLLECTION'] = ['org.eclipse.collections:eclipse-collect
 CONFIG['LIBRARY_DEPRECATED'] = ['org.apache.httpcomponents:httpclient:4.5.12', 'net.oneandone.reflections8:reflections8:0.11.7', 'org.jogamp.gluegen:gluegen-rt-main:2.3.1', 'org.json:json:20180813', 'org.apache.commons:commons-pool2:2.8.0']
 CONFIG['LIBRARY_DEFAULT'] = CONFIG['LIBRARY_SPOTBUGS'] + CONFIG['LIBRARY_COMMONS_LANG'] + CONFIG['LIBRARY_DEPRECATED'];
 
-CONFIG['TESTLIBRARY_IMPLEMENTATION'] = 'org.junit.jupiter:junit-jupiter-api:5.7.2'
-CONFIG['TESTLIBRARY_RUNTIME'] = 'org.junit.jupiter:junit-jupiter-engine:5.7.2'
+CONFIG['TESTLIBRARY_IMPLEMENTATION'] = 'org.junit.jupiter:junit-jupiter:5.8.2'
 
 scriptExport CONFIG, being('CONFIG')

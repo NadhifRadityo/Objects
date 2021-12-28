@@ -13,11 +13,21 @@ def project_init = { def context ->
 		mavenCentral()
 	}
 	delegate.dependencies {
-		compileOnly(gradleApi())
-		compileOnly(gradleKotlinDsl())
-		compileOnly(localGroovy())
-		testCompileOnly(gradleTestKit())
+		compileOnly gradleApi()
+		compileOnly gradleKotlinDsl()
+		compileOnly localGroovy()
+		testCompileOnly gradleTestKit()
+
 		compileOnly 'io.github.NadhifRadityo.Objects:gradle:LATEST'
+		testCompileOnly testFixtures('io.github.NadhifRadityo.Objects:gradle:LATEST')
+
+		testRuntimeOnly gradleApi()
+		testRuntimeOnly gradleKotlinDsl()
+		testRuntimeOnly localGroovy()
+		testRuntimeOnly gradleTestKit()
+
+		testRuntimeOnly 'io.github.NadhifRadityo.Objects:gradle:LATEST'
+		testRuntimeOnly testFixtures('io.github.NadhifRadityo.Objects:gradle:LATEST')
 
 		implementation CONFIG['LIBRARY_COMMONS_LANG']
 		implementation 'commons-cli:commons-cli:1.4'
@@ -25,10 +35,13 @@ def project_init = { def context ->
 		implementation 'org.jsoup:jsoup:1.14.1'
 
 		testImplementation CONFIG['TESTLIBRARY_IMPLEMENTATION']
-		testRuntimeOnly CONFIG['TESTLIBRARY_RUNTIME']
 	}
 	delegate.test {
 		useJUnitPlatform()
+
+		testLogging {
+			events "STARTED", "PASSED", "SKIPPED", "FAILED"
+		}
 	}
 
 	// This part requires Gradle Daemon to cache the ClassLoader.
