@@ -62,6 +62,7 @@ object StringUtils {
 						i += 5; i++; continue
 					}
 				}
+				else -> throw Error("Invalid escape character at ${i + 1}\n${string}")
 			}
 			stringBuilder.append(currentChar)
 			i++; i++

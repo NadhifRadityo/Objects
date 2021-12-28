@@ -172,3 +172,4 @@ Console Result:
 - [ ] Destructor call is currently unstable -- especially when the script is failing, because it relies on `afterTask`, but not all tasks will be guaranteed to be called from that event.
       Fallback that will call destructor exactly before the constructor is possible, but not preferable because it will create memory leaks
       in Gradle daemon. Predicting on which script will be executed based on the graph is currently the most reliable way. But in the mean time, I will be researching more about the event handlers.
+- [ ] Destructor call is not being called, when the script is completely failing on configuration stage.

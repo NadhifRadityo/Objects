@@ -107,8 +107,7 @@ context(this) {
 			}
 			if(loaderInfo.accessed) {
 				loaderInfo.accessed = false
-			}
-			if(loaderInfo.CLASS_Library == null) {
+			} else if(loaderInfo.CLASS_Library != null) {
 				llog "Removed library loader from build hash ${entry.getKey()}"
 				iterator.remove()
 			}

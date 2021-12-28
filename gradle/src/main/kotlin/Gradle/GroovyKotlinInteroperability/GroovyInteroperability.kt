@@ -197,19 +197,20 @@ object GroovyInteroperability {
 	fun attachObject(context: Context, cache: GroovyKotlinCache<*>) {
 		// Mostly, any property getter will use context.that
 		// As shown in BasicScript$ScriptDynamicObject.tryGetProperty
-		attachAnyObject(context.that, cache)
-		if(context.that is GroovyObject) {
-			val klass = context.that::class.java
+		val (that, _, project) = context
+		attachAnyObject(that, cache)
+		if(that is GroovyObject) {
+			val klass = that::class.java
 			val METHOD_BuildScript_target = klass.getMethod("getScriptTarget")
 			METHOD_BuildScript_target.isAccessible = true
-			val target = METHOD_BuildScript_target.invoke(context.that)
+			val target = METHOD_BuildScript_target.invoke(that)
 			// But, the setter isn't going through the scriptObject
 			// As shown in BasicScript$ScriptDynamicObject.trySetProperty
 			// So we need to inject to script target. Call to script target
 			// is shown in CompositeDynamicObject.trySetProperty
 			attachAnyObject(target, cache)
 		}
-		attachProjectObject(context.project, cache)
+		attachProjectObject(project, cache)
 	}
 	@ExportGradle @JvmStatic
 	fun attachAnyObject(that: Any, cache: GroovyKotlinCache<*>) {
@@ -225,8 +226,9 @@ object GroovyInteroperability {
 	}
 	@ExportGradle @JvmStatic
 	fun detachObject(context: Context, cache: GroovyKotlinCache<*>) {
-		detachAnyObject(context.that, cache)
-		detachProjectObject(context.project, cache)
+		val (that, _, project) = context
+		detachAnyObject(that, cache)
+		detachProjectObject(project, cache)
 	}
 	@ExportGradle @JvmStatic
 	fun detachAnyObject(that: Any, cache: GroovyKotlinCache<*>) {

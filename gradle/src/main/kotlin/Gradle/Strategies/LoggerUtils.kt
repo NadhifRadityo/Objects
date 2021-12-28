@@ -5,8 +5,10 @@ import Gradle.GroovyKotlinInteroperability.ExportGradle
 import Gradle.GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyKotlinCache
 import Gradle.GroovyKotlinInteroperability.GroovyKotlinCache
 import Gradle.Strategies.ExceptionUtils.throwableToString
-import Gradle.Strategies.GradleUtils.asService
+import Gradle.Strategies.GradleUtils.asService0
 import org.gradle.api.logging.LogLevel
+import org.gradle.internal.logging.events.StyledTextOutputEvent
+import org.gradle.internal.logging.services.DefaultStyledTextOutputFactory
 import org.gradle.internal.logging.text.StyledTextOutput
 import org.gradle.internal.logging.text.StyledTextOutputFactory
 
@@ -19,7 +21,7 @@ object LoggerUtils {
 	fun construct() {
 		cache = prepareGroovyKotlinCache(LoggerUtils)
 		groovyKotlinCaches += cache!!
-		factory = asService(StyledTextOutputFactory::class.java)
+		factory = asService0(StyledTextOutputFactory::class.java) ?: stubStyledTextOutputFactory()
 		instances = HashMap()
 	}
 	@JvmStatic
@@ -28,6 +30,17 @@ object LoggerUtils {
 		cache = null
 		factory = null
 		instances = null
+	}
+
+	@ExportGradle @JvmStatic
+	fun stubStyledTextOutputFactory(): StyledTextOutputFactory {
+		return DefaultStyledTextOutputFactory({ event ->
+			val string = if(event !is StyledTextOutputEvent) event.toString()
+				else event.spans.joinToString("") { it.text }
+			if(event.logLevel == LogLevel.ERROR)
+				System.err.print(string)
+			else System.out.print(string)
+		}, System::currentTimeMillis)
 	}
 
 	@ExportGradle @JvmStatic @JvmOverloads
@@ -142,7 +155,6 @@ object LoggerUtils {
 		}
 		var compiledString = args.map { it.toString() }.joinToString("")
 		compiledString += __escapeCodes["freset"] + __escapeCodes["breset"]
-		if(factory == null) { println(compiledString); return }
 		loggerPrintln(null, compiledString)
 	}
 	@JvmStatic

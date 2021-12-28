@@ -2,12 +2,16 @@ package Gradle.Strategies
 
 import Gradle.Common.groovyKotlinCaches
 import Gradle.Common.lastContext
+import Gradle.Common.lastContext0
 import Gradle.GroovyKotlinInteroperability.ExportGradle
 import Gradle.GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyKotlinCache
 import Gradle.GroovyKotlinInteroperability.GroovyKotlinCache
 import Gradle.Strategies.Utils.__invalid_type
 import Gradle.Strategies.Utils.__unimplemented
 import groovy.lang.Closure
+import org.gradle.BuildListener
+import org.gradle.BuildResult
+import org.gradle.StartParameter
 import org.gradle.api.*
 import org.gradle.api.artifacts.ConfigurationContainer
 import org.gradle.api.artifacts.Dependency
@@ -16,8 +20,10 @@ import org.gradle.api.artifacts.dsl.DependencyHandler
 import org.gradle.api.artifacts.dsl.DependencyLockingHandler
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.component.SoftwareComponentContainer
+import org.gradle.api.execution.TaskExecutionGraph
 import org.gradle.api.file.*
 import org.gradle.api.initialization.IncludedBuild
+import org.gradle.api.initialization.Settings
 import org.gradle.api.initialization.dsl.ScriptHandler
 import org.gradle.api.internal.GradleInternal
 import org.gradle.api.internal.plugins.PluginManagerInternal
@@ -30,6 +36,7 @@ import org.gradle.api.plugins.*
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.resources.ResourceHandler
+import org.gradle.api.services.BuildServiceRegistry
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.WorkResult
 import org.gradle.groovy.scripts.BasicScript
@@ -63,32 +70,52 @@ object GradleUtils {
 
 	// Gradle Object Conversion
 	@ExportGradle @JvmStatic @JvmOverloads
-	fun asProject(project: Any? = null): Project {
-		if(project == null) return lastContext().project
+	fun asProject0(project: Any? = null): Project? {
+		if(project == null) return lastContext0()?.project
 		if(project is Project) return project
-		if(project is String) return lastContext().project.project(project)
-		if(project is BasicScript) return (project.scriptTarget as ProjectInternal)
+		if(project is String) return lastContext0()?.project?.project(project)
+		if(project is BasicScript) return project.scriptTarget as ProjectInternal
 		if(project is DefaultKotlinScript) return kotlinScriptHostTarget(project)
-		throw __invalid_type()
+		return null
+	}
+	@ExportGradle @JvmStatic @JvmOverloads
+	fun asProject(project: Any? = null): Project {
+		return asProject0(project) ?: throw __invalid_type()
+	}
+	@ExportGradle @JvmStatic @JvmOverloads
+	fun asGradle0(project: Any? = null): Gradle? {
+		return asProject0(project)?.gradle
 	}
 	@ExportGradle @JvmStatic @JvmOverloads
 	fun asGradle(project: Any? = null): Gradle {
-		return asProject(project).gradle
+		return asGradle0(project) ?: throw __invalid_type()
+	}
+	@ExportGradle @JvmStatic @JvmOverloads
+	fun asTask0(task: Any, project: Any? = null): Task? {
+		if(task is Task) return task
+		if(task is String) return asProject0(project)?.tasks?.getByName(task)
+		return null
 	}
 	@ExportGradle @JvmStatic @JvmOverloads
 	fun asTask(task: Any, project: Any? = null): Task {
-		if(task is Task) return task
-		if(task is String) return asProject(project).tasks.getByName(task)
-		throw __invalid_type()
+		return asTask0(task, project) ?: throw __invalid_type()
+	}
+	@ExportGradle @JvmStatic @JvmOverloads
+	fun <T> asService0(clazz: Class<T>, project: Any? = null): T? {
+		return (asProject0(project) as? ProjectInternal)?.services?.get(clazz)
 	}
 	@ExportGradle @JvmStatic @JvmOverloads
 	fun <T> asService(clazz: Class<T>, project: Any? = null): T {
-		return (asProject(project) as ProjectInternal).services.get(clazz)
+		return asService0(clazz, project) ?: throw __invalid_type()
+	}
+	@ExportGradle
+	fun asBuildProject0(build: IncludedBuild): Project? {
+		if(build is IncludedBuildInternal) return GradleInternalProject(build.target.build)
+		return GradleBuildProject(build)
 	}
 	@ExportGradle
 	fun asBuildProject(build: IncludedBuild): Project {
-		if(build is IncludedBuildInternal) return GradleInternalProject(build.target.build)
-		return GradleBuildProject(build)
+		return asBuildProject0(build) ?: throw __invalid_type()
 	}
 
 	// Gradle Global Ext
@@ -111,7 +138,7 @@ object GradleUtils {
 	// Gradle Task
 	@ExportGradle @JvmStatic @JvmOverloads
 	fun forwardTask(project: Any?, filter: (Task) -> Boolean, exec: (Task) -> Unit = {}) {
-		val project0 = lastContext().project
+		val project0 = lastContext().project0
 		val project1 = asProject(project)
 		project1.tasks.filter(filter).map { task -> project0.task(task.name) {
 			it.group = task.group; it.dependsOn(task) } }.forEach(exec)
@@ -138,7 +165,7 @@ object GradleUtils {
 	}
 
 	// Kotlin DSL
-	fun <T: Any> kotlinScriptHostTarget(script: DefaultKotlinScript): T {
+	fun <T: Any> kotlinScriptHostTarget(script: DefaultKotlinScript): T? {
 		val FIELD_UNKNOWN_host = script.javaClass.superclass.getDeclaredField("host")
 		if(!KotlinScriptHost::class.java.isAssignableFrom(FIELD_UNKNOWN_host.type)) throw __invalid_type()
 		FIELD_UNKNOWN_host.isAccessible = true
@@ -298,5 +325,45 @@ object GradleUtils {
 		override fun normalization(configuration: Action<in InputNormalizationHandler>): Unit = __unimplemented()
 		override fun dependencyLocking(configuration: Action<in DependencyLockingHandler>): Unit = __unimplemented()
 		override fun getDependencyLocking(): DependencyLockingHandler = __unimplemented()
+	}
+	open class UnimplementedGradle: Gradle {
+		override fun getPlugins(): PluginContainer = __unimplemented()
+		override fun apply(closure: Closure<*>) = __unimplemented<Unit>()
+		override fun apply(action: Action<in ObjectConfigurationAction>) = __unimplemented<Unit>()
+		override fun apply(options: MutableMap<String, *>) = __unimplemented<Unit>()
+		override fun getPluginManager(): PluginManager = __unimplemented()
+		override fun getGradleVersion(): String = __unimplemented()
+		override fun getGradleUserHomeDir(): File = __unimplemented()
+		override fun getGradleHomeDir(): File? = __unimplemented()
+		override fun getParent(): Gradle? = __unimplemented()
+		override fun getRootProject(): Project = __unimplemented()
+		override fun rootProject(action: Action<in Project>) = __unimplemented<Unit>()
+		override fun allprojects(action: Action<in Project>) = __unimplemented<Unit>()
+		override fun getTaskGraph(): TaskExecutionGraph = __unimplemented()
+		override fun getStartParameter(): StartParameter = __unimplemented()
+		override fun addProjectEvaluationListener(listener: ProjectEvaluationListener): ProjectEvaluationListener = __unimplemented()
+		override fun removeProjectEvaluationListener(listener: ProjectEvaluationListener) = __unimplemented<Unit>()
+		override fun beforeProject(closure: Closure<*>) = __unimplemented<Unit>()
+		override fun beforeProject(action: Action<in Project>) = __unimplemented<Unit>()
+		override fun afterProject(closure: Closure<*>) = __unimplemented<Unit>()
+		override fun afterProject(action: Action<in Project>) = __unimplemented<Unit>()
+		override fun beforeSettings(closure: Closure<*>) = __unimplemented<Unit>()
+		override fun beforeSettings(action: Action<in Settings>) = __unimplemented<Unit>()
+		override fun settingsEvaluated(closure: Closure<*>) = __unimplemented<Unit>()
+		override fun settingsEvaluated(action: Action<in Settings>) = __unimplemented<Unit>()
+		override fun projectsLoaded(closure: Closure<*>) = __unimplemented<Unit>()
+		override fun projectsLoaded(action: Action<in Gradle>) = __unimplemented<Unit>()
+		override fun projectsEvaluated(closure: Closure<*>) = __unimplemented<Unit>()
+		override fun projectsEvaluated(action: Action<in Gradle>) = __unimplemented<Unit>()
+		override fun buildFinished(closure: Closure<*>) = __unimplemented<Unit>()
+		override fun buildFinished(action: Action<in BuildResult>) = __unimplemented<Unit>()
+		override fun addBuildListener(buildListener: BuildListener) = __unimplemented<Unit>()
+		override fun addListener(p0: Any) = __unimplemented<Unit>()
+		override fun removeListener(p0: Any) = __unimplemented<Unit>()
+		override fun useLogger(p0: Any) = __unimplemented<Unit>()
+		override fun getGradle(): Gradle = __unimplemented()
+		override fun getSharedServices(): BuildServiceRegistry = __unimplemented()
+		override fun getIncludedBuilds(): MutableCollection<IncludedBuild> = __unimplemented()
+		override fun includedBuild(p0: String): IncludedBuild = __unimplemented()
 	}
 }

@@ -8,7 +8,7 @@ import Gradle.GroovyKotlinInteroperability.GroovyKotlinCache
 import Gradle.GroovyKotlinInteroperability.GroovyManipulation.closureToLambda0
 import Gradle.Strategies.CommonUtils.purgeThreadLocal
 import Gradle.Strategies.GradleUtils.asGradle
-import Gradle.Strategies.GradleUtils.asProject
+import Gradle.Strategies.GradleUtils.asProject0
 import Gradle.Strategies.Utils.__must_not_happen
 import groovy.lang.Closure
 import org.gradle.api.GradleException
@@ -36,12 +36,14 @@ object Common {
 			throw IllegalStateException("Constructor must be called once")
 		println("CONSTRUCT")
 		val context = lastContext()
-		val gradle = asGradle(context.project)
+		val (that, _, project) = context
+		val gradle = asGradle(project)
 		val session = Session(context, gradle.parent?.includedBuilds?.firstOrNull {
-			it.projectDir.canonicalPath == context.project.rootProject.projectDir.canonicalPath })
+			it.projectDir.canonicalPath == project.rootProject.projectDir.canonicalPath })
 		currentSession = session
+
 		val exception = GradleException("Error while running construct")
-		context(context.that) {
+		context(that) {
 			if(session.build == null) {
 				val mainTasks = mutableListOf<Task>()
 				val unfinishedTasks = mutableListOf<Task>()
@@ -87,8 +89,8 @@ object Common {
 					}
 				}
 				gradle.taskGraph.whenReady {
-					val currentTask = gradle.taskGraph.allTasks.filter { it.project.rootProject == context.project }
-					mainTasks += gradle.startParameter.taskNames.flatMap { context.project.getTasksByName(it, true) }
+					val currentTask = gradle.taskGraph.allTasks.filter { it.project.rootProject == project }
+					mainTasks += gradle.startParameter.taskNames.flatMap { project.getTasksByName(it, true) }
 					unfinishedTasks += currentTask
 					currentTask.forEach { computeTreeBack(it) }
 					if(unfinishedTasks.isEmpty()) destruct()
@@ -136,8 +138,11 @@ object Common {
 		if(session == null)
 			throw IllegalStateException("Constructor wasn't being called")
 		val context = session.context
+		val (that, _, project) = context
+		val gradle = asGradle(project)
+
 		val exception = GradleException("Error while running destruct")
-		context(context.that) {
+		context(that) {
 			val priorities = onConfigFinished.keys.sortedDescending()
 			for(priority in priorities) {
 				val list = onConfigFinished[priority]!!
@@ -166,11 +171,57 @@ object Common {
 		if(exception.suppressed.isNotEmpty())
 			throw exception
 	}
-
-	@ExportGradle
 	@JvmStatic
+	fun constructNoContext() {
+		val exception = GradleException("Error while running construct")
+		run {
+			cache = prepareGroovyKotlinCache(Common)
+			groovyKotlinCaches += cache!!
+			Gradle.GroovyKotlinInteroperability.construct()
+			Gradle.DynamicScripting.construct()
+			Gradle.Strategies.construct()
+		}
+		val priorities = onConfigStarted.keys.sortedDescending()
+		for(priority in priorities) {
+			val list = onConfigStarted[priority]!!
+			list.reverse()
+			for(callback in list)
+				try { callback() } catch(e: Throwable)
+				{ exception.addSuppressed(e) }
+		}
+		if(exception.suppressed.isNotEmpty())
+			throw exception
+	}
+	@JvmStatic
+	fun destructNoContext() {
+		val exception = GradleException("Error while running destruct")
+		val priorities = onConfigFinished.keys.sortedDescending()
+		for(priority in priorities) {
+			val list = onConfigFinished[priority]!!
+			list.reverse()
+			for(callback in list)
+				try { callback() } catch(e: Throwable)
+				{ exception.addSuppressed(e) }
+		}
+		run {
+			Gradle.GroovyKotlinInteroperability.destruct()
+			Gradle.DynamicScripting.destruct()
+			Gradle.Strategies.destruct()
+			groovyKotlinCaches -= cache!!
+			cache = null
+		}
+		groovyKotlinCaches.clear()
+		purgeThreadLocal(contextStack)
+		onConfigStarted.clear()
+		onConfigFinished.clear()
+		currentSession = null
+		if(exception.suppressed.isNotEmpty())
+			throw exception
+	}
+
+	@ExportGradle @JvmStatic
 	fun <T> context(that: Any, callback: () -> T): T {
-		val context = Context(that, asProject(that))
+		val context = Context(that, asProject0(that))
 		val stack = contextStack.get()
 		stack.addLast(context)
 		try {
@@ -181,42 +232,38 @@ object Common {
 				__must_not_happen()
 		}
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun <T> context(that: Any, callback: Closure<T>): T {
 		return context(that, closureToLambda0(callback)) as T
 	}
-	@ExportGradle
-	@JvmStatic
-	fun lastContext(): Context {
+	@ExportGradle @JvmStatic
+	fun lastContext0(): Context? {
 		val stack = contextStack.get()
-		if(stack.size == 0)
-			throw IllegalStateException("context is not available")
-		return stack.last
+		return if(stack.size > 0) stack.last() else null
+	}
+	@ExportGradle @JvmStatic
+	fun lastContext(): Context {
+		return lastContext0() ?: throw IllegalStateException("Context is not available")
 	}
 
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun addOnConfigStarted(priority: Int, callback: () -> Unit) {
 		val list = onConfigStarted.computeIfAbsent(priority) { ArrayList() }
 		list.add(callback)
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun removeOnConfigStarted(priority: Int, callback: () -> Unit) {
 		val list = onConfigStarted[priority] ?: return
 		list.remove(callback)
 		if(list.isEmpty())
 			onConfigStarted.remove(priority)
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun addOnConfigFinished(priority: Int, callback: () -> Unit) {
 		val list = onConfigFinished.computeIfAbsent(priority) { ArrayList() }
 		list.add(callback)
 	}
-	@ExportGradle
-	@JvmStatic
+	@ExportGradle @JvmStatic
 	fun removeOnConfigFinished(priority: Int, callback: () -> Unit) {
 		val list = onConfigFinished[priority] ?: return
 		list.remove(callback)

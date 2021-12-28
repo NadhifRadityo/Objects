@@ -7,10 +7,12 @@ import Gradle.GroovyKotlinInteroperability.GroovyInteroperability.prepareGroovyK
 import Gradle.GroovyKotlinInteroperability.GroovyKotlinCache
 import Gradle.GroovyKotlinInteroperability.GroovyManipulation
 import Gradle.Strategies.ClassUtils.classForName0
-import Gradle.Strategies.GradleUtils.asService
+import Gradle.Strategies.GradleUtils.asService0
 import Gradle.Strategies.UnsafeUtils.unsafe
+import org.gradle.internal.logging.progress.DefaultProgressLoggerFactory
 import org.gradle.internal.logging.progress.ProgressLogger
 import org.gradle.internal.logging.progress.ProgressLoggerFactory
+import org.gradle.internal.logging.services.ProgressLoggingBridge
 import org.gradle.internal.operations.BuildOperationDescriptor
 import java.util.*
 
@@ -23,7 +25,7 @@ object ProgressUtils {
 	fun construct() {
 		cache = prepareGroovyKotlinCache(ProgressUtils)
 		groovyKotlinCaches += cache!!
-		factory = asService(ProgressLoggerFactory::class.java)
+		factory = asService0(ProgressLoggerFactory::class.java) ?: stubProgressLoggerFactory()
 		instances = HashMap()
 	}
 	@JvmStatic
@@ -32,6 +34,12 @@ object ProgressUtils {
 		cache = null
 		factory = null
 		instances = null
+	}
+
+	@ExportGradle @JvmStatic
+	fun stubProgressLoggerFactory(): ProgressLoggerFactory {
+		val random = Random()
+		return DefaultProgressLoggerFactory(ProgressLoggingBridge(System.out::println), System::currentTimeMillis, random::nextLong)
 	}
 
 	@ExportGradle @JvmStatic @JvmOverloads
