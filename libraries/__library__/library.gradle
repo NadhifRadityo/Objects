@@ -17,24 +17,32 @@ def project_init = { def context ->
 		compileOnly gradleKotlinDsl()
 		compileOnly localGroovy()
 		testCompileOnly gradleTestKit()
-
-		compileOnly 'io.github.NadhifRadityo.Objects:gradle:LATEST'
-		testCompileOnly testFixtures('io.github.NadhifRadityo.Objects:gradle:LATEST')
+		testCompileOnly CONFIG['TESTLIBRARY_IMPLEMENTATION']
+		testFixturesCompileOnly gradleTestKit()
+		testFixturesCompileOnly CONFIG['TESTLIBRARY_IMPLEMENTATION']
 
 		testRuntimeOnly gradleApi()
 		testRuntimeOnly gradleKotlinDsl()
 		testRuntimeOnly localGroovy()
 		testRuntimeOnly gradleTestKit()
+		testFixturesRuntimeOnly gradleApi()
+		testFixturesRuntimeOnly gradleKotlinDsl()
+		testFixturesRuntimeOnly localGroovy()
+		testFixturesRuntimeOnly gradleTestKit()
+
+		compileOnly 'io.github.NadhifRadityo.Objects:gradle:LATEST'
+		testCompileOnly testFixtures('io.github.NadhifRadityo.Objects:gradle:LATEST')
+		testFixturesCompileOnly testFixtures('io.github.NadhifRadityo.Objects:gradle:LATEST')
 
 		testRuntimeOnly 'io.github.NadhifRadityo.Objects:gradle:LATEST'
 		testRuntimeOnly testFixtures('io.github.NadhifRadityo.Objects:gradle:LATEST')
+		testFixturesRuntimeOnly 'io.github.NadhifRadityo.Objects:gradle:LATEST'
+		testFixturesRuntimeOnly testFixtures('io.github.NadhifRadityo.Objects:gradle:LATEST')
 
 		implementation CONFIG['LIBRARY_COMMONS_LANG']
 		implementation 'commons-cli:commons-cli:1.4'
 		implementation 'com.google.code.gson:gson:2.8.6'
 		implementation 'org.jsoup:jsoup:1.14.1'
-
-		testImplementation CONFIG['TESTLIBRARY_IMPLEMENTATION']
 	}
 	delegate.test {
 		useJUnitPlatform()

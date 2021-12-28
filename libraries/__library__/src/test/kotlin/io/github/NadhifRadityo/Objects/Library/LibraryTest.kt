@@ -1,33 +1,26 @@
 package io.github.NadhifRadityo.Objects.Library
 
-import Gradle.AbstractGradleTest
+import Gradle.Strategies.StringUtils.randomString
 import org.junit.jupiter.api.Test
 
-class LibraryTest: AbstractGradleTest() {
+class LibraryTest: AbstractLibraryTest() {
 
 	@Test
 	fun `basic library`() {
-		withRootProject {
+		val randomVariable = randomString(50)
+		val randomVariable2 = randomString(50)
+		val objectBuild = withRootProject("Objects") {
+			withDefaultSettingsSource()
+			withDefaultBuildSource()
+		}
+		withRootProject(builds=listOf(objectBuild)) {
+			withDefaultSettingsSource()
+			withDefaultBuildSource()
 			"library" / {
-				withProject {
+				withLibraryProject {
+					withDefaultBuildSource()
 					withBuildSource {
-						+"""
-							plugins {
-								id 'java'
-								id 'org.jetbrains.kotlin.jvm' version '1.5.30'
-							}
-
-							buildDir = '../__target__/__sources__/'
-
-							context(this) {
-								scriptImport from('Objects:libraries/__library__/libraryLoad.gradle')
-								scriptImport listOf('module'), from('Objects:libraries/__library__/libraryModules.gradle'), being('libraryModules')
-
-								libraryModules.module('Computing - LWJGL')
-
-								scriptImport from('Objects:libraries/__library__/library.gradle')
-							}
-						"""
+						+"llog '${randomVariable2}'"
 					}
 				}
 			}
