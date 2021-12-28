@@ -218,6 +218,10 @@ object Common {
 		if(exception.suppressed.isNotEmpty())
 			throw exception
 	}
+	@ExportGradle(names=["currentSession0"], asProperty=false) @JvmStatic
+	fun currentSession(): Session? {
+		return currentSession
+	}
 
 	@ExportGradle @JvmStatic
 	fun <T> context(that: Any, callback: () -> T): T {

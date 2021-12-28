@@ -117,17 +117,17 @@ object PropertiesUtils {
     @ExportGradle @JvmStatic @JvmOverloads fun p_getDouble(properties: Properties, key: String, defaultValue: Double = 0.0): Double { return p_getObject(properties, key, Double::class.java, defaultValue)!! }
 
     @ExportGradle @JvmStatic
-    fun <T> p_setObject(properties: Properties, key: String?, type: Class<T>?, value: T?) {
-        if(key == null || value == null) return
+    fun <T> p_setObject(properties: Properties, key: String, type: Class<T>?, value: T?) {
+        if(value == null) return
         properties[key] = value
     }
-    @ExportGradle @JvmStatic fun <T> p_setObject(properties: Properties, key: String?, value: T) { p_setObject(properties, key, Any::class.java, value) }
-    @ExportGradle @JvmStatic fun p_setByte(properties: Properties, key: String?, value: Byte) { p_setObject(properties, key, Byte::class.java, value) }
-    @ExportGradle @JvmStatic fun p_setBoolean(properties: Properties, key: String?, value: Boolean) { p_setObject(properties, key, Boolean::class.java, value) }
-    @ExportGradle @JvmStatic fun p_setChar(properties: Properties, key: String?, value: Char) { p_setObject(properties, key, Char::class.java, value) }
-    @ExportGradle @JvmStatic fun p_setShort(properties: Properties, key: String?, value: Short) { p_setObject(properties, key, Short::class.java, value) }
-    @ExportGradle @JvmStatic fun p_setInt(properties: Properties, key: String?, value: Int) { p_setObject(properties, key, Int::class.java, value) }
-    @ExportGradle @JvmStatic fun p_setLong(properties: Properties, key: String?, value: Long) { p_setObject(properties, key, Long::class.java, value) }
-    @ExportGradle @JvmStatic fun p_setFloat(properties: Properties, key: String?, value: Float) { p_setObject(properties, key, Float::class.java, value) }
-    @ExportGradle @JvmStatic fun p_setDouble(properties: Properties, key: String?, value: Double) { p_setObject(properties, key, Double::class.java, value) }
+    @ExportGradle @JvmStatic fun <T> p_setObject(properties: Properties, key: String, value: T) { p_setObject(properties, key, Any::class.java, value) }
+    @ExportGradle @JvmStatic fun p_setByte(properties: Properties, key: String, value: Byte) { p_setObject(properties, key, Byte::class.java, value) }
+    @ExportGradle @JvmStatic fun p_setBoolean(properties: Properties, key: String, value: Boolean) { p_setObject(properties, key, Boolean::class.java, value) }
+    @ExportGradle @JvmStatic fun p_setChar(properties: Properties, key: String, value: Char) { p_setObject(properties, key, Char::class.java, value) }
+    @ExportGradle @JvmStatic fun p_setShort(properties: Properties, key: String, value: Short) { p_setObject(properties, key, Short::class.java, value) }
+    @ExportGradle @JvmStatic fun p_setInt(properties: Properties, key: String, value: Int) { p_setObject(properties, key, Int::class.java, value) }
+    @ExportGradle @JvmStatic fun p_setLong(properties: Properties, key: String, value: Long) { p_setObject(properties, key, Long::class.java, value) }
+    @ExportGradle @JvmStatic fun p_setFloat(properties: Properties, key: String, value: Float) { p_setObject(properties, key, Float::class.java, value) }
+    @ExportGradle @JvmStatic fun p_setDouble(properties: Properties, key: String, value: Double) { p_setObject(properties, key, Double::class.java, value) }
 }

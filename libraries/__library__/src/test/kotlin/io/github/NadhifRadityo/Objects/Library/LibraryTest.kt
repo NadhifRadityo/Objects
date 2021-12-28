@@ -1,6 +1,7 @@
 package io.github.NadhifRadityo.Objects.Library
 
 import Gradle.Strategies.StringUtils.randomString
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 
 class LibraryTest: AbstractLibraryTest() {
@@ -9,11 +10,14 @@ class LibraryTest: AbstractLibraryTest() {
 	fun `basic library`() {
 		val randomVariable = randomString(50)
 		val randomVariable2 = randomString(50)
-		val objectBuild = withRootProject("Objects") {
+		val objectsProject = withRootProject("Objects") {
 			withDefaultSettingsSource()
 			withDefaultBuildSource()
+			withBuildSource {
+				+"llog '${randomVariable}'"
+			}
 		}
-		withRootProject(builds=listOf(objectBuild)) {
+		val project = withRootProject(builds=listOf(objectsProject)) {
 			withDefaultSettingsSource()
 			withDefaultBuildSource()
 			"library" / {
@@ -25,5 +29,8 @@ class LibraryTest: AbstractLibraryTest() {
 				}
 			}
 		}
+		val result = run(project, false)
+		Assertions.assertTrue(result.output.contains(randomVariable))
+		Assertions.assertTrue(result.output.contains(randomVariable2))
 	}
 }

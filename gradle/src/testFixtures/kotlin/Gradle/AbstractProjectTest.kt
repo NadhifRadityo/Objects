@@ -8,6 +8,7 @@ import Gradle.Strategies.FileUtils.fileExists
 import Gradle.Strategies.FileUtils.fileRelative
 import Gradle.Strategies.LoggerUtils
 import Gradle.Strategies.LoggerUtils.lwarn
+import Gradle.Strategies.RuntimeUtils.env_getFile
 import Gradle.Strategies.StringUtils
 import Gradle.Strategies.StringUtils.randomString
 import org.gradle.testkit.runner.BuildResult
@@ -18,26 +19,22 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
 
-val GRADLE_BUILD_PATH = file(System.getProperty("gradleutils.project_path", System.getProperty("user.dir")))
-var GRADLE_BUILD_PATH_VALIDATED: Boolean = false
-val `$` = '$'
-
-fun validate_gradle_build_path() {
-	if(GRADLE_BUILD_PATH_VALIDATED) return
-	if(!GRADLE_BUILD_PATH.exists())
-		throw Error("Gradle build path does not exists! Try reconfigure property -Dgradleutils.project_path=\"...\"")
-	val buildFiles = fileExists(GRADLE_BUILD_PATH, "build.gradle", "build.gradle.kts")
+val GRADLE_BUILD_PATH: File = run {
+	val buildPath = env_getFile("GRADLEUTILS_PROJECTPATH")
+	if(buildPath == null || !buildPath.exists())
+		throw Error("Gradle build path does not exists! Try reconfigure gradle environment variable set/export GRADLEUTILS_PROJECTPATH=\"...\"")
+	val buildFiles = fileExists(buildPath, "build.gradle", "build.gradle.kts")
 	if(buildFiles.size != 1)
 		throw Error("Gradle build path is not a valid project! The directory must contains exactly one \"build.gradle(.kts)\"")
 	val buildFile = buildFiles.first()
 	val buildFileContent = FileUtils.fileString(buildFile)
 	if(!buildFileContent.contains("group = \"io.github.NadhifRadityo.Objects\""))
 		throw Error("Gradle build path is not a valid expected project!")
-	GRADLE_BUILD_PATH_VALIDATED = true
+	buildPath
 }
+val `$` = '$'
 
 fun ROOTPROJECT_SETTINGS(name: String, directory: File, rootBuild: Boolean, children: List<Project>): String {
-	validate_gradle_build_path()
 	return if(rootBuild) """
 		import java.nio.file.Paths
 		
@@ -327,7 +324,8 @@ open class AbstractProjectTest {
 				}
 				
 				Common.context(this) {
-					Common.destruct()
+					if(Common.currentSession() != null)				
+						Common.destruct()
 				}
 				"""
 			}

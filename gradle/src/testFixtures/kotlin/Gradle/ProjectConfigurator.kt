@@ -113,7 +113,6 @@ open class RootProject(
 	open fun run(expectSucceed: Boolean = true): BuildResult {
 		val runner = GradleRunner.create()
 		runner.withProjectDir(directory)
-		runner.withPluginClasspath()
 		runner.forwardStdOutput(newOutputWriter(name))
 		runner.forwardStdError(newErrorWriter(name))
 		runner.appendArgs("--stacktrace")

@@ -4,28 +4,26 @@ import Gradle.*
 import Gradle.Strategies.FileUtils.file
 import Gradle.Strategies.FileUtils.fileCopyDir
 import Gradle.Strategies.FileUtils.fileExists
+import Gradle.Strategies.RuntimeUtils.env_getFile
 import Gradle.Strategies.StringUtils
+import java.io.File
 import java.nio.file.StandardCopyOption
 
-val LIBRARY_BUILD_PATH = file(System.getProperty("libraryutils.project_path", System.getProperty("user.dir")))
-var LIBRARY_BUILD_PATH_VALIDATED: Boolean = false
-val `$` = '$'
-
-fun validate_library_build_path() {
-	if(LIBRARY_BUILD_PATH_VALIDATED) return
-	if(!LIBRARY_BUILD_PATH.exists())
-		throw Error("Library build path does not exists! Try reconfigure property -Dlibraryutils.project_path=\"...\"")
-	val buildFiles = fileExists(GRADLE_BUILD_PATH, "build.gradle", "build.gradle.kts")
+val LIBRARY_BUILD_PATH: File = run {
+	val buildPath = env_getFile("LIBRARYUTILS_PROJECTPATH")
+	if(buildPath == null || !buildPath.exists())
+		throw Error("Library build path does not exists! Try reconfigure gradle environment variable set/export LIBRARYUTILS_PROJECTPATH=\"...\"")
+	val buildFiles = fileExists(buildPath, "build.gradle", "build.gradle.kts")
 	if(buildFiles.size != 1)
 		throw Error("Library build path is not a valid project! The directory must contains exactly one \"build.gradle(.kts)\"")
-	val scripts = fileExists(GRADLE_BUILD_PATH, "library.gradle", "libraryLoad.gradle", "libraryModules.gradle", "libraryUtilsGenerate.gradle")
+	val scripts = fileExists(buildPath, "library.gradle", "libraryLoad.gradle", "libraryModules.gradle", "libraryUtilsGenerate.gradle")
 	if(scripts.size != 4)
 		throw Error("Library build path is not a valid project! The directory must contains \"library.gradle\", \"libraryLoad.gradle\", \"libraryModules.gradle\", \"libraryUtilsGenerate.gradle\"")
-	LIBRARY_BUILD_PATH_VALIDATED = true
+	buildPath
 }
+val `$` = '$'
 
 fun LIBRARYPROJECT_BUILD(name: String, asCurrent: Boolean): String {
-	validate_library_build_path()
 	return """
 		plugins {
 			id 'java'
@@ -52,6 +50,8 @@ open class AbstractLibraryTest: AbstractProjectTest() {
 			throw IllegalStateException("Cannot find parent project!")
 		val projectDir = file(root, "/${name}")
 		val project = LibraryProject(parent, projectDir, name)
+		// Need to include build 'Objects', because the
+		// Library Project does not construct the Gradle Utils.
 		parent.builds.firstOrNull() { it.name == "Objects" }
 			?: throw IllegalStateException("Must include build 'Objects'!")
 		if(root == parent.directory)
