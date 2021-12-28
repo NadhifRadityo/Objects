@@ -43,7 +43,9 @@ object FileUtils {
         }
     }
     @ExportGradle @JvmStatic @Throws(IOException::class)
-    fun fileBytes(path: String): ByteArray { return fileBytes(File(path)) }
+    fun fileBytes(parent: File, vararg children: String): ByteArray { return fileBytes(file(parent, *children)) }
+    @ExportGradle @JvmStatic @Throws(IOException::class)
+    fun fileBytes(vararg children: String): ByteArray { return fileBytes(file(*children)) }
 
     @ExportGradle @JvmStatic @JvmOverloads @Throws(IOException::class)
     fun fileString(file: File, charset: Charset = StandardCharsets.UTF_8): String {
@@ -56,10 +58,12 @@ object FileUtils {
         }
     }
     @ExportGradle @JvmStatic @JvmOverloads @Throws(IOException::class)
-    fun fileString(path: String, charset: Charset = StandardCharsets.UTF_8): String { return fileString(File(path), charset) }
+    fun fileString(parent: File, vararg children: String, charset: Charset = StandardCharsets.UTF_8): String { return fileString(file(parent, *children), charset) }
+    @ExportGradle @JvmStatic @JvmOverloads @Throws(IOException::class)
+    fun fileString(vararg children: String, charset: Charset = StandardCharsets.UTF_8): String { return fileString(file(*children), charset) }
 
     @ExportGradle @JvmStatic @Throws(IOException::class)
-    fun writeFileBytes(file: File, bytes: ByteArray, off: Int, len: Int) {
+    fun writeFileBytes(file: File, bytes: ByteArray, off: Int = 0, len: Int = bytes.size) {
         prog(arrayOf(file, bytes, off, len), FileUtils::class.java, "Writing file", true).use { prog0 ->
             prog0.pdo("Writing ${file.path}")
             ldebug("Writing contents to file: ${file.path}")
@@ -69,7 +73,9 @@ object FileUtils {
         }
     }
     @ExportGradle @JvmStatic @Throws(IOException::class)
-    fun writeFileBytes(path: String, bytes: ByteArray, off: Int, len: Int) { writeFileBytes(File(path), bytes, off, len) }
+    fun writeFileBytes(parent: File, vararg children: String, bytes: ByteArray, off: Int = 0, len: Int = bytes.size) { writeFileBytes(file(parent, *children), bytes, off, len) }
+    @ExportGradle @JvmStatic @Throws(IOException::class)
+    fun writeFileBytes(vararg children: String, bytes: ByteArray, off: Int = 0, len: Int = bytes.size) { writeFileBytes(file(*children), bytes, off, len) }
 
     @ExportGradle @JvmStatic @JvmOverloads @Throws(IOException::class)
     fun writeFileString(file: File, string: String, charset: Charset = StandardCharsets.UTF_8) {
@@ -82,7 +88,9 @@ object FileUtils {
         }
     }
     @ExportGradle @JvmStatic @JvmOverloads @Throws(IOException::class)
-    fun writeFileString(path: String, string: String, charset: Charset = StandardCharsets.UTF_8) { writeFileString(File(path), string, charset) }
+    fun writeFileString(parent: File, vararg children: String, string: String, charset: Charset = StandardCharsets.UTF_8) { writeFileString(file(parent, *children), string, charset) }
+    @ExportGradle @JvmStatic @JvmOverloads @Throws(IOException::class)
+    fun writeFileString(vararg children: String, string: String, charset: Charset = StandardCharsets.UTF_8) { writeFileString(file(*children), string, charset) }
 
     @ExportGradle @JvmStatic fun fileName(fileName: String): String { return if(fileName.contains(".")) fileName.substring(0, fileName.lastIndexOf(".")) else fileName }
     @ExportGradle @JvmStatic fun fileName(file: File): String { return fileName(file.name) }
@@ -131,21 +139,38 @@ object FileUtils {
     }
 
     @JvmStatic
-    internal fun delFile0(file: File) {
+    internal fun delfile0(file: File) {
         if(!file.exists()) return
         ldebug("Deleting file: ${file.path}")
         if(file.delete()) return
-        throw IllegalStateException("Cannot delete file")
+        throw IllegalStateException("Cannot delete file ${file.canonicalPath}")
     }
     @ExportGradle @JvmStatic
-    fun delFile(file: File) {
-        if(file.isFile) { delFile0(file); return }
-        val children = file.listFiles()
-        if(children == null) { delFile0(file); return }
-        for(child in children) {
-            if(child.isDirectory) delFile(child)
-            delFile0(child)
+    fun delfile(parent: File, vararg children: String): File {
+        val result = file(parent, *children)
+        if(!result.exists()) return result
+        if(result.isFile) { delfile0(result); return result; }
+        val childrenFile = result.listFiles()
+        if(childrenFile == null) { delfile0(result); return result; }
+        for(child in childrenFile) {
+            if(child.isDirectory) delfile(child)
+            else delfile0(child)
         }
-        delFile0(file)
+        delfile0(result)
+        return result
+    }
+    @ExportGradle @JvmStatic
+    fun delfile(vararg children: String): File {
+        val result = file(*children)
+        if(!result.exists()) return result
+        if(result.isFile) { delfile0(result); return result; }
+        val childrenFile = result.listFiles()
+        if(childrenFile == null) { delfile0(result); return result; }
+        for(child in childrenFile) {
+            if(child.isDirectory) delfile(child)
+            else delfile0(child)
+        }
+        delfile0(result)
+        return result
     }
 }
