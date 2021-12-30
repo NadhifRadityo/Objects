@@ -1,8 +1,12 @@
 package io.github.NadhifRadityo.Objects.Library
 
+import Gradle.Strategies.FileUtils.fileCopy
+import Gradle.Strategies.FileUtils.fileCopyDir
 import Gradle.Strategies.StringUtils.randomString
+import Gradle.includeBuild
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
+import java.io.File
 
 class LibraryTest: AbstractLibraryTest() {
 
@@ -16,10 +20,15 @@ class LibraryTest: AbstractLibraryTest() {
 			withBuildSource {
 				+"llog '${randomVariable}'"
 			}
+			fileCopyDir(File(LIBRARY_BUILD_PATH, "../.."), ".", "common.gradle")
+			"libraries" / {
+				fileCopyDir(LIBRARY_BUILD_PATH, "__library__", "library.gradle", "libraryLoad.gradle", "libraryModules.gradle", "libraryUtilsGenerate.gradle")
+			}
 		}
 		val project = withRootProject(builds=listOf(objectsProject)) {
-			withDefaultSettingsSource()
-			withDefaultBuildSource()
+			configure {
+				includeBuild(objectsProject)
+			}
 			"library" / {
 				withLibraryProject {
 					withDefaultBuildSource()
@@ -28,8 +37,10 @@ class LibraryTest: AbstractLibraryTest() {
 					}
 				}
 			}
+			withDefaultSettingsSource()
+			withDefaultBuildSource()
 		}
-		val result = run(project, false)
+		val result = run(project)
 		Assertions.assertTrue(result.output.contains(randomVariable))
 		Assertions.assertTrue(result.output.contains(randomVariable2))
 	}

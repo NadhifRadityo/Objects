@@ -27,15 +27,16 @@ fun LIBRARYPROJECT_BUILD(name: String, asCurrent: Boolean): String {
 	return """
 		plugins {
 			id 'java'
+			id 'java-test-fixtures'
 			id 'org.jetbrains.kotlin.jvm' version '1.5.30'
 		}
 		
 		buildDir = '../__target__/__sources__/'
 		
 		context(this) {
-			scriptImport from('${if(asCurrent) "Objects:libraries/__library__/" else ""}libraryLoad.gradle')
-			scriptImport listOf('module'), from('${if(asCurrent) "Objects:libraries/__library__/" else ""}libraryModules.gradle'), being('libraryModules')
-			scriptImport from('${if(asCurrent) "Objects:libraries/__library__/" else ""}library.gradle')
+			scriptImport from('${if(!asCurrent) "Objects:libraries/__library__/" else ""}libraryLoad.gradle')
+			scriptImport listOf('module'), from('${if(!asCurrent) "Objects:libraries/__library__/" else ""}libraryModules.gradle'), being('libraryModules')
+			scriptImport from('${if(!asCurrent) "Objects:libraries/__library__/" else ""}library.gradle')
 		}
 	"""
 }

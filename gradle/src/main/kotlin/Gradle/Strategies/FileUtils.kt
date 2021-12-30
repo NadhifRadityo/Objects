@@ -100,20 +100,17 @@ object FileUtils {
     @ExportGradle @JvmStatic fun fileExtension(file: File): String { return fileExtension(file.name) }
     @ExportGradle @JvmStatic fun file(parent: File, vararg children: String): File { return File(parent, children.joinToString("/")) }
     @ExportGradle @JvmStatic fun file(vararg children: String): File { return File(children.joinToString("/")) }
-    @ExportGradle @JvmStatic fun fileRelative(from: File, what: File): File { return Paths.get(from.canonicalPath).relativize(Paths.get(what.canonicalPath)).toFile() }
+    @ExportGradle @JvmStatic fun fileRelative(from: File, what: File): String { return Paths.get(from.canonicalPath).relativize(Paths.get(what.canonicalPath)).toString() }
     @ExportGradle @JvmStatic fun fileExists(parent: File, vararg what: String, matchDirectory: Boolean = false): List<File> { return parent.listFiles()?.filter { it.isDirectory == matchDirectory && what.contains(it.name) } ?: listOf() }
     @ExportGradle @JvmStatic fun fileExists(parent: File, what: String, matchDirectory: Boolean = false): File? { return parent.listFiles()?.first { it.isDirectory == matchDirectory && it.name == what } }
 
     @ExportGradle @JvmStatic fun fileCopy(from: File, to: File, vararg options: CopyOption): File {
         ldebug("Copying file: ${from.path} to ${to.path} with options ${options.joinToString { it.toString() }}")
-        if(from.parentFile.isDirectory && !from.parentFile.exists())
-            mkdir(from.parentFile)
-        if(to.parentFile.isDirectory && !to.parentFile.exists())
-            mkdir(to.parentFile)
+        if(!to.parentFile.exists()) mkdir(to.parentFile)
         Files.copy(Paths.get(from.canonicalPath), Paths.get(to.canonicalPath), *options);
         return to
     }
-    @ExportGradle @JvmStatic fun fileCopyDir(fromDir: File, toDir: File, what: Array<String>, vararg options: CopyOption): Array<File> {
+    @ExportGradle @JvmStatic fun fileCopyDir(fromDir: File, toDir: File, what: Array<out String>, vararg options: CopyOption): Array<File> {
         return what.map { name ->
             val from = file(fromDir, name)
             val to = file(toDir, name)

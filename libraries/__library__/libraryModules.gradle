@@ -28,7 +28,7 @@ def set_relative_to_dir = { File relativeToDir0 ->
 	if(Files.exists(link)) return
 	lwarn 'Cannot create library junction, reverting to use srcDirs alternative. Your IDE might not like this because modules cannot share the same content root.'
 	lwarn 'If you have problem with this alternative, try to elevate either gradle or your IDE as administrator.'
-	String sourcePath = fileRelative(relativeToDir, target.resolve('main').toFile()).getPath()
+	String sourcePath = fileRelative(relativeToDir, target.resolve('main').toFile())
 	sourceSets {
 		main.java { srcDirs = [ "$sourcePath/java" ] }
 		main.kotlin { srcDirs = [ "$sourcePath/kotlin" ] }
@@ -50,7 +50,7 @@ def module = { String path ->
 	}
 	linfo "Imported library module '$path'"
 	loadedModules.put(moduleIdentifier, modulePath)
-	String sourcePath = fileRelative(relativeToDir, modulePath).getPath()
+	String sourcePath = fileRelative(relativeToDir, modulePath)
 	applySourceSets(sourcePath)
 }
 def loaded_modules = { ->

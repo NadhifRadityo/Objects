@@ -1,8 +1,10 @@
 package Gradle
 
 import Gradle.Strategies.FileUtils.file
+import Gradle.Strategies.FileUtils.fileRelative
 import Gradle.Strategies.FileUtils.mkfile
 import Gradle.Strategies.LoggerUtils.loggerAppend
+import Gradle.Strategies.StringUtils.escape
 import org.gradle.testkit.runner.BuildResult
 import org.gradle.testkit.runner.GradleRunner
 import java.io.File
@@ -38,6 +40,9 @@ fun GradleRunner.appendArgs(args: List<String>) {
 	val argsList = arguments.toMutableList()
 	argsList += args
 	withArguments(argsList)
+}
+fun GradleRunner.includeBuild(rootProject: RootProject) {
+	appendArgs("--include-build=${escape(fileRelative(projectDir, rootProject.directory))}")
 }
 
 typealias ProjectFileDSLExpression<RESULT> = FileDSLExpression<ProjectFileDSL, RESULT>

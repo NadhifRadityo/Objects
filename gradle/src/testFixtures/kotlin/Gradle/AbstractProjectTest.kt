@@ -18,6 +18,7 @@ import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.io.TempDir
 import java.io.File
+import java.nio.file.StandardCopyOption
 
 val GRADLE_BUILD_PATH: File = run {
 	val buildPath = env_getFile("GRADLEUTILS_PROJECTPATH")
@@ -46,7 +47,7 @@ fun ROOTPROJECT_SETTINGS(name: String, directory: File, rootBuild: Boolean, chil
 		def extend = { String projectPath, String projectName = null ->
 			int splitIndex = projectPath.indexOf(':')
 			List<String> path = Arrays.asList((splitIndex != -1 ? projectPath.substring(0, splitIndex) : projectPath).split('/'))
-			String name = projectName != null ? projectName : splitIndex != -1 ? projectPath.substring(splitIndex + 1) : String.join('${'$'}', path.stream()
+			String name = projectName != null ? projectName : splitIndex != -1 ? projectPath.substring(splitIndex + 1) : String.join('$`$`', path.stream()
 					.map{it.substring(0, 1).toUpperCase() + it.substring(1)}.toArray(String[]::new))
 			String id = "$`$`{String.join('#', path)}?$`$`name"
 			GLOBAL.extendedProjects.put(id, false)
@@ -92,21 +93,21 @@ fun ROOTPROJECT_SETTINGS(name: String, directory: File, rootBuild: Boolean, chil
 		
 		if(ext.find('export_functions_only') == null || !ext.find('export_functions_only')) {
 			rootProject.name = '${name}'
-			${children.map { "extend(${fileRelative(directory, it.directory).path}, '${it.name}')" }.joinToString("\n")}
+			${children.map { "extend('${fileRelative(directory, it.directory).replace("\\", "/")}', '${it.name}')" }.joinToString("\n")}
 			apply(this)
 		}
 	"""
 	else """
 		def original_export_functions_only = ext.has('export_functions_only') ? ext['export_functions_only'] : null
 		ext.set('export_functions_only', true)
-		apply from: relativePath(File(startParameter.includedBuilds.get(0), 'settings.gradle'))
+		apply from: new File(startParameter.includedBuilds.get(0), 'settings.gradle')
 		ext.set('export_functions_only', original_export_functions_only)
 		
 		def extend = ext.get('extend')
 		def applyScript = ext.get('apply')
 		if(!ext.has('export_functions_only') || ext['export_functions_only'] == null || !(ext['export_functions_only'] as Boolean)) {
 			rootProject.name = '${name}'
-			${children.map { "extend(${fileRelative(directory, it.directory).path}, '${it.name}')" }.joinToString("\n")}
+			${children.map { "extend('${fileRelative(directory, it.directory).replace("\\", "/")}', '${it.name}')" }.joinToString("\n")}
 			applyScript(this)
 		}
 	"""
@@ -128,7 +129,8 @@ fun ROOTPROJECT_BUILD(name: String): String {
 typealias FileDSLExpression<RECEIVER, RESULT> = RECEIVER.() -> RESULT
 typealias FileDSLGenerator<RECEIVER> = (File, FileDSL<RECEIVER>) -> RECEIVER
 open class FileDSL<RECEIVER: FileDSL<RECEIVER>>(val generator: FileDSLGenerator<RECEIVER>, val root: File) {
-	internal val _instance: RECEIVER = this as RECEIVER
+	internal val _instance: RECEIVER
+		get() = this as RECEIVER
 	open operator fun String.not(): File {
 		return if(!this.startsWith("/")) mkfile(this)
 			else mkdir(this)
@@ -149,8 +151,14 @@ open class FileDSL<RECEIVER: FileDSL<RECEIVER>>(val generator: FileDSLGenerator<
 	open fun file(vararg name: String): File {
 		return file(root, *name)
 	}
-	open fun fileRelative(file: File): File {
+	open fun fileRelative(file: File): String {
 		return fileRelative(root, file)
+	}
+	open fun fileCopy(from: File, vararg name: String): File {
+		return FileUtils.fileCopy(from, file(*name), StandardCopyOption.REPLACE_EXISTING)
+	}
+	open fun fileCopyDir(from: File, dir: String, vararg what: String): Array<File> {
+		return FileUtils.fileCopyDir(from, file(dir), what, StandardCopyOption.REPLACE_EXISTING)
 	}
 	open fun mkfile(vararg name: String): File {
 		return FileUtils.mkfile(file(*name))
