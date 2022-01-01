@@ -1,5 +1,11 @@
 import java.nio.file.Paths
 
+buildscript {
+	dependencies {
+		classpath file('')
+	}
+}
+
 class GLOBAL {
 	protected static final Map<String, Boolean> extendedProjects = new HashMap<>()
 }
@@ -43,14 +49,6 @@ ext {
 	set('apply', apply)
 	set('extended_projects', extended_projects)
 	gradle.ext.set('settings_extended_projects', extended_projects)
-}
-
-gradle.allprojects {
-	it.buildscript {
-		dependencies {
-			classpath 'io.github.NadhifRadityo.Objects:gradle:LATEST'
-		}
-	}
 }
 
 if(ext.find('export_functions_only') == null || !ext.find('export_functions_only')) {
